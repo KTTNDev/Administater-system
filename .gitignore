@@ -1,0 +1,16 @@
+node_modules/
+node_modules-stalled/
+.tools/
+.runtime-local.json
+.next/
+.env*
+!.env.example
+data/
+test-results/
+playwright-report/
+*.tsbuildinfo
+references/*.docx
+references/*.pdf
+references/*-analysis.json
+references/*-preview.png
+references/*-probe.tgz

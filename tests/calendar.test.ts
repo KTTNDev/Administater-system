@@ -1,0 +1,34 @@
+import { beforeAll,afterAll,it,expect } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { db,auditHistory } from "../src/lib/db";
+import { blankEvent,calendarSchema,onDay } from "../src/lib/calendar";
+import { listCalendar,writeCalendar } from "../src/lib/calendar-db";
+import { writeOffice } from "../src/lib/office-db";
+const directory=fs.mkdtempSync(path.join(os.tmpdir(),"sarabun-calendar-test-"));
+beforeAll(()=>{process.env.DATABASE_PATH=path.join(directory,"test.sqlite");});
+afterAll(()=>db().close());
+it("validates real dates, ordered ranges and safe attachment URLs",()=>{
+ const e={...blankEvent("2026-09-13"),title:"ประชุม"};
+ expect(calendarSchema.safeParse({...e,date:"2026-02-30"}).success).toBe(false);
+ expect(calendarSchema.safeParse({...e,endDate:"2026-09-12"}).success).toBe(false);
+ expect(calendarSchema.safeParse({...e,end:"08:00"}).success).toBe(false);
+ expect(calendarSchema.safeParse({...e,allDay:true,end:"08:00"}).success).toBe(true);
+ expect(calendarSchema.safeParse({...e,attachments:[{name:"ไฟล์",url:"javascript:alert(1)"}]}).success).toBe(false);
+ expect(onDay({...e,endDate:"2026-09-15"},"2026-09-14")).toBe(true);
+ expect(onDay({...e,endDate:"2026-09-15"},"2026-09-16")).toBe(false);
+});
+it("persists source and attachments, rejects stale changes and missing sources",()=>{
+ const sourceOfficeId=writeOffice({kind:"incoming",title:"เชิญประชุม"});
+ const input={...blankEvent("2026-09-13"),title:"ประชุมตามหนังสือ",sourceOfficeId,attachments:[{name:"หนังสือเชิญ",url:"https://example.org/invitation.pdf"}]};
+ const id=writeCalendar(input),saved=listCalendar().find(e=>e.id===id)!;
+ expect(saved.attachments).toEqual(input.attachments);expect(saved.sourceOfficeId).toBe(sourceOfficeId);
+ writeCalendar({...saved,status:"cancelled"},id,saved.version);
+ expect(()=>writeCalendar({...saved,title:"เก่า"},id,saved.version)).toThrow();
+ expect(listCalendar().find(e=>e.id===id)?.status).toBe("cancelled");
+ expect(auditHistory(id).some(e=>e.action==="calendar_update")).toBe(true);
+ expect(()=>writeCalendar({...input,documentId:"00000000-0000-4000-8000-999999999999"})).toThrow();
+ expect(()=>writeCalendar({...input,sourceOfficeId:"00000000-0000-4000-8000-999999999999"})).toThrow();
+ expect(listCalendar()).toHaveLength(1);
+});

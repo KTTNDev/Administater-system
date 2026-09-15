@@ -1,0 +1,618 @@
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+  	
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>:::ยินดีต้อนรับสู่กรมส่งเสริมการปกครองท้องถิ่น::: [DLA-WEB68-APP02] </title> 
+	<link rel="icon" type="image/png" href="/images/logo.png" />
+	<script type="text/javascript">
+		var ctxPath = "";
+	</script>
+
+	<!-- style -->
+	<link rel="stylesheet" href="/lib/bootstrap-5.3.0-alpha3-dist/css/bootstrap.min.css" />   
+	<link rel="stylesheet" href="/fonts/fontawesome-free-6.4.0-web/css/all.min.css" />
+	<link rel="stylesheet" href="/lib/fontawesome-pro-5.8.2-web/css/all.css" />
+	<link rel="stylesheet" href="/lib/slick-1.8.1/slick/slick.css">
+	<link rel="stylesheet" href="/lib/slick-1.8.1/slick/slick-theme.css" />
+	<link rel="stylesheet" href="/assets/fonts/phosphor-icons/style.css"/>  
+	<link rel="stylesheet" href="/lib/calendar/css/style.css">  
+	<link rel="stylesheet" href="/lib/daterangepicker-master/daterangepicker.css" />
+	<link rel="stylesheet" href="/css/main-index.css">  
+	<link rel="stylesheet" href="/lib/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css">
+	<link rel="stylesheet" href="/css/custom.css">
+	<link rel="stylesheet" href="/fonts/RemixIcon-master/fonts/remixicon.css">
+	<link rel="stylesheet" href="/lib/sweetalert2/sweetalert2.min.css"/>
+	<link rel="stylesheet" href="/css/votePage.css"/>
+	
+	<script type="text/javascript" src="/js/win.js"></script>
+	<script type="text/javascript" src="/js/util.js"></script>
+	<script type="text/javascript" src="/js/struts.js"></script>
+	<script type="text/javascript" src="/js/popupCalendar.js"></script>
+	<script type="text/javascript" src="/js/validateForm.js"></script>
+	<script type="text/javascript" src="/js/validateDate.js"></script>
+	<script type="text/javascript" src="/js/validateNumber.js"></script>
+	<script type="text/javascript" src="/lib/jquery-1.11.0.min.js"></script>
+	<script type="text/javascript" src="/lib/bootstrap-5.3.0-alpha3-dist/js/bootstrap.bundle.min.js"></script>
+	<script type="text/javascript" src="/lib/daterangepicker-master/moment.min.js"></script>
+    <script type="text/javascript" src="/lib/daterangepicker-master/daterangepicker.js"></script>
+    <script type="text/javascript" src="/js/bootstrap-datepicker.js"></script>
+	<script type="text/javascript" src="/js/bootstrap-datepicker-thai.js" charset="UTF-8"></script>
+	<script type="text/javascript" src="/js/locales/bootstrap-datepicker.th.js" charset="UTF-8"></script>
+	<script type="text/javascript" src="/lib/sweetalert2/sweetalert2.all.min.js"></script>
+	
+	<script language="JavaScript" src="/dwr/interface/DlaService.js"></script>
+	<script language="JavaScript" src="/dwr/interface/SsoService.js"></script>
+	<script language="JavaScript" src="/dwr/util.js"></script>
+	<script language="JavaScript" src="/dwr/engine.js"></script>
+	<script language="JavaScript" src="/js/dwr.js"></script>
+
+	<script type="text/javascript" src="/js/script.js"></script>
+	<script type="text/javascript">
+	
+		$(function(){
+		    var current = location.pathname;
+			var isdropdownpage1 = false
+									                                
+           var isdropdownpage2 = false                               
+								
+		    console.log("current :"+current)
+			$('.navbar-nav li a').each(function(){
+		        var $this = $(this);
+		        console.log($this)
+		        // if the current path is like this link, make it active
+		        if($this.attr('href').indexOf(current) !== -1){
+					if(isdropdownpage1 || isdropdownpage2) {
+						$this.parent().parent().parent().addClass('activelan');
+						$this.parent().addClass('activelan');
+					} else {
+						$this.parent().addClass('activelan');
+					}
+		            
+		        } else {
+		        	$this.parent().removeClass('activelan');
+				}
+		        
+		    })
+		})
+		function doLogout() {
+			swal({
+				title: 'ยืนยันการออกจากระบบ',
+				type: 'warning',
+				showCancelButton: true,
+				confirmButtonColor: '#3085d6',
+				cancelButtonColor: '#d33',
+				confirmButtonText: 'ยืนยัน',
+				cancelButtonText: 'ยกเลิก',
+				confirmButtonClass: 'btn btn-success',
+				cancelButtonClass: 'btn btn-danger',
+				buttonsStyling: false
+			}).then(function (result) {
+				if (result.value) {
+					document.location.href = '/login.do?cmd=doPublicLogout&ts='+(new Date()).getTime();
+				}
+			});
+		}
+		function goToLogin() {
+			var contextPath = '';
+			var fullPath = window.location.pathname; 
+			var relativePath = fullPath.substring(contextPath.length);
+			var encodedPath = encodeURIComponent(relativePath);
+		  	var loginPath = '/login.do';
+		  	if (loginPath && loginPath !== '#') {
+		     	window.location.href = loginPath + '?redirect=' + encodedPath;
+		  	}
+	   }
+	</script>
+<style>
+
+.modal-dialog {
+/*     width: fit-content !important; */
+/*     justify-self: center; */
+}
+
+html {
+  -webkit-filter: grayscale(80%);
+  filter: grayscale(80%);
+}
+</style>
+</head>
+<body>
+<!-- votePage -->
+
+<!-- votePage -->
+<style>
+	.dropdown-menu{
+		width: fit-content;
+	}
+	.navbar-nav .nav-link .ph {
+	  display: inline-block;
+	  max-width: 150px;   /* กำหนดความกว้างสูงสุด */
+	  white-space: nowrap; /* ไม่ให้ตัดบรรทัด */
+	  overflow: hidden;    /* ซ่อนข้อความที่เกิน */
+	  text-overflow: ellipsis; /* แสดง … เมื่อข้อความยาวเกิน */
+	  vertical-align: middle; /* จัดให้อยู่ตรงกลางแนวตั้ง */
+	}
+	/* จัด alignment ให้เมนู dropdown */
+	#navbarDropdown + .dropdown-menu {
+	  right: 0 !important;
+	  left: auto !important;
+	}
+	li.activelan {
+		background-color: #d2ddc1;
+	    border-radius: 5%;
+    }
+    .container .navbar-collapse ul.dropdown-menu li a:hover ,
+    .container .navbar-collapse li a:hover {
+    background-color: #d2ddc1;
+    color: #212121;
+    font-weight: bold;           /* ตัวหนา */
+}
+		
+</style>
+
+    <header>
+        <div class="container">
+            <div class="row">
+                <nav class="navbar navbar-expand-lg bg-body-tertiary">
+                    <div class="container-fluid">
+                        <a href="/index.do"><img src="/images/logo.png" alt="" class="logo-img"></a>
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                      <span class="navbar-toggler-icon"></span>
+                    </button>
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                                <li class="nav-item ">
+                                    <a class="nav-link active" aria-current="page" href="/index.do">หน้าแรก</a>
+                                </li>
+                                
+									                                
+                                
+                                <li class="nav-item dropdown ">
+							        <a class="nav-link dropdown-toggle" href="#" id="navbarAbout" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							          เกี่ยวกับเรา
+							        </a>
+						          	<ul class="dropdown-menu" aria-labelledby="navbarAbout">
+						          		<li ><a class="dropdown-item" href="/land/executiveAgenda.do">วาระงานผู้บริหาร</a></li>
+										<li ><a class="dropdown-item" href="/land/history.do">ประวัติความเป็นมา</a></li>
+										<li ><a class="dropdown-item" href="/land/officePresident.do">ทำเนียบอธิบดี</a></li>
+										<li ><a class="dropdown-item" href="/land/officeDeputy.do">ทำเนียบรองอธิบดี</a></li>
+										<li ><a class="dropdown-item" href="/land/executiveBoard.do">คณะผู้บริหาร</a></li>
+										<li ><a class="dropdown-item" href="/land/structureGov.do">โครงสร้างและการแบ่งส่วนราชการ สถ.</a></li>
+										<li ><a class="dropdown-item" href="/land/authority.do">อำนาจหน้าที่</a></li>
+										<li ><a class="dropdown-item" href="/land/directActPlan.do">ทิศทาง สถ.</a></li>
+
+
+
+
+
+
+
+
+						          	</ul>
+						       	</li>
+                                <li class="nav-item">
+                                    <a class="nav-link" aria-current="page" href="/land/annouceNews.do">ข่าวประชาสัมพันธ์</a>
+                                </li>
+                                <li class="nav-item">
+                                </li>
+                                <li class="nav-item dropdown ">
+							        <a class="nav-link dropdown-toggle" href="#" id="navbarAbout" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							          บริการประชาชน
+							        </a>
+						          	<ul class="dropdown-menu" aria-labelledby="navbarAbout">
+						          		<li ><a class="dropdown-item" href="/land/questiondlafon.do">สายตรง สถ.</a></li>
+										<li ><a class="dropdown-item" href="/land/jusComplaintfon.do">ศูนย์ดำรงธรรมท้องถิ่น</a></li>
+										<li ><a class="dropdown-item" target="_blank" href="https://wbs.nacc.go.th/">ระบบแจ้งเบาะแสการทุจริตทางเว็บไซต์สำนักงาน ป.ป.ช.</a></li>
+										<li ><a class="dropdown-item" target="_blank" href="https://anonymous.pacc.go.th/">ระบบรับแจ้งเบาะแส/ข้อมูลการทุจริตของสำนักงาน ป.ป.ท.</a></li>
+
+
+						          	</ul>
+						       	</li>
+                                <li class="nav-item">
+                                    <a class="nav-link" aria-current="page" href="/land/faq.do">คำถามที่พบบ่อย</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" aria-current="page" href="/land/ebook.do">หนังสืออิเล็กทรอนิกส์</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" aria-current="page" href="/land/contactUs.do">ติดต่อเรา</a>
+                                </li>
+                            </ul>
+                            <div class="flag col-auto">
+                            <a target="_blank" href="https://www.facebook.com/thongthinthai">
+	                            	<img src="/images/Flag-facebook.png" alt="" class=""> 
+	                            </a>
+                               
+                            	<a href="/landEng/history.do">
+                                	<img src="/images/Flag-Eng-Active.png" alt="" class="">
+                                </a>
+                            </div>
+                            
+                            	<button type="button" onclick="goToLogin();" class="sep-btn">เข้าสู่ระบบ</button>
+                            
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            <div class="modal fade" id="popUpModal" tabindex="-1" role="dialog" aria-labelledby="popUpModalTitle" aria-hidden="true">
+				<div class="modal-dialog modal-fullscreen modal-dialog-centered" role="document">
+					<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+						<div class="modal-content bg-transparent border-0 shadow-none">
+							<button type="button"
+								class="btn-close position-absolute top-0 end-0 mt-2 me-2"
+								style="z-index: 1055; background-color: rgba(255, 255, 255, 0.9); border-radius: 20%; width: 32px; height: 32px; filter: invert(0);"
+								data-bs-dismiss="modal" aria-label="Close"></button>	
+							<div class="modal-body p-0 text-center">
+								<img src="/images/alertUAT.png" class="img-fluid rounded-3" width="700px" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </header>
+<form name="FON010" method="post" action="/land/govloadfon.do;jsessionid=C9BDDB5238262F4D90B7D658459AE7BF" enctype="multipart/form-data">
+<input type="hidden" name="cmd" value="" />
+<input type="hidden" name="data_index" value="" />
+  <style>
+/* Modal Content */
+
+a:hover {
+    color: #212121;
+}
+</style>
+
+<main>
+  <section class="pt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                      <li class="breadcrumb-item"><i class="ri-home-5-line"></i> <a href="/index.do">หน้าแรก</a></li>
+                      <li class="breadcrumb-item"><a href="/index.do#information">ข้อมูลสารสนเทศ</a></li>
+                      <li class="breadcrumb-item active" aria-current="page"> ดาวน์โหลดแบบฟอร์มเอกสารราชการ</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 ">
+                    <p class="title-result"> ดาวน์โหลดแบบฟอร์มเอกสารราชการ </p>
+                </div>                
+            </div>            
+        </div>
+		<div class="container my-3">            
+           
+            <div class="row mt-4">
+                <div class="col-lg-4 col-xl-3 mb-4">
+                    <div class="left-menu">
+                    	 
+                    	 
+	                    		
+								
+		                        <a class="active" href="/land/govloadfon.do?cmd=list&data_index=0">แผ่นแบบ (Template) หนังสือราชการ</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=1">รูปแบบตัวพิมพ์ (Font) 13 รูปแบบ</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=2">แบบฟอร์มการทดลองปฏิบัติหน้าที่ราชการ</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=3">แบบฟอร์มการประเมินผลการทดลองการปฏิบัติหน้าที่ราชการ</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=4">แบบฟอร์มการขอรับคัดเลือกให้ได้รับเงินเพิ่ม สำหรับตำแหน่งที่มีเหตุพิเศษ ตำแหน่งนิติกร</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=5">คำร้องขอหนังสือรับรองเงินเดือน/บุคคล/รับรองเวลาทำงาน/ผ่านสิทธิและหนังสือยินยอมให้หักเงินเดือน</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=6">แบบฟอร์มเบิกค่าเช่าบ้าน</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=7">แบบฟอร์มเบิกค่ารักษาพยาบาล</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=8">แบบฟอร์มเบิกค่าเล่าเรียนบุตร</a> 
+	                        
+		                        <a class="" href="/land/govloadfon.do?cmd=list&data_index=9">แบบฟอร์มใบมอบฉันทะ</a> 
+	                        
+                        
+                    </div>
+                </div>
+               
+                 <div class="col-lg-8 col-xl-9">
+                     
+                     
+                    <h4 class="title-index">
+                        <i class="ph ph-cloud-arrow-down"></i>
+                        <span>แผ่นแบบ (Template) หนังสือราชการ</span>
+                    </h4>
+                    <div class="download">
+	                    
+		                    
+		                        
+									
+									
+									
+					             		<a  href="/download/GovLoad/20251002/F85D80C6-F4A2-DFFA-012E-C16CF59973D7_17492758.doc" target="_blank"><i class="ri-file-word-2-line" style="font-size: 32px;"></i> &nbsp;หนังสือภายใน</a>
+					             		
+							    
+		                    
+		                        
+									
+									
+									
+					             		<a  href="/download/GovLoad/20251002/FA67D65A-ABA8-A940-DBFA-B66862B8D91C_603477924.doc" target="_blank"><i class="ri-file-word-2-line" style="font-size: 32px;"></i> &nbsp;หนังสือภายนอก</a>
+					             		
+							    
+		                    
+		                        
+									
+									
+									
+					             		<a  href="/download/GovLoad/20251002/53E79078-F400-5C9F-F46D-383BD70CCAAB_500649772.doc" target="_blank"><i class="ri-file-word-2-line" style="font-size: 32px;"></i> &nbsp;หนังสือประทับตรา</a>
+					             		
+							    
+		                     
+	                       
+                    </div>                  
+                    
+                 </div>
+                
+
+
+<input type="hidden" name="searchCondition.position" value="0"><table class="table-footer" align="center" border="0" width="100%"><tr class="row col-12">
+  <td width="40%" class="noprint d-flex col-5 align-middle" nowrap="nowrap">&nbsp;<div class="col-5"><select class="form-select" name="searchCondition.pageSize" onchange="doGoto(0)"><option value="10" selected>หน้าละ 10 รายการ</option><option value="25">หน้าละ 25 รายการ</option><option value="50">หน้าละ 50 รายการ</option><option value="100">หน้าละ 100 รายการ</option></select></div>
+  &nbsp;
+    <div class="col-2 text-center pt-1">หน้าที่</div> <div class="col-5"><select class="form-select" onchange="doGoto(this.selectedIndex*10)">
+      <option value="0" selected>1 จาก 3</option><option value="10">2 จาก 3</option><option value="20">3 จาก 3</option>
+    </select>
+  </div>&nbsp;</td>
+  <td width="20%" class="col-2 pt-1" nowrap="nowrap" align="center">
+    1 ถึง 10 จาก 25
+  </td>
+  <td width="40%" align="right" class="noprint col-5" nowrap="nowrap">&nbsp;
+    
+    <i class="fas fa-angle-double-left fa-lg" style="opacity: .5;"></i>&nbsp;&nbsp;
+    <i class="fas fa-angle-left fa-lg" style="opacity: .5;"></i>&nbsp;&nbsp;
+    
+    
+    <a href="javascript:doGoto(10)"><i class="fas fa-angle-right fa-lg"></i></a>&nbsp;&nbsp;
+    <a href="javascript:doGoto(20)"><i class="fas fa-angle-double-right fa-lg"></i></a>
+    
+  &nbsp;</td>
+</tr></table>
+       
+            </div>
+        </div>
+    </section>
+</main>
+</form>
+<!-- footer -->
+<script type="text/javascript">
+
+</script>
+	<footer>
+        <div class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="dla-logo">
+                            <img src="/images/logo_lower.png" alt="Logo Lower">
+                        </div>
+                        <div class="upper-text">
+                            <p>กรมส่งเสริมการปกครองท้องถิ่น ถนนนครราชสีมา แขวงดุสิต เขตดุสิต กรุงเทพ 10300 โทรศัพท์ : 0 2241 9000 โทรสาร : 0 2241 9019 อีเมล : saraban@dla.go.th</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="col-md-3 mt-4">
+                        <div class="text-column">
+                            <p class="fw-bold">เกี่ยวกับเรา</p>
+                            <p><a href="/land/executiveAgenda.do">วาระงานผู้บริหาร</a></p>
+                            <p><a href="/land/history.do">ประวัติความเป็นมา</a></p>
+                            <p><a href="/land/officePresident.do">ทำเนียบอธิบดี</a></p>
+                            <p><a href="/land/officeDeputy.do">ทำเนียบรองอธิบดี</a></p>
+                            
+                            <p><a href="/land/executiveBoard.do">คณะผู้บริหาร</a></p>
+                            <p><a href="/land/structureGov.do">โครงสร้างและการแบ่งส่วนราชการ สถ.</a></p>
+                            <p><a href="/land/authority.do">อำนาจหน้าที่</a></p>
+                            <p><a href="/land/directActPlan.do">ทิศทาง สถ.</a></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-4">
+                        <div class="text-column">
+                            <p class="fw-bold">ข่าว</p>
+                            <p><a href="/land/annouceNews.do">ข่าวประชาสัมพันธ์</a></p>
+                            <p><a href="/land/mainNews.do?type=1">ข่าวผู้บริหาร</a></p>
+                            <p><a href="/land/mainNews.do?type=2">ข่าวกิจกรรม</a></p>
+                            <p><a href="/land/clipVideo.do">คลิปข่าว</a></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-4">
+                        <div class="text-column">
+                            <p class="fw-bold"><a href="/land/faq.do">คำถามที่พบบ่อย</p>
+                            
+                           	<p class="fw-bold mt-3"><a href="/land/officialDoc.do">หนังสือราชการ</a></p>
+                            <p class="fw-bold mt-3">บริการประชาชน</p>
+                            <p><a href="/land/questiondlafon.do">สายตรง สถ.</a></p>
+                            <p><a href="/land/jusComplaintfon.do">ศูนย์ดำรงธรรมท้องถิ่น</a></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-4">
+                        <div class="text-column">
+                            <p class="fw-bold"><a href="/land/ebook.do">หนังสืออิเล็กทรอนิกส์</a></p>
+                            
+                       		<p class="fw-bold">นโยบายการใช้งานเว็บไซต์ สถ.</p>
+                            <p><a target="_blank" href="/website_policy/WebsitePolicy.pdf">นโยบายเว็บไชต์</a></p>
+                            <p><a target="_blank" href="/website_policy/PrivacyPolicy.pdf">นโยบายการเปลี่ยนแปลงแก้ไขและรักษาความปลอดภัยด้านเทคโนโลยีสารสนเทศ</a></p>
+                            <p><a target="_blank" href="/website_policy/ItSecurityPolicy.pdf">นโยบายการคุ้มครองข้อมูลส่วนบุคคล (Privacy Policy)</a></p>
+                            <p class="fw-bold mt-3"><a href="/land/contactUs.do">ติดต่อเรา</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="lower-text">
+                            <p>Copyright 2015 Department of Local Administration. All rights reserved : [DLA-WEB68-APP02][FON010]</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row justify-content-between">
+                    <div class="col-auto">
+                        <div class="footer-badges">
+                            <img src="/images/pic1.png" alt="">
+                            <img src="/images/pic2.png" alt="">
+                            <img src="/images/pic3.png" alt="">
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="user">
+                        	
+                           	   
+					         <input type="hidden" id="page" value="FON010">  
+					         <input type="hidden" id="iSpage" value="true">  
+					         <script type="text/javascript">__th_page="Home";</script>
+<div id="truehits_div"></div>
+<script type="text/javascript">
+(function() {
+var ga1 = document.createElement('script'); ga1.type = 'text/javascript';
+ga1.async = true;
+ga1.src = "//lvs.truehits.in.th/dataa/l0022111.js";
+var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga1, s);
+})();
+</script>
+                            <img src="/images/people-icon.png" alt="People Icon">
+                            <p class="filterAll"></p>
+                            <img src="/images/user-icon.png" alt="User Icon">
+                            <p class="filterToday"></p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button onclick="topFunction()" id="myBtn" title="Go to top"><i class="ph ph-arrow-up"></i></button>
+	</footer>
+	
+<!--======= votepage =========-->	
+<div class="modal fade" id="votepage" tabindex="-1" aria-labelledby="modal-01" aria-hidden="true">
+ 	<div class="modal-dialog modal-dialog-centered modal-xl">
+	        <div class="modal-content modalQuestiondla">
+	            <div class="modal-header">
+	                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	            </div>
+	            <div class="modal-body">
+	                <div class="row">
+	                    <div class="container-iframe" style="min-height: 450px;">
+							<iframe scrolling="auto" id="builder-frame"  name="iframe_a" class="responsive-iframe"></iframe>
+						</div>
+					</div>
+	            </div>
+	            <div class="modal-footer">
+               </div>
+	        </div>
+	    </div>
+</div>
+<!--======= votepage =========-->
+
+</body>
+ <!--======= Customize =========-->
+<script src="/lib/slick-1.8.1/slick/slick.js"></script>
+<script src="/js/script-index.js"></script>
+<script src="/lib/calendar/js/popper.js"></script>
+<script src="/lib/calendar/js/main.js"></script>
+
+
+<script>     
+getCounterFilter();
+   let mybutton = document.getElementById("myBtn");      
+   
+   window.onscroll = function() {scrollFunction()};
+   
+   function scrollFunction() {
+     if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+       mybutton.style.display = "block";
+     } else {
+       mybutton.style.display = "none";
+     }
+   }      
+   
+   function topFunction() {
+     document.body.scrollTop = 0;
+     document.documentElement.scrollTop = 0;
+   }
+   
+   
+   function openModalVodePage(pageCode) {
+	    const $modal = $('#votepage');
+	    const src = '/land/satisfactionfon.do?cmd=list&data_index='+pageCode;
+	    $modal.off('show.bs.modal').on('show.bs.modal', function () {
+	        const $iframe = $modal.find('.container-iframe iframe');
+	        $iframe.attr('src', src);
+	    });
+	    const modalInstance = new bootstrap.Modal($modal[0]);
+	    modalInstance.show();
+	}
+	window.addEventListener('message', function(event) {
+		if (!event.data || !event.data.action) return;
+
+		// ซ่อน modal ถ้ามี modal เปิดอยู่
+		var modalEl = $('#votepage');
+		var modal = bootstrap.Modal.getInstance(modalEl[0]) || new bootstrap.Modal(modalEl[0]);
+		// จัดการตาม action
+		switch (event.data.action) {
+			case 'closeModalVotepage':
+				modal.hide();
+				doGoto(0);
+				break;
+
+			case 'goSurveyResultfrom':
+				modal.hide();
+				location.href = '/land/satisfactionfon.do?cmd=form';
+				break;
+
+			case 'goIndexPage':
+				modal.hide();
+				location.href = '/index.do';
+				break;
+				
+			case 'goSurveyResultClose':
+				modal.hide();
+				break;	
+
+			default:
+				console.warn('Unknown action:', event.data.action);
+		}
+	});
+	window.onload = function() {
+	    var hash = window.location.hash;
+	    if(hash != '') {
+	    	var element = document.getElementById(hash.substring(1));
+	        if (element) {
+	        	 element.scrollIntoView({
+	             	block: 'center',
+	             	behavior: 'instant',
+	             });
+	        }
+	    }
+	}
+	
+	function getCounterFilter(){
+		var pageCode = 	$('#page').val();
+		var iscountPageCode = $('#iSpage').val();
+		
+			SsoService.processCounterPageCodeViewToday(pageCode,iscountPageCode ,function(totalToday) {
+			$('.filterToday').text(totalToday);
+			SsoService.processCounterPageCodeViewAll(pageCode,function(totalAll) {
+		 		$('.filterAll').text(totalAll);
+			});
+		});
+	}
+</script>
+  
+

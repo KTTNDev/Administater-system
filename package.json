@@ -1,0 +1,39 @@
+{
+  "name": "sarabun-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/run-next.mjs dev",
+    "build": "node scripts/run-next.mjs build",
+    "start": "node scripts/run-next.mjs start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "seed:drive-demo": "node scripts/seed-drive-demo.mjs",
+    "postinstall": "node scripts/prepare-pdfjs.mjs"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@googleapis/drive": "22.0.0",
+    "jose": "6.2.12",
+    "lucide-react": "1.43.0",
+    "next": "16.3.4",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.3.289",
+    "playwright": "1.63.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "typescript": "5.9.3",
+    "vitest": "5.0.0"
+  }
+}

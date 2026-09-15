@@ -1,0 +1,26 @@
+import {test,expect} from "@playwright/test";
+test("create, preview, export, reload, search, duplicate, and delete",async({page})=>{
+  const subject=`ทดสอบระบบ ${Date.now()}`;
+  await page.goto("/");
+  await expect(page.getByRole("heading",{name:"ร่างหนังสือของฉัน",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"หนังสือภายนอก ติดต่อหน่วยงานภายนอก"}).click();
+  await page.getByRole("button",{name:"ใช้ข้อมูลตัวอย่าง"}).click();
+  await page.getByLabel("เรื่อง / ชื่อร่าง").fill(subject);
+  await expect(page.frameLocator("iframe").locator("body")).toContainText(subject);
+  await page.getByRole("button",{name:"บันทึกร่าง",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("บันทึกร่างเรียบร้อยแล้ว");
+  const downloadPromise=page.waitForEvent("download");
+  await page.getByRole("button",{name:"ดาวน์โหลด PDF"}).click();
+  const download=await downloadPromise;expect(download.suggestedFilename()).toContain(subject);
+  await page.getByLabel(/^ข้อความ/).fill("ข้อความทดสอบย่อหน้ายาว เพื่อทดสอบการแบ่งหน้าและรักษาข้อความภาษาไทย ".repeat(180));
+  await expect(page.frameLocator("iframe").locator(".page")).not.toHaveCount(1);
+  const text=await page.frameLocator("iframe").locator(".body-text").allTextContents();expect(text.join("")).toBe("ข้อความทดสอบย่อหน้ายาว เพื่อทดสอบการแบ่งหน้าและรักษาข้อความภาษาไทย ".repeat(180));
+  await page.getByRole("button",{name:"บันทึกร่าง",exact:true}).click();await expect(page.getByRole("status")).toContainText("บันทึกร่างเรียบร้อยแล้ว");
+  await page.reload();await page.getByLabel("ค้นหาร่างหนังสือ").fill(subject);await expect(page.getByRole("button",{name:new RegExp(subject)}).first()).toBeVisible();
+  await page.getByRole("button",{name:`ทำสำเนา ${subject}`,exact:true}).click();await expect(page.getByLabel("เรื่อง / ชื่อร่าง")).toHaveValue(subject+" (สำเนาร่าง)");
+  await page.getByRole("button",{name:"กลับรายการ"}).click();
+  page.on("dialog",dialog=>dialog.accept());
+  await page.getByRole("button",{name:`ลบ ${subject} (สำเนาร่าง)`,exact:true}).click();await expect(page.getByRole("status")).toContainText("ลบร่างเรียบร้อยแล้ว");
+  await page.getByRole("button",{name:`ลบ ${subject}`,exact:true}).click();await expect(page.getByRole("status")).toContainText("ลบร่างเรียบร้อยแล้ว");
+});
+test("mobile navigation remains usable",async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto("/");await page.getByRole("button",{name:"เปิดเมนู"}).click();await page.getByRole("button",{name:"แบบหนังสือราชการ",exact:true}).click();await expect(page.getByRole("heading",{name:"เลือกแบบหนังสือราชการ"})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)});
