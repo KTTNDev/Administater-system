@@ -1,0 +1,12 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';
+import {saveRecovery,getRecoveryList,getRecovery} from '@/app/recovery-actions';
+type Scope='document'|'budget';
+export function RecoveryPanel({scope,value,enabled,contextKey,onRestore}:{scope:Scope;value:unknown;enabled:boolean;contextKey:string;onRestore:(value:unknown)=>void}){
+ const [status,setStatus]=useState(''),[error,setError]=useState(''),[rows,setRows]=useState<{id:string;title:string;at:string}[]>([]),[open,setOpen]=useState(false);
+ const generation=useRef(0),key=useRef(''),identity=useRef(''),sequence=useRef(0);const serialized=JSON.stringify(value);
+ useEffect(()=>{if(key.current!==contextKey||!identity.current){key.current=contextKey;identity.current=crypto.randomUUID();sequence.current=0;}const ticket=++generation.current;if(!enabled)return;setStatus('รอบันทึกสำเนากู้คืน…');const id=identity.current,seq=++sequence.current;
+ const timer=setTimeout(()=>{setStatus('กำลังบันทึกสำเนากู้คืน…');saveRecovery({id,scope,sequence:seq,data:JSON.parse(serialized)}).then(()=>{if(generation.current===ticket)setStatus('บันทึกสำเนากู้คืนแล้ว');}).catch(()=>{if(generation.current===ticket)setStatus('สำเนากู้คืนยังไม่บันทึก กรุณากดบันทึกงานเอง และตรวจการเชื่อมต่อหรือข้อมูล');});},1500);return()=>{clearTimeout(timer);generation.current++;};},[serialized,enabled,contextKey,scope]);
+ async function show(){setError('');try{setRows(await getRecoveryList(scope));setOpen(true);}catch{setError('โหลดสำเนากู้คืนไม่สำเร็จ กรุณาลองใหม่');}}
+ return <section className="recovery-panel" style={{padding:12,margin:'12px 0',background:'#edf7f3',borderRadius:10}}><span aria-live="polite">{enabled?status:'สำเนากู้คืนอัตโนมัติ · เก็บแยกจากทะเบียน'}</span>{error&&<p role="alert">{error}</p>} <button type="button" onClick={show}>เปิดสำเนากู้คืน</button>{open&&<div><p>กู้เป็นร่างใหม่ ไม่เขียนทับฉบับเดิม · สำเนาอยู่บนเครื่องที่รันระบบ ยังไม่ใช่สำรองนอกเครื่อง</p><button type="button" onClick={()=>setOpen(false)}>ปิดรายการ</button>{!rows.length?<p>ยังไม่มีสำเนากู้คืน</p>:<ul>{rows.map(r=><li key={r.id}><button type="button" onClick={async()=>{if(enabled&&!confirm('เปิดสำเนานี้เป็นร่างใหม่แทนงานบนหน้าจอหรือไม่? ควรกดบันทึกงานปัจจุบันก่อน'))return;try{const data=await getRecovery(r.id,scope);onRestore(data);setOpen(false);}catch{setError('เปิดสำเนาไม่สำเร็จ กรุณาลองใหม่');}}}>{r.title} — {new Date(r.at).toLocaleString('th-TH')}</button></li>)}</ul>}</div>}</section>;
+}
