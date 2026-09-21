@@ -23,7 +23,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
       if(d.reference) field("อ้างถึง",d.reference); if(d.attachmentFiles.length) field("สิ่งที่ส่งมาด้วย",d.attachmentFiles.map((a,i)=>`${i+1}. ${a.description} จำนวน ${a.quantity} ${a.unit}`).join("\n"));
       body(); p(e(d.closing),"closing"); signature(); contact(); if(d.copies) field("สำเนาส่ง",d.copies); break;
     case "internal": case "memorandum":
-      blocks.push(`<div class="memo-head">${d.type==="internal"?emblem:""}<strong>บันทึกข้อความ</strong></div>`);
+      blocks.push(`<div class="memo-head">${d.type==="internal"||d.memoEmblem?emblem:""}<strong>บันทึกข้อความ</strong></div>`);
       field("ส่วนราชการ",[...(d.layout==='budget-reference'?[d.department,d.organization]:[d.organization,d.department]),d.phone?"โทร. "+d.phone:""].filter(Boolean).join("  "),"memo-field");
       blocks.push(`<div class="memo-row"><p class="memo-field"><b>ที่</b><span class="memo-value">${e(d.number)||'&nbsp;'}</span></p><p class="memo-field"><b>วันที่</b><span class="memo-value">${e(date)}</span></p></div>`);
       field("เรื่อง",d.subject,"memo-field"); field(d.salutation,d.recipient,"salutation"); body(); if(d.attachmentFiles.length)p(e(d.attachmentPhrase+" ได้แก่ "+d.attachmentFiles.map((a,i)=>`${i+1}. ${a.description} จำนวน ${a.quantity} ${a.unit}`).join("; ")),"body-text"); signature(); break;
@@ -35,13 +35,14 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
       if(t.mark) blocks.push(`<div class="center-emblem">${emblem}</div>`);
       p(`${e(t.name)}${e(d.organization)}`,"center title");
       if(d.type==="order") p(`ที่ ${e(d.number)}`,"center");
-      p(`เรื่อง ${e(d.subject)}`,"center title");
+      p(`${d.type==="regulation"||d.type==="rule"?'ว่าด้วย':'เรื่อง'} ${e(d.subject)}`,"center title");
+      if((d.type==="regulation"||d.type==="rule")&&d.number)p(`(ฉบับที่ ${e(d.number)})`,"center");
       if(d.type==="regulation" || d.type==="rule") p(`พ.ศ. ${e(String(documentYear(d.date,"calendar")))}`,"center");
       if(d.type==="statement" && d.number) p(`ฉบับที่ ${e(d.number)}`,"center");
       p("____________________","center divider"); body();
       if(d.effectiveDate) p(e(d.effectiveDate),"body-text");
       if(d.type==="news" || d.type==="statement") { p(e(d.organization),"closing"); p(e(date),"closing"); }
-      else { p(`${d.type==="order"?"สั่ง": "ประกาศ"} ณ วันที่ ${e(date)}`,"issued"); signature(); } break;
+      else { p(`${d.type==="order"?"สั่ง": "ประกาศ"} ณ วันที่ ${e(date)}`,"issued"); if(d.type==="order"&&d.orderReceivedBy)p(`รับคำสั่ง${e(d.orderReceivedBy)}`,"received-order");signature(); } break;
     case "certificate":
       blocks.push(`<div class="letter-head">${emblem}<div class="letter-number">ที่ ${e(d.number)}</div><div class="letter-agency">${e(d.organization)}<br>${e(d.address)}</div></div>`);
       body(); p(`ให้ไว้ ณ วันที่ ${e(date)}`,"issued"); signature(); break;
@@ -64,8 +65,8 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   @font-face{font-family:DocumentThai;src:url('${assets.bold}') format('truetype');font-weight:700;font-display:block}
   *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#e8edec;color:#111;font-family:DocumentThai,serif;font-size:16pt;line-height:normal}
   .page{position:relative;width:210mm;height:297mm;background:white;margin:0 auto 7mm;padding:25mm 20mm 20mm 30mm;break-after:page;overflow:hidden}
-  .page:first-child{padding-top:15mm}.page:last-child{margin-bottom:0;break-after:auto}
-  .content{height:240mm;display:flow-root}.page:first-child .content{height:250mm}
+  .page:first-child{padding-top:${d.firstPageTop==='25'?25:15}mm}.page:last-child{margin-bottom:0;break-after:auto}
+  .content{height:240mm;display:flow-root}.page:first-child .content{height:${d.firstPageTop==='25'?240:250}mm}
   p{margin:0 0 6pt;white-space:pre-wrap;overflow-wrap:anywhere;orphans:2;widows:2}.body-text{text-indent:25mm;text-align:justify;white-space:pre-wrap}
   .garuda{position:relative;display:inline-block;overflow:hidden;flex-shrink:0;height:30mm;width:calc(30mm * 1194 / 1340)}.garuda-source{position:absolute;max-width:none;width:calc(100% * 2320 / 1194);height:calc(100% * 1811 / 1340);left:calc(-100% * 498 / 1194);top:calc(-100% * 324 / 1340)}.letter-head{position:relative;min-height:38mm;padding-top:23mm;margin-bottom:6pt;display:flex;justify-content:space-between;gap:8mm}
   .letter-head .garuda{position:absolute;top:0;left:calc(50% - 5mm);transform:translateX(-50%)}.letter-number{max-width:50%}.letter-agency{width:65mm;padding-left:10mm;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -83,6 +84,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   .budget-detail{margin-left:50.8mm;text-indent:0}.budget-spec{margin-left:55mm;text-indent:0}
   .budget-document .opinion{margin-top:5mm}.budget-document .opinion-line{height:6mm}.budget-document .opinion-sign{margin-top:10mm}.budget-document .opinion-sign p:first-child,.budget-document .opinion-sign p:last-child{display:none}
   .correspondence .content>p{margin-bottom:0}.correspondence .content>p:not(:where(.memo-field)){margin-top:6pt}.correspondence .content>.date{margin-top:0}.correspondence .content>.closing{margin-top:12pt}.correspondence .content>.contact{margin-top:3lh}.correspondence .contact~p{margin-top:0}.correspondence .memo-field{margin-bottom:0}.correspondence .memo-head strong{line-height:35pt}.correspondence .body-text{text-indent:25mm}.correspondence .sign-space{height:3lh}
+  .received-order{margin:6pt 0 0 70mm;text-align:center;break-after:avoid}.issued{text-indent:50mm}
   #source{display:none}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
   </style></head><body class="${["external","internal","memorandum"].includes(d.type)?"correspondence ":""}${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>

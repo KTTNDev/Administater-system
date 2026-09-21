@@ -24,6 +24,7 @@ export function restoreBackup(source,destination){
  for(const name of ['ict.pdf','ict-2569.pdf','equipment.pdf','classification.pdf'])if(names.has('budget-reference-'+name)){
   const refs=path.join(data,'budget-references');fs.mkdirSync(refs,{recursive:true});fs.copyFileSync(path.join(source,'budget-reference-'+name),path.join(refs,name),fs.constants.COPYFILE_EXCL);
  }
+ if(names.has('template-reference-20170502100402.pdf')){const refs=path.join(data,'template-references');fs.mkdirSync(refs,{recursive:true});fs.copyFileSync(path.join(source,'template-reference-20170502100402.pdf'),path.join(refs,'20170502100402.pdf'),fs.constants.COPYFILE_EXCL);}
  fs.writeFileSync(path.join(destination,'RESTORE-README.txt'),'Restored business data and embedded attachments. Original application remains unchanged. Configure DATABASE_PATH to the restored data/sarabun.sqlite and restore budget references before starting a separate application. Settings and Google OAuth must be configured again. PDF exports can be regenerated.\n',{flag:'wx'});
  return {destination,database:path.join(data,'sarabun.sqlite')};
 }
