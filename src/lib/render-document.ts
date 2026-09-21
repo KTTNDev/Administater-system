@@ -13,7 +13,9 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   }):bodySections(d).filter(s=>s.text.trim()).forEach(s=>{if(s.title&&d.sectionHeadings)p(e(s.title),"title");s.text.split(/\n/).forEach(line=>p(e(line),"body-text"));});
   const signature=() => blocks.push(`<div class="signature"><div class="sign-space"></div><p>(${e(d.signer)})</p><p>${e(d.position)}</p></div>`);
   const contact=() => { if(d.department) p(e(d.department),"contact"); if(d.phone) field("โทร.",d.phone); if(d.email) p(`<span class="label">ไปรษณีย์อิเล็กทรอนิกส์</span> ${escapeHtml(d.email)}`); };
-  const emblem = `<img class="garuda" src="${assets.garuda}" alt="ตราครุฑ" />`;
+  // The bundled 2320×1811 scan includes white margins and speckles. The CSS
+  // viewport (498,324,1194,1340) measures the emblem, not the scan's outer box.
+  const emblem = `<span class="garuda" role="img" aria-label="ตราครุฑ"><img class="garuda-source" src="${assets.garuda}" alt="" /></span>`;
   switch(d.type) {
     case "external":
       blocks.push(`<div class="letter-head">${emblem}<div class="letter-number">ที่ ${e(d.number)}</div><div class="letter-agency">${e(d.organization)}<br>${e(d.address)}</div></div>`);
@@ -24,7 +26,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
       blocks.push(`<div class="memo-head">${d.type==="internal"?emblem:""}<strong>บันทึกข้อความ</strong></div>`);
       field("ส่วนราชการ",[...(d.layout==='budget-reference'?[d.department,d.organization]:[d.organization,d.department]),d.phone?"โทร. "+d.phone:""].filter(Boolean).join("  "),"memo-field");
       blocks.push(`<div class="memo-row"><p class="memo-field"><b>ที่</b><span class="memo-value">${e(d.number)||'&nbsp;'}</span></p><p class="memo-field"><b>วันที่</b><span class="memo-value">${e(date)}</span></p></div>`);
-      field("เรื่อง",d.subject,"memo-field"); field(d.salutation,d.recipient); body(); if(d.attachmentFiles.length)p(e(d.attachmentPhrase+" ได้แก่ "+d.attachmentFiles.map((a,i)=>`${i+1}. ${a.description} จำนวน ${a.quantity} ${a.unit}`).join("; ")),"body-text"); signature(); break;
+      field("เรื่อง",d.subject,"memo-field"); field(d.salutation,d.recipient,"salutation"); body(); if(d.attachmentFiles.length)p(e(d.attachmentPhrase+" ได้แก่ "+d.attachmentFiles.map((a,i)=>`${i+1}. ${a.description} จำนวน ${a.quantity} ${a.unit}`).join("; ")),"body-text"); signature(); break;
     case "stamped":
       blocks.push(`<div class="letter-head">${emblem}<div class="letter-number">ที่ ${e(d.number)}</div></div>`);
       field("ถึง",d.recipient); body(); p(e(d.organization),"closing"); p(e(date),"closing");
@@ -60,29 +62,30 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   <style>
   @font-face{font-family:DocumentThai;src:url('${assets.regular}') format('truetype');font-weight:400;font-display:block}
   @font-face{font-family:DocumentThai;src:url('${assets.bold}') format('truetype');font-weight:700;font-display:block}
-  *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#e8edec;color:#111;font-family:DocumentThai,serif;font-size:16pt;line-height:1.15}
+  *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#e8edec;color:#111;font-family:DocumentThai,serif;font-size:16pt;line-height:normal}
   .page{position:relative;width:210mm;height:297mm;background:white;margin:0 auto 7mm;padding:25mm 20mm 20mm 30mm;break-after:page;overflow:hidden}
-  .page:first-child{padding-top:${d.copyMark!=="none"?28:15}mm}.page:last-child{margin-bottom:0;break-after:auto}
-  .content{height:240mm;display:flow-root}.page:first-child .content{height:${d.copyMark!=="none"?237:250}mm}
+  .page:first-child{padding-top:15mm}.page:last-child{margin-bottom:0;break-after:auto}
+  .content{height:240mm;display:flow-root}.page:first-child .content{height:250mm}
   p{margin:0 0 6pt;white-space:pre-wrap;overflow-wrap:anywhere;orphans:2;widows:2}.body-text{text-indent:25mm;text-align:justify;white-space:pre-wrap}
-  .garuda{height:30mm;width:auto;object-fit:contain}.letter-head{position:relative;min-height:38mm;padding-top:23mm;margin-bottom:6pt;display:flex;justify-content:space-between;gap:8mm}
+  .garuda{position:relative;display:inline-block;overflow:hidden;flex-shrink:0;height:30mm;width:calc(30mm * 1194 / 1340)}.garuda-source{position:absolute;max-width:none;width:calc(100% * 2320 / 1194);height:calc(100% * 1811 / 1340);left:calc(-100% * 498 / 1194);top:calc(-100% * 324 / 1340)}.letter-head{position:relative;min-height:38mm;padding-top:23mm;margin-bottom:6pt;display:flex;justify-content:space-between;gap:8mm}
   .letter-head .garuda{position:absolute;top:0;left:calc(50% - 5mm);transform:translateX(-50%)}.letter-number{max-width:50%}.letter-agency{width:65mm;padding-left:10mm;white-space:pre-wrap;overflow-wrap:anywhere}
   .date{margin-left:75mm}.memo-head{position:relative;height:${d.urgency!=="ปกติ"?27:18}mm;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3pt}
-  .memo-head strong{font-size:29pt;line-height:1.2}.memo-head .garuda{position:absolute;height:15mm;left:0;top:0}
-  .memo-field{display:flex;align-items:baseline;gap:2mm}.memo-value{flex:1;min-width:0;position:relative;white-space:pre-wrap;overflow-wrap:anywhere}.memo-value:after{content:"";position:absolute;left:0;right:0;bottom:2pt;${d.memoGuides?"border-bottom:1px dotted #888":""};pointer-events:none}.memo-field .label,.memo-field b{font-size:20pt;font-weight:700;white-space:nowrap}.memo-row{display:flex;gap:5mm}.memo-row p:first-child{width:49%}.memo-row p:last-child{flex:1}
-  .closing,.signature{margin-left:70mm;text-align:center;white-space:pre-wrap}.closing{margin-top:12pt}.signature{break-inside:avoid}.sign-space{height:20mm}.signature p{margin:0;white-space:pre-wrap}.contact{margin-top:16mm}
+  .memo-head strong{font-size:29pt;line-height:35pt}.memo-head .garuda{position:absolute;height:15mm;width:calc(15mm * 1194 / 1340);left:0;top:0}
+  .memo-field{display:flex;align-items:baseline;gap:2mm}.memo-value{flex:1;min-width:0;position:relative;white-space:pre-wrap;overflow-wrap:anywhere}.memo-value:after{content:"";position:absolute;left:0;right:0;bottom:2pt;border-bottom:1px dotted #888;pointer-events:none}.memo-field .label,.memo-field b{font-size:20pt;font-weight:700;white-space:nowrap}.memo-row{display:flex;gap:5mm}.memo-row p:first-child{width:49%}.memo-row p:last-child{flex:1}
+  .closing,.signature{margin-left:70mm;text-align:center;white-space:pre-wrap}.closing{margin-top:12pt}.signature{break-inside:avoid}.sign-space{height:3lh}.signature p{margin:0;white-space:pre-wrap}.contact{margin-top:3lh}
   .budget-line{display:flex;gap:4mm;text-indent:0}.budget-label{flex:0 0 53mm;font-weight:bold}.budget-line>span:last-child{flex:1;min-width:0}.center{text-align:center}.title{font-weight:700}.center-emblem{text-align:center;margin-left:-10mm;margin-bottom:8pt}.issued{text-indent:25mm;margin-top:12pt}.divider{margin-bottom:12pt}
-  .urgency{font-weight:bold;font-size:32pt;color:#f00;position:absolute;left:${compact?52:30}mm;top:${d.copyMark!=="none"?29:16}mm;line-height:1}.copy-mark{position:absolute;left:0;right:0;top:12mm;text-align:center;font-size:24pt;font-weight:bold}.opinion{margin-top:8mm;break-inside:avoid}.opinion-line{height:8mm;border-bottom:1px dotted #555}.opinion-sign{margin-top:8mm;text-align:center;margin-left:70mm}.opinion-sign p{margin-bottom:0}.production{margin:12mm 0 0 auto;width:85mm;break-inside:avoid}.production p{margin-bottom:2mm}.stamp-placeholder{margin:8mm 0 0 70mm;text-align:center;color:#777;font-size:14pt}
-  .continuation-cue{position:absolute;right:20mm;bottom:20mm;max-width:90mm;text-align:right;white-space:nowrap;font-size:16pt;line-height:1.15}.page-number{position:absolute;top:14mm;left:0;right:0;text-align:center}.security{position:absolute;top:1mm;left:0;right:0;text-align:center;color:#f00;font-weight:700;font-size:32pt;line-height:1}.security.bottom{top:auto;bottom:2mm}
-  .budget-document{line-height:18.1pt}.budget-document p{margin-bottom:0}.budget-document .body-text{text-indent:25.4mm}
+  .urgency{font-weight:bold;font-size:32pt;color:#f00;position:absolute;left:${compact?52:30}mm;top:${d.copyMark!=="none"?29:16}mm;line-height:1}.copy-mark{position:absolute;left:auto;right:20mm;width:60mm;top:4mm;text-align:right;font-size:24pt;font-weight:bold}.opinion{margin-top:8mm;break-inside:avoid}.opinion-line{height:8mm;border-bottom:1px dotted #555}.opinion-sign{margin-top:8mm;text-align:center;margin-left:70mm}.opinion-sign p{margin-bottom:0}.production{margin:12mm 0 0 auto;width:85mm;break-inside:avoid}.production p{margin-bottom:2mm}.stamp-placeholder{margin:8mm 0 0 70mm;text-align:center;color:#777;font-size:14pt}
+  .continuation-cue{position:absolute;right:20mm;bottom:20mm;max-width:90mm;text-align:right;white-space:nowrap;font-size:16pt;line-height:normal}.page-number{position:absolute;top:14mm;left:0;right:0;text-align:center}.security{position:absolute;top:1mm;left:0;right:0;text-align:center;color:#f00;font-weight:700;font-size:32pt;line-height:1}.security.bottom{top:auto;bottom:2mm}
+  .budget-document{line-height:normal}.budget-document p{margin-bottom:0}.budget-document .body-text{text-indent:25mm}
   .budget-document .memo-field{margin-bottom:6pt}.budget-document .memo-row .memo-field{margin-bottom:6pt}.budget-document .memo-head{margin-bottom:6pt}
   .budget-document .budget-heading{margin-top:6pt;text-indent:25.4mm}.budget-document .budget-line{margin-left:25.4mm;gap:0;line-height:18.1pt}.budget-document .budget-label{flex-basis:25.4mm;font-weight:400}
   .budget-money{display:grid;grid-template-columns:50.8mm 15mm minmax(0,1fr) 8mm;column-gap:2mm;margin-left:50.8mm;text-indent:0}.budget-money>span:nth-child(3){text-align:right}
   .budget-detail{margin-left:50.8mm;text-indent:0}.budget-spec{margin-left:55mm;text-indent:0}
   .budget-document .opinion{margin-top:5mm}.budget-document .opinion-line{height:6mm}.budget-document .opinion-sign{margin-top:10mm}.budget-document .opinion-sign p:first-child,.budget-document .opinion-sign p:last-child{display:none}
+  .correspondence .content>p{margin-bottom:0}.correspondence .content>p:not(:where(.memo-field)){margin-top:6pt}.correspondence .content>.date{margin-top:0}.correspondence .content>.closing{margin-top:12pt}.correspondence .content>.contact{margin-top:3lh}.correspondence .contact~p{margin-top:0}.correspondence .memo-field{margin-bottom:0}.correspondence .memo-head strong{line-height:35pt}.correspondence .body-text{text-indent:25mm}.correspondence .sign-space{height:3lh}
   #source{display:none}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
-  </style></head><body class="${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
+  </style></head><body class="${["external","internal","memorandum"].includes(d.type)?"correspondence ":""}${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
   <script>
   window.addEventListener('message',event=>{if(event.source===parent&&event.data==='sarabun-print')window.print()});
   (async()=>{ await Promise.all([document.fonts.load('16pt DocumentThai'),document.fonts.load('bold 16pt DocumentThai')]); await document.fonts.ready; await Promise.all(Array.from(document.images).map(i=>i.decode().catch(()=>{})));
