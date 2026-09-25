@@ -16,6 +16,16 @@ export const documentSchema = z.object({
   firstPageTop:z.enum(['15','25']).default('15'),
   memoEmblem:z.boolean().default(false),
   orderReceivedBy:z.string().max(200).default(''),
+  certificatePhotoArea:z.boolean().default(false),
+  certificateRecipient:text,
+  minutesMode:z.enum(['free','agenda']).default('free'),
+  minutesIntroduction:z.string().max(10000).default(''),
+  meetingAgenda:z.array(z.object({
+    title:z.string().max(300).default(''),
+    discussion:z.string().max(10000).default(''),
+    resolution:z.string().max(5000).default(''),
+    resolutionLabel:z.enum(['มติที่ประชุม','ข้อยุติ','ข้อสรุป']).default('มติที่ประชุม'),
+  })).max(50).default([]),
   contentBlocks:z.array(z.object({kind:z.enum(['paragraph','heading','line','budget-money','budget-detail','budget-spec']),label:z.string().max(100).default(''),text:z.string().max(10000)})).max(500).default([]),
   signer: text, position: text,
   numeralStyle: z.enum(["original", "thai", "arabic"]).default("original"),
@@ -69,8 +79,13 @@ export function reviewIssues(d: Draft): string[] {
   if (d.type === "external" && !d.address.trim()) issues.push("ระบุที่อยู่ส่วนราชการ");
   if (d.type === "external" && !d.closing.trim()) issues.push("ตรวจคำลงท้ายตามฐานะผู้รับ");
   if (d.type === "minutes") {
+    if(d.minutesMode==='agenda') {
+      if(!d.meetingAgenda.length) issues.push('เพิ่มอย่างน้อยหนึ่งวาระการประชุม');
+      if(d.meetingAgenda.some(a=>!a.title.trim()||!a.discussion.trim())) issues.push('ระบุหัวข้อและข้ออภิปรายของทุกวาระ (มติกรอกเมื่อมี)');
+    }
     for (const [field, label] of [["meetingNo", "ครั้งที่ประชุม"], ["location", "สถานที่ประชุม"], ["attendees", "ผู้มาประชุม"], ["startTime", "เวลาเริ่มประชุม"], ["endTime", "เวลาเลิกประชุม"], ["recorder", "ผู้จดรายงานการประชุม"]] as const) if (!d[field].trim()) issues.push("ระบุ" + label);
   }
+  if(d.type==='certificate'&&d.certificatePhotoArea&&!d.certificateRecipient.trim()) issues.push('ระบุชื่อผู้ได้รับการรับรองใต้ช่องรูปถ่าย');
   return issues;
 }
 export const statusLabels = { draft: "ฉบับร่าง", reviewed: "ตรวจทานแล้ว" };
@@ -79,6 +94,14 @@ export function numerals(value:string,style:Draft["numeralStyle"]) {
   const latin=value.replace(/[๐-๙]/g,c=>String("๐๑๒๓๔๕๖๗๘๙".indexOf(c)));
   return style==="arabic"?latin:latin.replace(/[0-9]/g,c=>"๐๑๒๓๔๕๖๗๘๙"[Number(c)]);
 }
-export function bodySections(d:Draft) { return d.bodyMode==="free"?[{title:"",text:d.body}]:[
+export function bodySections(d:Draft) {
+  if(d.type==='minutes'&&d.minutesMode==='agenda') return [
+    {title:'',text:d.minutesIntroduction},
+    ...d.meetingAgenda.flatMap((a,i)=>[
+      {title:`ระเบียบวาระที่ ${i+1}  ${a.title}`,text:a.discussion},
+      ...(a.resolution.trim()?[{title:a.resolutionLabel,text:a.resolution}]:[]),
+    ]),
+  ];
+  return d.bodyMode==="free"?[{title:"",text:d.body}]:[
   {title:"เรื่องเดิม / ข้อเท็จจริง",text:d.background},{title:"ข้อกฎหมาย / ระเบียบที่เกี่ยวข้อง",text:d.legalBasis},
   {title:"ข้อพิจารณา",text:d.consideration},{title:"ข้อเสนอ / ข้อสรุป",text:d.proposal}]; }

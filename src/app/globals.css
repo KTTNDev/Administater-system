@@ -22,3 +22,5 @@
 .attachment-card{padding:12px;border:1px solid #dce5e5;border-radius:12px;display:grid;gap:8px}.attachment-controls{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.attachment-controls label{max-width:100px}.attachment-controls button{padding:8px}.attachment-preview{padding:16px;background:#f3f6f6;border-top:1px solid #dce5e5}.attachment-preview section{margin-top:12px;background:white;border-radius:12px;overflow:hidden}.attachment-preview h4{padding:12px;margin:0}.attachment-preview a{font-size:13px;margin-left:10px}.attachment-preview p{font-size:13px;color:#526365}
 
 .pdf-preview{padding:12px;background:#e8edec}.pdf-render-page{margin:0 auto 16px;background:white;max-width:100%;box-shadow:0 1px 5px #0001}.pdf-page-label{font-size:13px;color:#5c6966;text-align:center;padding:6px}.pdf-render-page canvas{max-width:100%}.pdf-preview [role=status],.pdf-preview [role=alert]{padding:16px;color:#43534f}
+
+.minutes-editor{display:grid;gap:14px}.agenda-card{display:grid;gap:12px;padding:16px;border:1px solid var(--border,#dce5e2);border-radius:12px;background:#f8faf9}.agenda-actions{display:flex;gap:6px}.agenda-actions button{padding:7px}

@@ -6,11 +6,11 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   const e=(s:string)=>escapeHtml(numerals(s,d.numeralStyle)), t=template(d.type), date=thaiDate(d.date), blocks:string[]=[];
   const p=(content:string,cls="") => blocks.push(`<p class="${cls}">${content || "&nbsp;"}</p>`);
   const field=(label:string,value:string,cls="") => p(`<span class="label">${e(label)}</span> ${cls==="memo-field"?`<span class="memo-value">${e(value)||'&nbsp;'}</span>`:e(value)}`,cls);
-  const body=() => d.contentBlocks.length?d.contentBlocks.forEach(b=>{
+  const body=() => d.contentBlocks.length&&!(d.type==='minutes'&&d.minutesMode==='agenda')?d.contentBlocks.forEach(b=>{
     if(b.kind==='line')p(`<span class="budget-label">${e(b.label)}</span><span>${e(b.text)}</span>`,"budget-line");
     else if(b.kind==='budget-money')p(`<span>${e(b.label)}</span><span>เป็นเงิน</span><span>${e(b.text)}</span><span>บาท</span>`,"budget-money");
     else p(e(b.text),b.kind==='heading'?"title budget-heading":b.kind==='budget-detail'?"budget-detail":b.kind==='budget-spec'?"budget-spec":"body-text");
-  }):bodySections(d).filter(s=>s.text.trim()).forEach(s=>{if(s.title&&d.sectionHeadings)p(e(s.title),"title");s.text.split(/\n/).forEach(line=>p(e(line),"body-text"));});
+  }):bodySections(d).filter(s=>s.text.trim()||(d.type==='minutes'&&d.minutesMode==='agenda'&&s.title)).forEach(s=>{if(s.title&&(d.sectionHeadings||d.type==='minutes'&&d.minutesMode==='agenda'))p(e(s.title),"title");s.text.split(/\n/).forEach(line=>p(e(line),"body-text"));});
   const signature=() => blocks.push(`<div class="signature"><div class="sign-space"></div><p>(${e(d.signer)})</p><p>${e(d.position)}</p></div>`);
   const contact=() => { if(d.department) p(e(d.department),"contact"); if(d.phone) field("โทร.",d.phone); if(d.email) p(`<span class="label">ไปรษณีย์อิเล็กทรอนิกส์</span> ${escapeHtml(d.email)}`); };
   // The bundled 2320×1811 scan includes white margins and speckles. The CSS
@@ -45,7 +45,9 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
       else { p(`${d.type==="order"?"สั่ง": "ประกาศ"} ณ วันที่ ${e(date)}`,"issued"); if(d.type==="order"&&d.orderReceivedBy)p(`รับคำสั่ง${e(d.orderReceivedBy)}`,"received-order");signature(); } break;
     case "certificate":
       blocks.push(`<div class="letter-head">${emblem}<div class="letter-number">ที่ ${e(d.number)}</div><div class="letter-agency">${e(d.organization)}<br>${e(d.address)}</div></div>`);
-      body(); p(`ให้ไว้ ณ วันที่ ${e(date)}`,"issued"); signature(); break;
+      body(); p(`ให้ไว้ ณ วันที่ ${e(date)}`,"issued"); signature();
+      if(d.certificatePhotoArea) blocks.push(`<div class="certificate-photo-area"><div class="certificate-photo">รูปถ่าย<br>(ถ้ามี)<br>${e("ขนาด 4 × 6 ซม.")}</div><p>ลงชื่อ ................................................</p><p>(${e(d.certificateRecipient)})</p><p>ผู้ได้รับการรับรอง</p><p class="certificate-seal">(ประทับตราชื่อส่วนราชการ)</p></div>`);
+      break;
     case "minutes":
       p(`รายงานการประชุม${e(d.subject)}`,"center title"); p(`ครั้งที่ ${e(d.meetingNo)}`,"center"); p(`เมื่อ ${e(date)}`,"center"); p(`ณ ${e(d.location)}`,"center"); p("____________________","center divider");
       field("ผู้มาประชุม",d.attendees); field("ผู้ไม่มาประชุม",d.absentees||"ไม่มี"); field("ผู้เข้าร่วมประชุม",d.participants||"ไม่มี");
@@ -85,6 +87,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets): string {
   .budget-document .opinion{margin-top:5mm}.budget-document .opinion-line{height:6mm}.budget-document .opinion-sign{margin-top:10mm}.budget-document .opinion-sign p:first-child,.budget-document .opinion-sign p:last-child{display:none}
   .correspondence .content>p{margin-bottom:0}.correspondence .content>p:not(:where(.memo-field)){margin-top:6pt}.correspondence .content>.date{margin-top:0}.correspondence .content>.closing{margin-top:12pt}.correspondence .content>.contact{margin-top:3lh}.correspondence .contact~p{margin-top:0}.correspondence .memo-field{margin-bottom:0}.correspondence .memo-head strong{line-height:35pt}.correspondence .body-text{text-indent:25mm}.correspondence .sign-space{height:3lh}
   .received-order{margin:6pt 0 0 70mm;text-align:center;break-after:avoid}.issued{text-indent:50mm}
+  .certificate-photo-area{position:relative;margin-top:18mm;width:100mm;break-inside:avoid}.certificate-photo{width:40mm;height:60mm;border:1px solid #555;display:flex;flex-direction:column;justify-content:center;text-align:center;margin:0 0 6pt 10mm}.certificate-photo-area p{width:60mm;text-align:center;margin-bottom:0}.certificate-photo-area .certificate-seal{position:absolute;left:53mm;top:59mm;width:47mm;font-size:14pt}
   #source{display:none}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
   </style></head><body class="${["external","internal","memorandum"].includes(d.type)?"correspondence ":""}${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
