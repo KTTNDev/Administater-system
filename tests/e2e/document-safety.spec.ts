@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+const root=process.env.SARABUN_SAFETY_TEST_ROOT;
+test.skip(!root,'Requires an isolated portable installation.');
+test('portable installation saves, scans, trashes, restores, reserves and backs up',async({page})=>{
+ if(!fs.existsSync(path.join(root!,'SAFETY-TEST-ONLY')))throw Error('Refuse to mutate a real installation');
+ page.on('dialog',dialog=>dialog.accept());const subject='ทดสอบชุดพกพา '+Date.now(),prefix='ทดสอบ '+Date.now();
+ await page.goto('/');await page.getByRole('button',{name:'สร้างหนังสือใหม่',exact:true}).click();
+ await page.locator('.template-card').filter({has:page.getByRole('heading',{name:'หนังสือภายใน',exact:true})}).click();
+ await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง'}).click();await page.getByLabel('เรื่อง / ชื่อร่าง').fill(subject);await page.getByLabel('เลขที่หนังสือ',{exact:true}).fill('');
+ await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(page.locator('.toast')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
+ await page.goto('/');const safety=page.getByRole('region',{name:'ถังขยะและเลขทะเบียน'});
+ await safety.locator('summary').filter({hasText:'จองเลขทะเบียน'}).first().click();await safety.getByLabel('ร่างที่ต้องการจองเลข').selectOption({label:subject});await safety.getByLabel('รหัสหน่วยงาน / ชุดเลข').fill(prefix);await safety.getByLabel('เริ่มค้นหาเลขตั้งแต่').fill('100');await safety.getByRole('button',{name:'จองและบันทึกเลข'}).click();await expect(safety.getByRole('status')).toContainText(prefix+'/100');
+ await page.getByRole('button',{name:`ไฟล์สแกนฉบับลงนามของ ${subject}`,exact:true}).click();const scans=page.getByRole('dialog',{name:'ไฟล์สแกนฉบับลงนาม'});await scans.getByRole('checkbox').check();await scans.locator('input[type=file]').setInputFiles({name:'signed-test.png',mimeType:'image/png',buffer:fs.readFileSync('public/assets/garuda.png')});await expect(scans.locator('.signed-scan-row')).toHaveCount(1);await scans.getByRole('button',{name:'ปิด',exact:true}).click();
+ await page.getByRole('button',{name:`ลบ ${subject}`,exact:true}).click();await expect(page.locator('.toast')).toContainText('ย้ายเข้าถังขยะ');
+ await safety.locator('summary').filter({hasText:'ถังขยะ'}).click();const item=safety.locator('.safety-row').filter({hasText:subject}).first();await expect(item).toBeVisible();await item.getByRole('button',{name:'กู้คืน',exact:true}).click();await expect(safety.getByRole('status')).toContainText('กู้เอกสาร');await expect(page.getByRole('button',{name:`ลบ ${subject}`,exact:true})).toBeVisible();
+ await expect(page.getByRole('row').filter({hasText:subject})).toContainText('มีฉบับลงนาม (1)');
+ await page.goto('/?view=settings');await page.locator('.settings-disclosure > summary').click();const backup=page.locator('.backup-status');await expect(backup).toContainText(path.join(root!,'output','storage'));
+ await backup.getByLabel('รอบการสำรอง').selectOption('6');await expect(backup.getByRole('status')).toContainText('บันทึก');await backup.getByRole('button',{name:'สำรองตอนนี้'}).click();await expect(backup.locator('p').filter({hasText:'สำเร็จล่าสุด:'})).not.toContainText('ยังไม่มี');
+ await page.reload();await page.locator('.settings-disclosure > summary').click();await expect(page.getByLabel('รอบการสำรอง')).toHaveValue('6');await page.locator('.backup-status summary').click();await expect(page.locator('.backup-status')).toContainText('สร้างเมื่อ');
+ await page.screenshot({path:'output/safety-settings.png',fullPage:true});
+ const snapshots=fs.readdirSync(path.join(root!,'output','storage','สำรองข้อมูล'));expect(snapshots.length).toBeGreaterThan(0);
+});

@@ -3,6 +3,8 @@ node_modules-stalled/
 .tools/
 .runtime-local.json
 .next/
+.next-workspace/
+.local-startup-backup/
 .env*
 !.env.example
 data/
@@ -17,3 +19,7 @@ references/*.pdf
 references/*-analysis.json
 references/*-preview.png
 references/*-probe.tgz
+
+.next-desktop/
+.desktop/
+releases/

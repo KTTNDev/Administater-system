@@ -4,16 +4,17 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { documentSchema, reviewIssues } from "@/lib/document";
-import { requireUser, validPassword, createSession } from "@/lib/auth";
+import { requireUser, validPassword, createSession, loginRequired } from "@/lib/auth";
 import { listDrafts, writeDraft, removeDraft, readDraft, auditHistory, getSetting, setSetting } from "@/lib/db";
 import { syncToDrive } from "@/lib/drive";
 import { validateAttachments } from "@/lib/attachments";
+import { validateAppendixImages } from "@/lib/appendix";
 const uuid = z.string().uuid();
 const versionSchema = z.number().int().positive();
 export async function saveDocument(input: unknown, id?: string, version?: number) {
   try {
     await requireUser(); const draft = documentSchema.parse(input);
-    validateAttachments(draft);
+    validateAttachments(draft); validateAppendixImages(draft);
     if (id) { uuid.parse(id); versionSchema.parse(version); }
     if (draft.status === "reviewed" && reviewIssues(draft).length) throw new Error("ข้อมูลที่จำเป็นยังไม่ครบ: " + reviewIssues(draft).join(" · "));
     const saved = writeDraft(draft,id,version); revalidatePath("/"); return {ok:true as const, data:saved};
@@ -29,6 +30,7 @@ export async function saveOrganization(value: unknown) {
   setSetting("organization",JSON.stringify(data)); revalidatePath("/"); return data;
 }
 export async function login(_previous: string, formData: FormData) {
+  if (!loginRequired()) redirect("/");
   const key="login-attempts"; const now=Date.now(); const attempts=JSON.parse(getSetting(key)||'{"count":0,"until":0}') as {count:number;until:number};
   if(attempts.count>=10 && attempts.until>now) return "ลองใหม่อีกครั้งหลังผ่านไป 15 นาที";
   const password=String(formData.get("password")||"");
@@ -36,4 +38,4 @@ export async function login(_previous: string, formData: FormData) {
   try { await createSession(); } catch { return "กรุณาตั้งค่า SESSION_SECRET ก่อนใช้งาน"; }
   setSetting(key,'{"count":0,"until":0}'); redirect("/");
 }
-export async function logout() { (await cookies()).delete("sarabun-session"); redirect("/login"); }
+export async function logout() { (await cookies()).delete("sarabun-session"); redirect(loginRequired()?"/login":"/"); }

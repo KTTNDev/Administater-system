@@ -4,7 +4,7 @@ import {documentHtml} from '../../src/lib/render-document';
 import {budgetSample} from '../../src/lib/budget';
 import {budgetDraft} from '../../src/lib/budget-document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png')};
+const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 test('budget pattern paginates all entries, totals and five opinions',async({page})=>{
  const b=budgetSample('2026-09-15');b.signer='ผู้เสนอ (ตัวอย่าง)';b.position='เจ้าพนักงานธุรการ';b.increases.forEach((r,i)=>Object.assign(r,i===0?{pricingBasis:'standard',sourceId:'ict',sourcePage:20,sourceItem:'37 อุปกรณ์ค้นหาเส้นทางเครือข่าย (Router)',citedCirculars:['1095']}:{pricingBasis:'local',pricingReason:'[ตัวอย่าง: ระบุผลการเทียบคุณลักษณะที่จำเป็นกับบัญชีมาตรฐาน]',pricingEvidence:'[ตัวอย่าง: กรอกใบเสนอราคาและวันที่ของหลักฐานจริง]',citedCirculars:['1095','1989','7509']}));
  await page.setContent(documentHtml(budgetDraft(b),assets));await page.waitForFunction(()=>!!(window as unknown as {__paginationDone:boolean}).__paginationDone);
@@ -16,7 +16,7 @@ test('budget pattern paginates all entries, totals and five opinions',async({pag
  await page.locator('.page').first().screenshot({path:'output/budget-pattern-first.png'});await page.locator('.page').last().screenshot({path:'output/budget-pattern-last.png'});
 });
 test('budget screen loads pattern and prevents incomplete generation',async({page})=>{
- await page.goto('/?view=budget');await page.getByRole('button',{name:'ลองแพตเทิร์นจากไฟล์ตัวอย่าง'}).click();
+ await page.goto('/?view=budget');await page.getByRole('button',{name:'เปิดคำขอตัวอย่าง'}).click();
  await expect(page.getByRole('button',{name:'สร้าง / เปิดบันทึกข้อความ'})).toBeDisabled();
  await page.getByLabel('ผู้เสนอ / ผู้ลงนาม',{exact:true}).fill('ผู้เสนอ (ทดสอบ)');await page.getByLabel('ตำแหน่ง',{exact:true}).first().fill('เจ้าพนักงานธุรการ');
  await page.getByLabel('ตรวจผู้มีอำนาจและข้อระเบียบที่ใช้กับรายการนี้แล้ว').check();await expect(page.getByRole('button',{name:'สร้าง / เปิดบันทึกข้อความ'})).toBeDisabled();

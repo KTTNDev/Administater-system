@@ -13,7 +13,8 @@ try {
     $confirmation = Read-PlainPassword 'Confirm password'
     if ($password -cne $confirmation) { throw 'Passwords do not match. Nothing was saved.' }
     $info = New-Object System.Diagnostics.ProcessStartInfo
-    $info.FileName = (Get-Command node.exe).Source
+    $bundledNode = Join-Path $workspace '.desktop\runtime\node.exe'
+    $info.FileName = if (Test-Path -LiteralPath $bundledNode) { $bundledNode } else { (Get-Command node.exe).Source }
     $info.Arguments = '"' + (Join-Path $PSScriptRoot 'configure-production.mjs') + '"'
     $info.WorkingDirectory = $workspace
     $info.UseShellExecute = $false
@@ -26,5 +27,5 @@ try {
     $process.WaitForExit()
     if ($process.ExitCode -ne 0) { throw 'Setup failed. See the message above.' }
     $process.Dispose()
-    Write-Host 'Next: npm run build, close the development server, then Open-Sarabun-Production.cmd.'
+    Write-Host 'Next: close Sarabun with Stop-Sarabun.cmd, then open Open-Sarabun.cmd.'
 } catch { Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }

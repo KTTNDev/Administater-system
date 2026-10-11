@@ -1,0 +1,49 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app */
+/* Hallmark · pre-emit critique: P5 H4 E4 S4 R5 V4 */
+/* Application chrome only; printed pages and the editor keep their own layout. */
+html, body { overflow-x: clip; }
+.app-shell { --font: var(--ui-font); --ink: var(--ui-ink); --muted: var(--ui-muted); --line: var(--ui-border); --canvas: var(--ui-canvas); }
+.main-shell, .page-main { font-family: var(--ui-font); }
+.page-main h1, .page-main h2, .page-main h3 { overflow-wrap: anywhere; }
+.page-main h1 { letter-spacing: 0; }
+.page-main .page-heading p { color: var(--ui-muted); max-width: 68ch; }
+.page-main .eyebrow { color: var(--ui-muted); }
+.sidebar { background: var(--ui-surface); padding-top: var(--ui-space-6); }
+.sidebar-heading { margin-bottom: var(--ui-space-6); }
+.sidebar .brand small { color: var(--ui-muted); font-size: var(--ui-text-xs); }
+.sidebar .nav-caption { color: var(--ui-muted); font-size: var(--ui-text-xs); margin-bottom: var(--ui-space-2); }
+.sidebar nav { margin-bottom: var(--ui-space-6); }
+.sidebar nav button { color: var(--ui-muted); min-height: 44px; }
+.sidebar nav button > svg { color: currentColor; }
+.sidebar nav button.active { color: var(--ui-accent-hover); background: var(--ui-accent-soft); }
+.sidebar nav button.active::before { display: none; }
+.sidebar nav button:hover:not(.active) { background: var(--ui-subtle); }
+.sidebar .nav-count { color: var(--ui-accent-hover); background: var(--ui-surface); padding-inline: var(--ui-space-2); }
+.sidebar-bottom { background: var(--ui-surface); }
+.sidebar .drive-summary { border-color: var(--ui-border); }
+.sidebar .drive-summary strong, .sidebar .drive-summary small, .sidebar .account small { color: var(--ui-muted); font-size: var(--ui-text-xs); }
+.sidebar .account strong { color: var(--ui-ink); font-size: var(--ui-text-sm); }
+.topbar { background: var(--ui-surface); gap: var(--ui-space-4); }
+.topbar .breadcrumbs strong { color: var(--ui-ink); font-weight: 600; }
+.topbar .breadcrumbs > span, .top-date { color: var(--ui-muted); }
+.topbar .app-refresh { color: var(--ui-muted); margin-left: auto; min-width: 40px; min-height: 40px; }
+.topbar .app-refresh:hover { background: var(--ui-subtle); }
+.recovery-panel { background: var(--ui-canvas); color: var(--ui-muted); font-size: var(--ui-text-xs); }
+.recovery-panel > button { color: var(--ui-accent); font-size: var(--ui-text-xs); }
+.page-main .settings-disclosure > summary small { color: var(--ui-muted); }
+.page-main .guide-card p, .page-main .guide-card li { color: var(--ui-muted); max-width: 72ch; }
+.page-main .primary, .page-main .secondary, .sidebar button, .topbar button { white-space: nowrap; }
+.app-shell :is(button, a, summary):focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 3px; }
+.app-shell :is(button, a, summary):active { opacity: .85; }
+.app-shell button:disabled { opacity: .5; cursor: not-allowed; }
+.document-safety > details { min-width: 0; flex-basis: 260px; }
+.backup-status .safety-path { color: var(--ui-muted); }
+@media (max-width: 600px) {
+  .page-main { padding: var(--ui-space-5) var(--ui-space-3) var(--ui-space-8); }
+  .topbar .breadcrumbs strong { max-width: 130px; }
+  .settings-disclosure > summary { padding: var(--ui-space-4); gap: var(--ui-space-2); }
+  .settings-disclosure > summary span { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .app-shell *::before, .app-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

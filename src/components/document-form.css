@@ -1,0 +1,92 @@
+/* The drafting controls use a UI font; the printable document keeps Sarabun. */
+.editor-main {font-family:"Leelawadee UI",Tahoma,"Segoe UI",sans-serif;font-size:14px;line-height:1.6}
+.editor-main .editor-header{padding:16px 24px}
+.editor-main .editor-title h1{font-size:21px;line-height:1.4;margin:3px 0}
+.editor-main .eyebrow{font-size:12px;letter-spacing:0}
+.editor-main .badge{font-size:12px}
+.editor-main .editor-layout{grid-template-columns:minmax(420px,46%) minmax(0,1fr)}
+.editor-main .form-pane{background:#f4f7f6;padding:22px 24px;scroll-padding-top:86px}
+.editor-main .form-intro{align-items:center;margin-bottom:14px}
+.editor-main .form-intro h2{font-size:20px}
+.editor-main .form-intro p{font-size:12px;color:#61756e;margin:4px 0 0}
+.editor-main .form-intro button{font-size:12px;white-space:nowrap}
+.form-jump-nav{position:sticky;top:-22px;z-index:5;display:flex;flex-direction:row;gap:5px;overflow-x:auto;padding:10px 0 12px;margin:0 0 16px;background:#f4f7f6;border-bottom:1px solid #dce7e2;scrollbar-width:thin}
+.form-jump-nav button{flex:0 0 auto;flex-direction:column;gap:4px;min-width:65px;padding:8px 9px;background:white;border:1px solid #dce7e2;border-radius:9px;font-size:11px;line-height:1.5;color:#526a60}
+.form-jump-nav button:hover,.form-jump-nav button:focus-visible{background:#e4f2ed;border-color:#86b9a7;color:#126b55}
+.form-jump-nav button{transition:background-color .2s,border-color .2s,box-shadow .2s,transform .2s}
+.form-jump-nav button.is-selected{background:#e4f2ed;border-color:#86b9a7;color:#126b55;box-shadow:inset 0 -2px #23866b}
+.form-jump-nav button:active{transform:translateY(1px)}
+.editor-main .editor-fields{padding:0}
+.editor-main .form-section{background:white;border:1px solid #dce6e0;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 5px #20392c03;overflow:visible}
+.editor-main .form-section>summary{border-radius:12px;padding:15px 18px;gap:10px;font-size:14px;min-height:55px;background:white;cursor:pointer}
+.editor-main .form-section[open]>summary{border-radius:12px 12px 0 0;border-bottom:1px solid #edf1ee}
+.editor-main .form-section>summary::marker{color:#69857b}
+.editor-main .form-section>summary>span:not(.section-icon):not(.step-number){font-size:11px;color:#718379;margin-left:auto;white-space:nowrap}
+.editor-main .form-section>summary>svg:last-child{margin-left:auto;transition:transform .15s}
+.editor-main .form-section:not([open])>summary>svg:last-child{transform:rotate(-90deg)}
+.section-icon{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;color:#23715b;background:#e8f4ed;border-radius:9px}
+.tone-blue .section-icon{color:#3e6ba2;background:#eaf1fd}
+.tone-violet .section-icon{color:#7b589e;background:#f1ebf7}
+.tone-amber .section-icon{color:#99722c;background:#fbf2df}
+.editor-main .section-heading{display:flex;align-items:center;gap:10px;margin:0;padding:15px 18px;font-size:14px;line-height:1.6}
+.section-count{margin-left:auto;font-size:11px;color:#7b8272;font-weight:400;white-space:nowrap}
+.editor-main .field-grid{gap:18px 16px;padding:20px}
+.editor-main label{font-size:14px;font-weight:600;line-height:1.6;color:#425b51}
+.editor-main input,.editor-main select,.editor-main textarea{font-family:inherit;font-size:15px;line-height:1.65;border-color:#d4dfd9;border-radius:7px;background:#fff;color:#243f33;min-width:0}
+.editor-main input,.editor-main select{min-height:43px}
+.editor-main textarea{padding:12px;line-height:1.9}
+.editor-main input::placeholder,.editor-main textarea::placeholder{color:#8c9c94;font-size:12px}
+.editor-main .check-label{font-size:12px;font-weight:400;display:flex;align-items:center;gap:9px}
+.editor-main input[type=checkbox]{width:16px;min-width:16px;min-height:16px;height:16px;margin:0;accent-color:#13786b}
+.editor-main small,.editor-main .field-note{font-size:12px;line-height:1.7;color:#718279}
+.editor-main .field-note{margin-bottom:0}
+.editor-main .compact-hint{font-size:12px;line-height:1.7;color:#73867c;margin:0}
+.editor-main .agency-fill{padding:12px 14px;background:#f4f8f5;border-radius:8px}
+.editor-main .agency-fill label{font-size:12px}
+.editor-main .field-divider{font-size:12px;color:#7e8a84;padding-top:13px;border-top:1px solid #e3ebe6}
+.header-marks{border-bottom:1px solid #e6ede8;padding-bottom:12px}
+.header-marks>summary{font-size:12px;color:#6b7e73;cursor:pointer}
+.header-marks>summary>span{float:right;color:#425f50;background:#edf4ef;padding:0 7px;border-radius:4px}
+.editor-main .header-marks .field-grid{padding:15px 0 0}
+.editor-main .form-help{font-size:12px;color:#60796b;font-weight:400;line-height:1.8}
+.editor-main .form-help>summary{width:fit-content;cursor:pointer;color:#437563;padding:3px 0}
+.editor-main .form-section .form-help>summary{display:list-item;list-style:disclosure-closed;font-size:12px;background:none;padding:3px 0;margin-left:14px}
+.editor-main .form-section .form-help[open]>summary{list-style-type:disclosure-open}
+.editor-main .form-section:not(.document-section)>summary::after{content:"";width:7px;height:7px;flex:0 0 7px;margin-left:auto;border-right:1.5px solid #7c9386;border-bottom:1.5px solid #7c9386;transform:rotate(45deg)}
+.editor-main .form-section:not(.document-section)[open]>summary::after{transform:rotate(225deg)}
+.editor-main .form-help>div,.editor-main .form-help>p{padding:9px 12px;background:#f4f8f5;border-radius:7px;margin:5px 0 0}
+.editor-main .inline-assistant{display:block;margin:12px 0 0;padding:10px 12px;border:1px dashed #d9e5de;border-radius:7px;background:#fafcfb}
+.editor-main .inline-assistant>summary{color:#608371;cursor:pointer;font-size:12px;font-weight:400}
+.editor-main .inline-assistant[open]>summary{margin-bottom:12px}
+.editor-main .inline-assistant label{margin-top:10px}
+.editor-main .inline-assistant a{display:inline-block;font-size:11px;margin:4px 8px 0 0}
+.editor-main .body-section-input{margin-top:22px}
+.editor-main .body-section-input>label{display:block;margin-bottom:7px;color:#355748}
+.editor-main .body-format-toolbar{padding:7px;background:#f4f7f5;gap:6px;border-radius:7px 7px 0 0;border:1px solid #d4dfd9;border-bottom:0}
+.editor-main .body-format-toolbar button{font-size:12px;min-height:30px;padding:4px 10px;background:white}
+.editor-main .body-editor>textarea{border-radius:0 0 7px 7px;margin-top:0}
+.editor-main .attachment-options{padding:0 12px 12px}
+.editor-main .attachment-options>.form-section{box-shadow:none;border-radius:8px;margin:8px 0 0;border-color:#e5eae6}
+.editor-main .attachment-options>.form-section>summary{font-size:12px;padding:12px;min-height:48px;background:#fafcfb}
+.editor-main .attachment-options .step-number{font-size:16px;background:#edf4ee;width:25px;height:25px}
+.editor-main .attachment-options .field-grid{padding:16px}
+.editor-main .attachment-card,.editor-main .repeat-card{padding:15px;background:#f8faf8;border-color:#dfe8e0;border-radius:8px}
+.editor-main .form-options>.section-heading{padding:4px 0 12px;color:#78877e;font-size:12px}
+.editor-main .form-options .form-section>summary{font-size:13px}
+.editor-main .form-options .step-number{font-size:16px;width:25px;height:25px}
+.editor-main .stamp-buttons{gap:7px;flex-wrap:wrap}
+.editor-main .stamp-buttons button,.editor-main .stamp-buttons a{font-size:12px}
+.editor-main .review-card,.editor-main .storage-card{background:white;border:1px solid #dce6e0;border-radius:12px;font-size:12px}
+.editor-main .section-title h3{font-size:14px;line-height:1.6}
+.editor-main .review-issues{margin-bottom:15px}
+.editor-main .review-issues summary{cursor:pointer;color:#a77533}
+.editor-main .review-card .field-note{font-size:11px;margin-top:10px}
+.editor-main .storage-card>summary{cursor:pointer;margin-bottom:0}
+.editor-main .storage-card[open]>summary{margin-bottom:16px}
+.editor-main .preview-toolbar,.editor-main .preview-info,.editor-main .preview-footer{font-size:12px}
+.editor-main .preview-toolbar strong{font-size:14px}
+.editor-main .preview-toolbar select{font-size:12px;min-height:32px;padding:4px 7px}
+.editor-main .sample-notice{font-size:12px}
+@media(max-width:1150px){.editor-main .editor-layout{grid-template-columns:minmax(370px,48%) minmax(0,1fr)}.editor-main .form-pane{padding:18px 16px}.form-jump-nav{top:-18px}.form-jump-nav button{min-width:59px;padding:7px}.editor-main .editor-title h1{font-size:19px}.editor-main .editor-title .badge{display:none}}
+@media(max-width:800px){.editor-main .editor-layout{display:flex;flex-direction:column}.editor-main .form-pane{overflow:visible;order:0}.editor-main .preview-pane{order:1}.editor-main .editor-header{padding:12px;gap:10px;flex-wrap:wrap}.editor-main .editor-actions{width:100%;justify-content:flex-end}.form-jump-nav{top:0}.editor-main .field-grid{padding:16px}.editor-main .form-intro{gap:10px}.editor-main .form-intro h2{font-size:18px}.editor-main .form-intro p{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.editor-main *{scroll-behavior:auto!important;transition:none!important}}

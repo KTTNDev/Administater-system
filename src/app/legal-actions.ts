@@ -22,4 +22,12 @@ export async function uploadLegalReference(id:string){await requireUser();const 
  const fileId=await uploadLibraryPdf({id:key,hash,title:data.title,category:data.category,year:data.year,bytes});
  c.transaction(()=>{const latest=c.prepare("SELECT data,updated_at FROM legal_library WHERE id=?").get(key);if(latest&&String(latest.updated_at)===String(row.updated_at)){c.prepare("UPDATE legal_library SET data=? WHERE id=?").run(JSON.stringify({...JSON.parse(String(latest.data)),driveFileId:fileId,driveHash:hash}),key);}else throw new Error("อัปโหลดฉบับก่อนแก้ไขแล้ว แต่รายการเปลี่ยนระหว่างอัปโหลด กรุณาโหลดคลังและอัปโหลดฉบับล่าสุดอีกครั้ง");})();revalidatePath("/");return fileId;
 }
-export async function deleteLegalReference(id:string){await requireUser();const key=z.string().uuid().parse(id),c=connection();c.transaction(()=>{const used=c.prepare("SELECT data FROM documents").all().some(r=>(JSON.parse(String(r.data)).legalReferenceIds||[]).includes(key));if(used)throw new Error("รายการนี้ถูกอ้างอิงในร่างหนังสือ กรุณาถอดการเชื่อมโยงก่อนลบ");c.prepare("DELETE FROM legal_library WHERE id=?").run(key);})();revalidatePath("/");}
+export async function deleteLegalReference(id:string){
+ await requireUser();const key=z.string().uuid().parse(id),c=connection();
+ const result=c.transaction(()=>{
+  const used=c.prepare("SELECT data FROM documents").all().some(r=>(JSON.parse(String(r.data)).legalReferenceIds||[]).includes(key));
+  if(used)return {ok:false as const,error:"รายการนี้ถูกอ้างอิงในร่างหนังสือ (รวมฉบับในถังขยะ) กรุณาถอดการเชื่อมโยงก่อนลบ"};
+  c.prepare("DELETE FROM legal_library WHERE id=?").run(key);return {ok:true as const};
+ })();
+ if(result.ok)revalidatePath("/");return result;
+}

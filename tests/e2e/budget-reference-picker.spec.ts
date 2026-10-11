@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('selects Router with the exact citation page and renders the source beside the form',async({page})=>{
- await page.goto('/?view=budget');await page.getByRole('button',{name:'ลองแพตเทิร์นจากไฟล์ตัวอย่าง'}).click();
+ await page.goto('/?view=budget');await page.getByRole('button',{name:'เปิดคำขอตัวอย่าง'}).click();
  const row=page.locator('details').filter({has:page.getByText('1. อุปกรณ์ค้นหาเส้นทางเครือข่าย (Router) — 21,300.00 บาท',{exact:true})});
  await row.getByText('ค้นอุปกรณ์ / เปิดบัญชีและหนังสือจำแนกประเภท',{exact:true}).click();await row.getByLabel('ค้นชื่ออุปกรณ์หรือคำในเอกสาร').fill('Router');
  await row.getByRole('button',{name:'ใช้อ้างอิงรายการนี้'}).first().click();await expect(row.getByLabel('เลขรายการและชื่อรายการในบัญชี')).toHaveValue('37 อุปกรณ์ค้นหาเส้นทางเครือข่าย (Router)');

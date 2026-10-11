@@ -1,0 +1,38 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app */
+/* Hallmark · pre-emit critique: P5 H4 E4 S4 R5 V4 */
+:root {
+  --ui-font: Tahoma, "Segoe UI", sans-serif;
+  --ui-ink: #37352f;
+  --ui-muted: #706f69;
+  --ui-border: #e8e7e4;
+  --ui-canvas: #fff;
+  --ui-surface: #fff;
+  --ui-subtle: #f7f7f5;
+  --ui-accent: #176fa8;
+  --ui-accent-hover: #125780;
+  --ui-accent-soft: #edf4f8;
+  --ui-focus: #2383b5;
+  --ui-warning: #79551d;
+  --ui-warning-soft: #faf1dd;
+  --ui-danger: #a13c31;
+  --ui-danger-soft: #fcedea;
+  --ui-on-accent: #fff;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-radius-sm: 6px;
+  --ui-radius: 8px;
+  --ui-text-xs: 12px;
+  --ui-text-sm: 13px;
+  --ui-text: 15px;
+  --ui-title: 28px;
+  --ui-sidebar: #f7f7f5;
+  --ui-hover: #eeedea;
+  --ui-paper-rule: #d4d1cb;
+  --ui-shadow: 0 2px 8px #37352f08;
+  --sidebar-width: 248px;
+}

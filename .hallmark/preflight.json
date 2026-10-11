@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-10",
+  "scope": "app",
+  "framework": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "source": "package.json"
+  },
+  "existing": {
+    "fonts": "Local Leelawadee UI, Tahoma, Segoe UI; printed document uses embedded TH Sarabun New",
+    "palette": "Muted green #226b55 with near-white surfaces",
+    "source": "src/app/system-theme.css:2",
+    "motion": "CSS transitions and existing smooth section scrolling; no motion library",
+    "icons": "lucide-react"
+  },
+  "decision": "User explicitly selected Notion. Use quiet neutral navigation, blue primary actions, recent drafts, visual template choices, and collapsible secondary details. Preserve official document forms and rendering.",
+  "genre": "modern-minimal",
+  "macrostructure": "Workbench",
+  "theme": "Notion-inspired neutral workspace",
+  "fontException": "Preserve the existing Thai-compatible offline font stack for the portable Windows app. No network fonts.",
+  "reference": "https://www.notion.com/releases/2024-06-11"
+}

@@ -4,13 +4,24 @@ const text = z.string().max(2000).default("");
 export const documentSchema = z.object({
   type: z.enum(templates.map(t => t.id) as [DocumentType, ...DocumentType[]]),
   subject: z.string().trim().min(1, "กรุณาระบุเรื่อง").max(300),
-  number: text, date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => {
+  number: text, date: z.string().refine(v => {
+    if (v === "") return true; // Keep older in-progress drafts readable; review still requires a valid date.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
     const d = new Date(v + "T00:00:00Z"); return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v && +v.slice(0,4) >= 1900 && +v.slice(0,4) < 2200;
-  }, "วันที่ไม่ถูกต้อง (บันทึกปี ค.ศ. และแสดงผลเป็น พ.ศ.)"),
+  }, "วันที่ไม่ถูกต้อง (บันทึกปี ค.ศ. และแสดงผลเป็น พ.ศ.)").default(""),
   organization: text, department: text, address: text, phone: text, email: text,
   salutation: z.string().max(80).default("เรียน"), recipient: text, reference: text, attachments: text, copies: text,
-  attachmentFiles: z.array(z.object({originalAvailable:z.boolean().default(false),id:z.string().uuid(),name:z.string().min(1).max(240),description:z.string().trim().min(1).max(300),pages:z.number().int().positive().max(200),bytes:z.number().int().positive().max(15*1024*1024),quantity:z.number().int().min(1).max(999).default(1),unit:z.enum(["ฉบับ","ชุด","แผ่น"]).default("ฉบับ")})).max(10).default([]),
+  additionalEnclosures: z.string().max(2000).default(""),
+  attachmentFiles: z.array(z.object({originalAvailable:z.boolean().default(false),id:z.string().uuid(),name:z.string().min(1).max(240),description:z.string().trim().min(1).max(300),showNameInDocument:z.boolean().default(true),pages:z.number().int().positive().max(200),bytes:z.number().int().positive().max(15*1024*1024),quantity:z.number().int().min(1).max(999).default(1),unit:z.enum(["ฉบับ","ชุด","แผ่น"]).default("ฉบับ")})).max(10).default([]),
   attachmentPhrase: z.enum(["ตามเอกสารที่แนบมาพร้อมนี้","รายละเอียดตามเอกสารแนบ","พร้อมนี้ได้แนบเอกสารประกอบการพิจารณา"]).default("ตามเอกสารที่แนบมาพร้อมนี้"),
+  appendixTitle: z.string().trim().max(200).default(""),
+  appendixLayout: z.enum(["auto","stack","columns"]).default("auto"),
+  appendixPages: z.array(z.object({id:z.string().uuid(),title:z.string().max(200).default(''),body:z.string().max(20000).default('')})).max(20).default([]),
+  appendixImages: z.array(z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000),caption:z.string().max(500).default(""),widthMm:z.number().min(30).max(180).default(150)})).max(20).default([]),
+  floatingItems: z.array(z.discriminatedUnion("kind",[
+    z.object({kind:z.literal("text"),id:z.string().uuid(),page:z.number().int().min(1).max(100),xMm:z.number().min(0).max(195),yMm:z.number().min(0).max(285),widthMm:z.number().min(10).max(190),fontPt:z.number().min(8).max(48),bold:z.boolean().default(false),text:z.string().max(4000)}),
+    z.object({kind:z.literal("image"),id:z.string().uuid(),page:z.number().int().min(1).max(100),xMm:z.number().min(0).max(195),yMm:z.number().min(0).max(285),widthMm:z.number().min(10).max(180),image:z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000)})}),
+  ])).max(30).default([]),
   body: z.string().max(40000).default(""), closing: z.string().max(200).default("ขอแสดงความนับถือ"),
   layout:z.enum(['standard','budget-reference']).default('standard'),
   firstPageTop:z.enum(['15','25']).default('15'),
@@ -32,12 +43,12 @@ export const documentSchema = z.object({
   copyMark: z.enum(["none", "สำเนา", "สำเนาคู่ฉบับ"]).default("none"),
   productionMark: z.boolean().default(false), drafter: text, typist: text, checker: text,
   bodyMode: z.enum(["free", "structured"]).default("free"),
-  background: z.string().max(10000).default(""), legalBasis: z.string().max(10000).default(""),
+  background: z.string().max(20001).default(""), legalBasis: z.string().max(10000).default(""), facts: z.string().max(10000).default(""),
   consideration: z.string().max(10000).default(""), proposal: z.string().max(10000).default(""),
   sectionHeadings: z.boolean().default(true),
   memoGuides: z.boolean().default(true),
   proposers: z.array(z.object({name:text,position:text})).max(5).default([]),
-  opinions: z.array(z.object({title:text,comment:z.string().max(3000).default(""),name:text,position:text,lines:z.number().int().min(2).max(3).default(3)})).max(5).default([]),
+  opinions: z.array(z.object({title:text,comment:z.string().max(3000).default(""),name:text,position:text,showDate:z.boolean().default(true),lines:z.number().int().min(1).max(3).default(3)})).max(5).default([]),
   legalReferenceIds: z.array(z.string().uuid()).max(30).default([]),
   urgency: z.enum(["ปกติ", "ด่วน", "ด่วนมาก", "ด่วนที่สุด"]).default("ปกติ"),
   confidentiality: z.enum(["ปกติ", "ลับ", "ลับมาก", "ลับที่สุด"]).default("ปกติ"),
@@ -49,7 +60,7 @@ export const documentSchema = z.object({
   startTime: text, endTime: text, recorder: text, effectiveDate: text,
 });
 export type Draft = z.infer<typeof documentSchema>;
-export type SavedDraft = Draft & { id: string; version: number; createdAt: string; updatedAt: string; driveFileId: string | null; syncedVersion: number | null };
+export type SavedDraft = Draft & { id: string; version: number; createdAt: string; updatedAt: string; driveFileId: string | null; syncedVersion: number | null; signedScanCount: number };
 export function today() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 export function newDraft(type: DocumentType = "external"): Draft {
   return documentSchema.parse({ type, subject: "ร่างหนังสือใหม่", date: today() });
@@ -65,6 +76,7 @@ export function documentYear(date: string, mode: "calendar" | "fiscal") {
 }
 export function reviewIssues(d: Draft): string[] {
   const issues: string[] = [];
+  if (!d.date) issues.push("ระบุวันที่หนังสือก่อนตรวจทานและส่งออก");
   if (!d.organization.trim()) issues.push("ระบุส่วนราชการเจ้าของหนังสือ");
   if (!bodySections(d).some(s=>s.text.trim())) issues.push("ระบุเนื้อหาหนังสือ");
   if (d.proposers.some(p=>!p.name.trim()||!p.position.trim())) issues.push("ระบุชื่อและตำแหน่งผู้เสนอเพิ่มเติมให้ครบ");
@@ -103,5 +115,8 @@ export function bodySections(d:Draft) {
     ]),
   ];
   return d.bodyMode==="free"?[{title:"",text:d.body}]:[
-  {title:"เรื่องเดิม / ข้อเท็จจริง",text:d.background},{title:"ข้อกฎหมาย / ระเบียบที่เกี่ยวข้อง",text:d.legalBasis},
-  {title:"ข้อพิจารณา",text:d.consideration},{title:"ข้อเสนอ / ข้อสรุป",text:d.proposal}]; }
+  {title:"เรื่องเดิม",text:d.background},
+  {title:"ข้อเท็จจริง",text:d.facts},
+  {title:"ข้อระเบียบ/กฎหมาย",text:d.legalBasis},
+  {title:"ข้อพิจารณา",text:d.consideration},
+  {title:"",text:d.proposal}]; }

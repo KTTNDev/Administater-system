@@ -1,0 +1,30 @@
+import {beforeAll,afterAll,it,expect} from 'vitest';
+import fs from 'node:fs';import path from 'node:path';import os from 'node:os';
+import {PDFDocument} from 'pdf-lib';
+import {db,setSetting} from '../src/lib/db';
+import {newDraft} from '../src/lib/document';
+import {createAttachment,appendAttachments} from '../src/lib/attachments';
+import {createAppendixImage} from '../src/lib/appendix';
+import {renderPdf} from '../src/lib/pdf';
+const folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-print-'));
+beforeAll(()=>{process.env.DATABASE_PATH=path.join(folder,'data.sqlite');setSetting('storage:local',folder);});
+afterAll(()=>db().close());
+it('keeps each original/counterpart together with its own PDF and image attachments',async()=>{
+ const attachment=await PDFDocument.create();attachment.addPage([321,456]);attachment.addPage([456,321]);
+ const a=await createAttachment(new File([new Uint8Array(await attachment.save())],'schedule.pdf'));
+ const image=await createAttachment(new File([new Uint8Array(fs.readFileSync('public/assets/garuda.png'))],'photo.png',{type:'image/png'}));
+ const cover=await PDFDocument.create();cover.addPage([510,700]);cover.addPage([511,700]);cover.addPage([520,700]);cover.addPage([521,700]);
+ const merged=await PDFDocument.load(await appendAttachments(Buffer.from(await cover.save()),{...newDraft(),copyMark:'สำเนาคู่ฉบับ',attachmentFiles:[a,image]},2));
+ expect(merged.getPages().map(p=>Math.round(p.getWidth()))).toEqual([510,511,321,456,595,520,521,321,456,595]);
+});
+it('exports a long letter with tables, signoff, stamps, authored appendices, images and mixed attachments',async()=>{
+ const attachment=await PDFDocument.create();attachment.addPage([321,456]);
+ const file=await createAttachment(new File([new Uint8Array(await attachment.save())],'details.pdf'));
+ const image=await createAppendixImage(new File([new Uint8Array(fs.readFileSync('public/assets/garuda.png'))],'evidence.png',{type:'image/png'}));
+ const rows=Array.from({length:65},(_,i)=>`| ${i+1} | รายการตรวจสอบอุปกรณ์และรายละเอียดประกอบ |`).join('\n');
+ const draft={...newDraft('external'),subject:'รายงานผลตรวจอุปกรณ์',organization:'เทศบาลตัวอย่าง',recipient:'หน่วยงานตัวอย่าง',body:'ตรวจสอบสภาพอุปกรณ์และรวบรวมข้อมูลเพื่อประกอบการพิจารณา '.repeat(90),closing:'ขอแสดงความนับถือ',signer:'ผู้ลงนามทดสอบ',position:'นายกเทศมนตรี',copyMark:'สำเนาคู่ฉบับ' as const,productionMark:true,appendixPages:[{id:'00000000-0000-4000-8000-000000000001',title:'บัญชีอุปกรณ์',body:'| ลำดับ | รายละเอียด |\n| --- | --- |\n'+rows}],appendixImages:[{...image,caption:'หลักฐานประกอบ'}],attachmentFiles:[file]};
+ const pdf=await PDFDocument.load(await renderPdf(draft));
+ expect(pdf.getPageCount()).toBeGreaterThan(10);expect(pdf.getPageCount()%2).toBe(0);
+ const widths=pdf.getPages().map(p=>Math.round(p.getWidth()));expect(widths[pdf.getPageCount()/2-1]).toBe(321);expect(widths.at(-1)).toBe(321);
+ fs.mkdirSync('output/print-check',{recursive:true});fs.writeFileSync('output/print-check/long-letter-bundle.pdf',await pdf.save());
+},30000);

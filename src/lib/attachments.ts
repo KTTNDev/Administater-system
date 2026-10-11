@@ -24,6 +24,18 @@ export async function createAttachment(file:File){
  const folder=path.join(storageConfig().localFolder,'เอกสารแนบ');fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,id+'.pdf'),pdf,{flag:'wx'});
  attachmentTable();db().prepare('INSERT INTO document_attachments(id,name,pages,file,created_at,original,original_name) VALUES(?,?,?,?,?,?,?)').run(id,name,output.getPageCount(),pdf,new Date().toISOString(),bytes,file.name.replace(/[\\/\x00-\x1f]/g,"_").slice(0,240));
  fs.writeFileSync(path.join(folder,id+"-original"),bytes,{flag:"wx"});
- return {originalAvailable:true,id,name,description:name.replace(/\.pdf$/i,''),pages:output.getPageCount(),bytes:pdf.length,quantity:1,unit:'ฉบับ' as const};
+ return {originalAvailable:true,id,name,description:name.replace(/\.pdf$/i,''),showNameInDocument:true,pages:output.getPageCount(),bytes:pdf.length,quantity:1,unit:'ฉบับ' as const};
 }
-export async function appendAttachments(cover:Buffer,d:Draft){if(!d.attachmentFiles.length)return cover;validateAttachments(d);const target=await PDFDocument.load(cover);for(const item of d.attachmentFiles){const source=await PDFDocument.load(readAttachment(item.id).file);for(const page of await target.copyPages(source,source.getPageIndices()))target.addPage(page);}return Buffer.from(await target.save());}
+export async function appendAttachments(cover:Buffer,d:Draft,originalPages?:number){
+ if(!d.attachmentFiles.length)return cover;validateAttachments(d);
+ const source=await PDFDocument.load(cover),target=await PDFDocument.create(),copies=d.copyMark==="สำเนาคู่ฉบับ"?2:1;
+ const boundary=copies===2?(originalPages??source.getPageCount()/2):source.getPageCount();
+ if(!Number.isInteger(boundary)||boundary<1||(copies===2&&boundary>=source.getPageCount()))throw new Error('จำนวนหน้าต้นฉบับกับสำเนาไม่ถูกต้อง กรุณาสร้างตัวอย่างใหม่');
+ const files=await Promise.all(d.attachmentFiles.map(item=>PDFDocument.load(readAttachment(item.id).file)));
+ for(let copy=0;copy<copies;copy++){
+   const from=copy===0?0:boundary,to=copy===0?boundary:source.getPageCount();
+   for(const page of await target.copyPages(source,Array.from({length:to-from},(_,i)=>from+i)))target.addPage(page);
+   for(const file of files)for(const page of await target.copyPages(file,file.getPageIndices()))target.addPage(page);
+ }
+ return Buffer.from(await target.save());
+}

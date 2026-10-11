@@ -1,0 +1,86 @@
+[
+  {
+    "date": "2026-10-09",
+    "scope": "app",
+    "verb": "redesign",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "theme": "Municipal green",
+    "designSystem": "design.md",
+    "copySkill": "humanizer 3.1.0",
+    "files": [
+      "src/app/layout.tsx",
+      "src/app/workspace-tokens.css",
+      "src/app/workspace-polish.css",
+      "src/components/document-dashboard.tsx",
+      "src/components/document-dashboard.module.css",
+      "src/components/document-safety.tsx",
+      "src/components/workspace.tsx"
+    ],
+    "critique": {
+      "P": 5,
+      "H": 4,
+      "E": 4,
+      "S": 4,
+      "R": 5,
+      "V": 4
+    },
+    "verification": {
+      "navigationPages": 10,
+      "uiTestsPassed": 8,
+      "unitTestsPassed": 102,
+      "viewports": [
+        320,
+        375,
+        390,
+        414,
+        768,
+        1440
+      ],
+      "realDraftPdfs": 8,
+      "newPaletteTextContrastMin": 5.26,
+      "portableDataUnchanged": true
+    },
+    "preserved": [
+      "Approved document forms",
+      "Print typography and layout",
+      "Formal Thai and user-authored document content"
+    ],
+    "exceptions": [
+      "Existing offline Thai system font stack retained by user context",
+      "Legacy page internals outside the dashboard were not rewritten"
+    ],
+    "artifacts": [
+      "output/system-design-dashboard.png",
+      "output/hallmark-dashboard-320.png",
+      "output/print-check/saved-documents-check.json",
+      "output/portable-release-check.json"
+    ],
+    "enrichment": "none",
+    "brief": "Improve the existing Thai correspondence workspace with a compact document list, clearer navigation and concise UI copy."
+  },
+  {
+    "date": "2026-10-10",
+    "scope": "app",
+    "verb": "redesign",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "theme": "Notion-inspired neutral workspace",
+    "reference": "https://www.notion.com/releases/2024-06-11",
+    "designSystem": "design.md",
+    "verification": {
+      "navigationPages": 10,
+      "uiAndFormTestsPassed": 7,
+      "documentTypesOpened": 13,
+      "additionalReadOnlyChecks": [
+        "Recent draft opens",
+        "Template category filtering",
+        "Details disclosure",
+        "All 10 pages at widths 320 and 768"
+      ],
+      "savedDocumentPDFs": 8,
+      "savedDocumentsUnchanged": true
+    },
+    "limits": "UI redesign only; document renderer unchanged. PDF smoke checks verify successful generation, not legal conformity."
+  }
+]

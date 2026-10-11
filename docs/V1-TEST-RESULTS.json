@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "verifiedDate": "2026-10-11",
+  "unitTests": {
+    "passed": 107,
+    "files": 28
+  },
+  "browserTests": {
+    "passed": 66,
+    "failed": 0,
+    "skipped": 0
+  },
+  "typecheck": "passed",
+  "desktopBuild": "passed",
+  "pdfVisualPages": 32,
+  "portableUpgradeRollbackAndMove": "passed on the same Windows PC",
+  "otherPhysicalPC": "not tested",
+  "physicalPrinter": "not tested"
+}

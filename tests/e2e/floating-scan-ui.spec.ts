@@ -1,0 +1,24 @@
+import {test,expect} from "@playwright/test";
+import fs from "node:fs";
+test("save a floating image, then attach and reopen a signed scan from its dashboard record",async({page})=>{
+ const subject="ทดสอบภาพและฉบับลงนาม "+Date.now();
+ await page.goto("/");
+ await page.waitForLoadState("networkidle");
+ await page.getByRole("button",{name:"สร้างหนังสือใหม่",exact:true}).click();await page.locator(".template-card").filter({has:page.getByRole("heading",{name:"หนังสือภายนอก",exact:true})}).click();
+ await page.getByLabel("เรื่อง / ชื่อร่าง").fill(subject);
+ await page.locator(".floating-editor summary").click();
+ await page.locator(".floating-add input[type=file]").setInputFiles({name:"qr.png",mimeType:"image/png",buffer:fs.readFileSync("public/assets/garuda.png")});
+ const preview=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
+ await expect(preview.locator(".floating-item img")).toBeVisible();
+ await page.getByRole("button",{name:"บันทึกร่าง"}).click();
+ await expect(page.getByText("บันทึกร่างเรียบร้อยแล้ว")).toBeVisible();
+ await page.getByRole("button",{name:"กลับรายการ"}).click();
+ const row=page.locator("tr").filter({hasText:subject});
+ await row.getByRole("button",{name:/ไฟล์สแกนฉบับลงนามของ/}).click();
+ await page.getByRole("checkbox",{name:/ยืนยันว่าไฟล์/}).check();
+ await page.locator(".signed-scan-upload input[type=file]").setInputFiles({name:"approved.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-1.4\n%%EOF")});
+ await expect(page.getByRole("dialog")).toContainText("approved.pdf");
+ await expect(page.getByRole("dialog").getByRole("link",{name:"เปิด approved.pdf"})).toHaveAttribute("href",/\/api\/signed-scans\//);
+ await page.getByRole("dialog").getByRole("button",{name:"ปิด",exact:true}).click();
+ await expect(row).toContainText("มีฉบับลงนาม (1)");
+});

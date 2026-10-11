@@ -15,7 +15,9 @@ import {
   FilePlus2,
   Files,
   FolderSearch,
+  FileCheck2,
   Plus,
+  Paperclip,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -25,6 +27,8 @@ import {
 import { documentYear, statusLabels, type SavedDraft } from "@/lib/document";
 import { template, templates, type DocumentType } from "@/lib/templates";
 import styles from "./document-dashboard.module.css";
+import { DocumentSafety } from "./document-safety";
+import { SignedScansManager } from "./signed-scans-manager";
 
 type StatusFilter = "all" | "draft" | "reviewed";
 type SyncFilter = "all" | "synced" | "pending";
@@ -77,17 +81,19 @@ function searchableText(document: SavedDraft) {
     document.attachments,
     document.copies,
     document.body,
+    ...document.appendixPages.flatMap(page=>[page.title,page.body]),
     document.minutesIntroduction,
     ...document.meetingAgenda.flatMap(a=>[a.title,a.discussion,a.resolution]),
     document.certificateRecipient,
     document.background,
     document.legalBasis,
+    document.facts,
     document.consideration,
     document.proposal,
     template(document.type).name,
     template(document.type).group,
     document.date,
-    String(documentYear(document.date, document.yearMode)),
+    document.date ? String(documentYear(document.date, document.yearMode)) : "ไม่ระบุปี",
   ]
     .join(" "));
 }
@@ -112,12 +118,13 @@ export function DocumentDashboard({
   const [sortMode, setSortMode] = useState<SortMode>("updated-desc");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [scanDocument, setScanDocument] = useState<SavedDraft | null>(null);
 
   const reviewed = documents.filter((document) => document.status === "reviewed").length;
   const synced = documents.filter((document) => document.syncedVersion === document.version).length;
   const years = useMemo(
     () =>
-      [...new Set(documents.map((document) => documentYear(document.date, document.yearMode)))]
+      [...new Set(documents.map((document) => documentYear(document.date, document.yearMode)).filter(year => year > 0))]
         .sort((a, b) => b - a),
     [documents],
   );
@@ -189,48 +196,21 @@ export function DocumentDashboard({
   }
 
   return (
-    <main className={`page-main ${styles.dashboard}`}>
+    <main className={`page-main notion-home ${styles.dashboard}`}>
       <section className={styles.hero}>
         <div className={styles.heroTop}>
           <div>
-            <span className={styles.kicker}>ศูนย์งานเอกสาร</span>
-            <h1>ค้นหา จัดการ และสร้างหนังสือ</h1>
+            <span className="home-page-icon" aria-hidden="true"><Files size={32}/></span>
+            <h1>พื้นที่ทำงาน</h1>
+            <p className={styles.kicker}>เปิดร่างที่ทำไว้ หรือเริ่มหนังสือฉบับใหม่</p>
           </div>
           <button className="primary" onClick={onOpenTemplates}>
             <Plus size={18} /> สร้างหนังสือ
           </button>
         </div>
-        <div className={styles.heroSearch}>
-          <Search size={21} />
-          <input
-            ref={searchRef}
-            aria-label="ค้นหาเอกสารทุกข้อมูล"
-            placeholder="ค้นหาเรื่อง เลขที่ ผู้รับ หน่วยงาน ผู้ลงนาม หรือข้อความในเอกสาร…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          {query && (
-            <button aria-label="ล้างคำค้น" onClick={() => setQuery("")}>
-              <X size={17} />
-            </button>
-          )}
-          <kbd>/</kbd>
-        </div>
       </section>
 
-      <section className={styles.metrics} aria-label="สรุปสถานะเอกสาร">
-        {[
-          { label: "ทั้งหมด", value: documents.length, icon: Files, tone: "green", filter: "all" as const },
-          { label: "กำลังร่าง", value: documents.length - reviewed, icon: FilePenLine, tone: "amber", filter: "draft" as const },
-          { label: "ตรวจทานแล้ว", value: reviewed, icon: CheckCircle2, tone: "blue", filter: "reviewed" as const },
-          { label: "อยู่บน Drive", value: synced, icon: Cloud, tone: "violet", filter: "synced" as const },
-        ].map((metric) => (
-          <button key={metric.label} className={styles.metric} onClick={() => chooseStatus(metric.filter)}>
-            <span className={`${styles.metricIcon} ${styles[metric.tone]}`}><metric.icon size={18} /></span>
-            <span><strong>{metric.value.toLocaleString("th-TH")}</strong><small>{metric.label}</small></span>
-          </button>
-        ))}
-      </section>
+      {documents.length > 0 && <section className="recent-work" aria-label="เอกสารล่าสุด"><h2>กลับมาทำต่อ</h2><div className="recent-work-grid">{[...documents].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,3).map(document=><button key={document.id} aria-label={`ทำต่อ: ${document.subject}`} onClick={()=>onOpen(document)}><span className="recent-document-icon" aria-hidden="true"><FilePenLine size={25}/></span><small>{template(document.type).name}</small><strong>{document.subject||"ยังไม่ระบุเรื่อง"}</strong><span>แก้ไข {formatter.format(new Date(document.updatedAt))}<ChevronRight size={15}/></span></button>)}</div></section>}
 
       <section className={styles.quickCreate} aria-label="สร้างเอกสารที่ใช้บ่อย">
         <span>สร้างด่วน</span>
@@ -240,14 +220,27 @@ export function DocumentDashboard({
         <button onClick={onOpenTemplates}>แบบทั้งหมด <ChevronRight size={15} /></button>
       </section>
 
-      <section className={styles.workspace}>
+      <section className={styles.workspace} aria-label="รายการเอกสาร">
         <div className={styles.listHeader}>
-          <div>
-            <h2>เอกสารในระบบ</h2>
-            <p>พบ {filtered.length.toLocaleString("th-TH")} จาก {documents.length.toLocaleString("th-TH")} รายการ</p>
+          <h2 className={styles.srOnly}>เอกสารในระบบ</h2>
+          <div className={styles.heroSearch}>
+          <Search size={21} />
+          <input
+            ref={searchRef}
+            aria-label="ค้นหาเอกสารทุกข้อมูล"
+            placeholder="ค้นหาเรื่อง เลขที่ หรือเนื้อหา…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          {query && (
+            <button aria-label="ล้างคำค้น" onClick={() => setQuery("")}>
+              <X size={17} />
+            </button>
+          )}
+          <kbd>/</kbd>
           </div>
           <div className={styles.headerActions}>
-            <button className={showFilters ? styles.filterActive : ""} onClick={() => setShowFilters((value) => !value)}>
+            <button aria-expanded={showFilters} aria-controls="document-filters" className={showFilters ? styles.filterActive : ""} onClick={() => setShowFilters((value) => !value)}>
               <SlidersHorizontal size={16} /> ตัวกรอง
               {activeFilterCount > 0 && <span>{activeFilterCount}</span>}
             </button>
@@ -255,8 +248,22 @@ export function DocumentDashboard({
           </div>
         </div>
 
-        <div className={`${styles.filters} ${showFilters ? styles.filtersOpen : ""}`}>
-          <label>ประเภท<select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as DocumentType | "all")}><option value="all">ทุกประเภท</option>{templates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <section className={styles.metrics} aria-label="สรุปสถานะเอกสาร">
+        {[
+          { label: "ทั้งหมด", value: documents.length, icon: Files, tone: "green", filter: "all" as const },
+          { label: "กำลังร่าง", value: documents.length - reviewed, icon: FilePenLine, tone: "amber", filter: "draft" as const },
+          { label: "ตรวจทานแล้ว", value: reviewed, icon: CheckCircle2, tone: "blue", filter: "reviewed" as const },
+          { label: "อยู่บน Drive", value: synced, icon: Cloud, tone: "violet", filter: "synced" as const },
+        ].map((metric) => (
+          <button key={metric.label} className={styles.metric} aria-pressed={metric.filter === "synced" ? syncFilter === "synced" : syncFilter === "all" && statusFilter === metric.filter} onClick={() => chooseStatus(metric.filter)}>
+            <span className={`${styles.metricIcon} ${styles[metric.tone]}`}><metric.icon size={18} /></span>
+            <span><small>{metric.label}</small><strong>{metric.value.toLocaleString("th-TH")}</strong></span>
+          </button>
+        ))}
+      </section>
+
+        <div id="document-filters" inert={!showFilters} className={`${styles.filters} ${showFilters ? styles.filtersOpen : ""}`}>
+          <label>ประเภท<select aria-label="ประเภท" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as DocumentType | "all")}><option value="all">ทุกประเภท</option>{templates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>สถานะ<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">ทุกสถานะ</option><option value="draft">ฉบับร่าง</option><option value="reviewed">ตรวจทานแล้ว</option></select></label>
           <label>Google Drive<select value={syncFilter} onChange={(event) => setSyncFilter(event.target.value as SyncFilter)}><option value="all">ทุกสถานะ</option><option value="synced">จัดเก็บล่าสุดแล้ว</option><option value="pending">ยังไม่จัดเก็บ/มีการแก้ไข</option></select></label>
           <label>ปีเอกสาร<select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="all">ทุกปี</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
@@ -267,7 +274,7 @@ export function DocumentDashboard({
         <div className={styles.resultBar}>
           <div className={styles.activeSummary}>
             <FolderSearch size={16} />
-            <span>{hasSearch ? `ผลการค้นหา ${filtered.length.toLocaleString("th-TH")} รายการ` : "เอกสารล่าสุดทั้งหมด"}</span>
+            <span>{hasSearch ? `พบ ${filtered.length.toLocaleString("th-TH")} จาก ${documents.length.toLocaleString("th-TH")} รายการ` : `${documents.length.toLocaleString("th-TH")} รายการ`}</span>
             {query && <span className={styles.queryChip}>“{query}”</span>}
           </div>
           <label className={styles.sort}><ArrowDownAZ size={15} /><span>เรียงตาม</span><select aria-label="เรียงเอกสาร" value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}><option value="updated-desc">แก้ไขล่าสุด</option><option value="updated-asc">เก่าสุด</option><option value="subject">ชื่อเรื่อง ก–ฮ</option><option value="number">เลขที่หนังสือ</option></select></label>
@@ -280,12 +287,12 @@ export function DocumentDashboard({
               <tbody>{visible.map((document) => {
                 const isSynced = document.syncedVersion === document.version;
                 return <tr key={document.id}>
-                  <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small>{document.number || "ยังไม่ระบุเลขที่"} · ฉบับที่ {document.version}</small></span></button></td>
-                  <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} {documentYear(document.date, document.yearMode)}</small></td>
+                  <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small>{document.number || "ยังไม่ระบุเลขที่"} · ฉบับที่ {document.version}</small></span></button><div className={styles.mobileMetadata}><span>{template(document.type).name} · {statusLabels[document.status]}</span>{document.signedScanCount > 0 && <span className={styles.signedBadge}><FileCheck2 size={12}/>มีฉบับลงนาม ({document.signedScanCount})</span>}</div></td>
+                  <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.date ? `${document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} ${documentYear(document.date, document.yearMode)}` : "ยังไม่ระบุปี"}</small></td>
                   <td><strong className={styles.cellMain}>{document.recipient || "—"}</strong><small className={styles.cellSub}>{document.department || document.organization || "ยังไม่ระบุหน่วยงาน"}</small></td>
                   <td><strong className={styles.cellMain}>{formatter.format(new Date(document.updatedAt))}</strong><small className={styles.cellSub}>{timeFormatter.format(new Date(document.updatedAt))} น.</small></td>
-                  <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span><span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : <CloudOff size={12} />}{isSynced ? "จัดเก็บแล้ว" : "รอจัดเก็บ"}</span></td>
-                  <td><div className={styles.rowActions}>{document.driveFileId && <a href={`https://drive.google.com/file/d/${document.driveFileId}/view`} target="_blank" rel="noreferrer" title="เปิดไฟล์บน Drive" aria-label={`เปิด ${document.subject} บน Drive`}><ExternalLink size={16} /></a>}<button title="ทำสำเนา" aria-label={`ทำสำเนา ${document.subject}`} disabled={pending} onClick={() => onDuplicate(document)}><Copy size={16} /></button><button className={styles.delete} title="ลบร่าง" aria-label={`ลบ ${document.subject}`} disabled={pending} onClick={() => onDelete(document)}><Trash2 size={16} /></button></div></td>
+                  <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span>{document.signedScanCount>0&&<span className={styles.signedBadge}><FileCheck2 size={12}/> มีฉบับลงนาม ({document.signedScanCount})</span>}<span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : <CloudOff size={12} />}{isSynced ? "จัดเก็บแล้ว" : "รอจัดเก็บ"}</span></td>
+                  <td><div className={styles.rowActions}><button title="จัดการไฟล์สแกนฉบับลงนาม" aria-label={`ไฟล์สแกนฉบับลงนามของ ${document.subject}`} onClick={()=>setScanDocument(document)}><Paperclip size={16}/></button>{document.driveFileId && <a href={`https://drive.google.com/file/d/${document.driveFileId}/view`} target="_blank" rel="noreferrer" title="เปิดไฟล์บน Drive" aria-label={`เปิด ${document.subject} บน Drive`}><ExternalLink size={16} /></a>}<button title="ทำสำเนา" aria-label={`ทำสำเนา ${document.subject}`} disabled={pending} onClick={() => onDuplicate(document)}><Copy size={16} /></button><button className={styles.delete} title="ลบร่าง" aria-label={`ลบ ${document.subject}`} disabled={pending} onClick={() => onDelete(document)}><Trash2 size={16} /></button></div></td>
                 </tr>;
               })}</tbody>
             </table>
@@ -293,9 +300,9 @@ export function DocumentDashboard({
         ) : (
           <div className={styles.empty}>
             <span><FolderSearch size={28} /></span>
-            <h3>ไม่พบเอกสารที่ค้นหา</h3>
-            <p>ลองใช้คำค้นที่สั้นลง หรือปรับตัวกรองประเภทและช่วงเวลา</p>
-            <button onClick={clearFilters}>ล้างการค้นหา</button>
+            <h3>{documents.length ? "ไม่พบเอกสาร" : "เริ่มร่างหนังสือฉบับแรก"}</h3>
+            <p>{documents.length ? "ลองเปลี่ยนคำค้นหาหรือล้างตัวกรอง" : "เลือกแบบหนังสือ แล้วกรอกข้อมูลพร้อมดูตัวอย่างได้ทันที"}</p>
+            <button onClick={documents.length ? clearFilters : onOpenTemplates}>{documents.length ? "ล้างการค้นหา" : "เลือกแบบหนังสือ"}</button>
           </div>
         )}
 
@@ -304,6 +311,8 @@ export function DocumentDashboard({
           {pageCount > 1 && <div className={styles.pagination}><button aria-label="หน้าก่อน" disabled={page === 1} onClick={() => setPage((value) => value - 1)}><ChevronLeft size={16} /></button><span>หน้า {page.toLocaleString("th-TH")} / {pageCount.toLocaleString("th-TH")}</span><button aria-label="หน้าถัดไป" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}><ChevronRight size={16} /></button></div>}
         </div>
       </section>
+      <DocumentSafety documents={documents} onChanged={onRefresh}/>
+      {scanDocument&&<SignedScansManager document={scanDocument} onClose={()=>setScanDocument(null)} onChanged={onRefresh}/>}
     </main>
   );
 }
