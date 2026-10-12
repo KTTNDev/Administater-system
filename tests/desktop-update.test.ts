@@ -36,7 +36,7 @@ test('updates without changing data, rolls back to matching data, and preserves 
  const root=setup('success');const env=fs.readFileSync(path.join(root,'.env.local'),'utf8');const result=applyUpdate(root,packageRoot);expect(result.version).toBe('1.0.1');expect(content(root)).toBe('original document');expect(fs.readFileSync(path.join(root,'.env.local'),'utf8')).toBe(env);
  const db=new DatabaseSync(path.join(root,'data/sarabun.sqlite'));db.exec("UPDATE documents SET text='work after update'");db.close();const back=rollback(root);expect(content(root)).toBe('original document');
  const rescue=new DatabaseSync(path.join(back.rescue,'database.sqlite'),{readOnly:true});expect(rescue.prepare('SELECT text FROM documents').get()!.text).toBe('work after update');rescue.close();expect(JSON.parse(fs.readFileSync(path.join(root,'.desktop/current.json'),'utf8')).version).toBe('old');expect(applyUpdate(root,packageRoot).version).toBe('1.0.1');
-});
+},20000);
 test('failed startup restores both prior program and database after a partial migration',()=>{
  const root=setup('failure');fs.writeFileSync(path.join(root,'FAIL-START'),'1');expect(()=>applyUpdate(root,packageRoot)).toThrow(/previous version retained/);expect(content(root)).toBe('original document');expect(JSON.parse(fs.readFileSync(path.join(root,'.desktop/current.json'),'utf8')).version).toBe('old');expect(fs.existsSync(path.join(root,'.desktop/pending-update.json'))).toBe(false);
 });

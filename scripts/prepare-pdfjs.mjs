@@ -5,5 +5,6 @@ const {version}=JSON.parse(fs.readFileSync(path.join(source,'package.json'),'utf
 const target=path.resolve('public/vendor/pdfjs',version);
 fs.mkdirSync(target,{recursive:true});
 fs.copyFileSync(path.join(source,'build/pdf.worker.min.mjs'),path.join(target,'pdf.worker.min.mjs'));
+fs.copyFileSync(path.join(source,'build/pdf.min.mjs'),path.join(target,'pdf.min.mjs'));
 for(const name of ['cmaps','standard_fonts','wasm'])fs.cpSync(path.join(source,name),path.join(target,name),{recursive:true});
 console.log('Prepared local PDF.js assets '+version);
