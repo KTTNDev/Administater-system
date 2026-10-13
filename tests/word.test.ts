@@ -21,7 +21,7 @@ async function inspect(name:string,draft:Draft){
  const zip=await JSZip.loadAsync(bytes),xml=await zip.file('word/document.xml')!.async('string');
  expect(xml).not.toContain('w:altChunk');expect(xml).toContain('w:t');
  expect(await zip.file('word/fontTable.xml')!.async('string')).toContain('w:embedRegular');
- expect(xml).toContain('w:szCs');return {zip,xml:xml.replaceAll('\u200b','')};
+ expect(xml).toContain('w:szCs');expect(xml).not.toContain('\u200b');expect(xml).not.toMatch(/<w:(?:br|cr)[\s/>]/);expect(xml).toContain('<w:noProof/>');expect(xml).toContain('w:val="th-TH"');return {zip,xml};
 }
 for(const t of templates)it(`exports editable ${t.id} text, bold runs and native tables`,async()=>{
  const {xml}=await inspect(t.id,{...newDraft(t.id),...base});
@@ -51,4 +51,14 @@ it('preserves long native tables and underlined structured sections without losi
  expect(xml.match(/<w:tbl>/g)!.length).toBeGreaterThan(1);
  for(let n=1;n<=70;n++)expect(xml).toContain(`>R${n}</w:t>`);
  expect(xml).toContain('w:u');expect(xml).toContain('หัวหน้าสำนักปลัด');
+},30000);
+
+it('keeps a long Thai paragraph intact and uses real paragraphs for explicit newlines',async()=>{
+ const text='เทศบาลมีความประสงค์ตรวจสอบอุปกรณ์สำนักงานเพื่อจัดทำข้อมูลประกอบการพิจารณาดำเนินการตามระเบียบที่เกี่ยวข้อง '.repeat(50).trim();
+ const {xml,zip}=await inspect('thai-paragraphs',{...newDraft('internal'),...base,body:text+'\nย่อหน้าใหม่สำหรับข้อเสนอ',position:'นายกเทศมนตรี\nรักษาราชการแทน',floatingItems:[{kind:'text',id:crypto.randomUUID(),page:1,xMm:20,yMm:270,widthMm:100,fontPt:16,bold:false,text:'บรรทัดแรก\nบรรทัดถัดไป'}]});
+ expect(xml).toContain(text);
+ expect(xml).toContain('<w:jc w:val="thaiDistribute"/>');
+ expect(xml).toContain('ย่อหน้าใหม่สำหรับข้อเสนอ');
+ expect(xml).toMatch(/นายกเทศมนตรี<\/w:t>[\s\S]*?<\/w:p><w:p>[\s\S]*?รักษาราชการแทน/);
+ expect(await zip.file('word/styles.xml')!.async('string')).toContain('<w:noProof/>');
 },30000);

@@ -4,7 +4,7 @@ export type DocumentAssets = { regular: string; bold: string; garuda: string; ro
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const isTableRule=(line:string)=>/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line.trim());
 const cells=(line:string)=>line.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(x=>x.trim());
-export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Record<string,string>={}): string {
+export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Record<string,string>={}, options:{wordParagraphs?:boolean}={}): string {
   const e=(s:string)=>escapeHtml(numerals(s,d.numeralStyle)), t=template(d.type), date=thaiDate(d.date), blocks:string[]=[];
   const inline=(s:string)=>e(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
   const p=(content:string,cls="") => blocks.push(`<p class="${cls}">${content || "&nbsp;"}</p>`);
@@ -151,6 +151,8 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
       continue;
     }
     if(node.tagName!=='P'){content.append(node);overflow=true;continue}
+    ${options.wordParagraphs ? `// Word must keep one logical paragraph, even when it flows across pages.
+    content.append(node);continue;` : ''}
     const segmenter=new Intl.Segmenter('th',{granularity:'word'});const words=Array.from(node.textContent.matchAll(/\\S+\\s*|\\s+/g),match=>match[0]).flatMap(token=>token.length>120?Array.from(segmenter.segment(token),part=>part.segment):[token]);node.remove();let offset=0;
     const boundaries=[0];for(const word of words)boundaries.push(boundaries[boundaries.length-1]+word.length);
     const textNodes=[],walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);while(walker.nextNode())textNodes.push(walker.currentNode);
