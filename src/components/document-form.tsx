@@ -42,8 +42,8 @@ export function DocumentFormNav({external}:{external:boolean}){
     setSelected(id);
     const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let parent=section.parentElement;
-    while(parent&&!/(auto|scroll)/.test(getComputedStyle(parent).overflowY))parent=parent.parentElement;
-    const scroller=parent??document.documentElement;
+    while(parent&&(!/(auto|scroll)/.test(getComputedStyle(parent).overflowY)||parent.scrollHeight<=parent.clientHeight))parent=parent.parentElement;
+    const scroller=parent??document.scrollingElement??document.documentElement;
     const nav=section.closest(".form-pane")?.querySelector(".form-jump-nav");
     const start=scroller.scrollTop;
     const top=parent?parent.getBoundingClientRect().top+parent.clientTop:0;

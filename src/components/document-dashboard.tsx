@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Cloud,
   CloudOff,
+  HardDrive,
   Copy,
   ExternalLink,
   FilePenLine,
@@ -118,6 +119,7 @@ export function DocumentDashboard({
   const [sortMode, setSortMode] = useState<SortMode>("updated-desc");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [scanDocument, setScanDocument] = useState<SavedDraft | null>(null);
 
   const reviewed = documents.filter((document) => document.status === "reviewed").length;
@@ -196,7 +198,7 @@ export function DocumentDashboard({
   }
 
   return (
-    <main className={`page-main notion-home ${styles.dashboard}`}>
+    <main className={`page-main notion-home ${styles.dashboard} ${showDetails ? styles.detailed : styles.comfortable}`}>
       <section className={styles.hero}>
         <div className={styles.heroTop}>
           <div>
@@ -240,6 +242,7 @@ export function DocumentDashboard({
           <kbd>/</kbd>
           </div>
           <div className={styles.headerActions}>
+            <button aria-label="แสดงรายละเอียดเพิ่มเติม" aria-pressed={showDetails} onClick={()=>setShowDetails(value=>!value)}><Files size={16}/>{showDetails?"ย่อรายละเอียด":"รายละเอียด"}</button>
             <button aria-expanded={showFilters} aria-controls="document-filters" className={showFilters ? styles.filterActive : ""} onClick={() => setShowFilters((value) => !value)}>
               <SlidersHorizontal size={16} /> ตัวกรอง
               {activeFilterCount > 0 && <span>{activeFilterCount}</span>}
@@ -287,11 +290,11 @@ export function DocumentDashboard({
               <tbody>{visible.map((document) => {
                 const isSynced = document.syncedVersion === document.version;
                 return <tr key={document.id}>
-                  <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small>{document.number || "ยังไม่ระบุเลขที่"} · ฉบับที่ {document.version}</small></span></button><div className={styles.mobileMetadata}><span>{template(document.type).name} · {statusLabels[document.status]}</span>{document.signedScanCount > 0 && <span className={styles.signedBadge}><FileCheck2 size={12}/>มีฉบับลงนาม ({document.signedScanCount})</span>}</div></td>
+                  <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small><span className={styles.inlineType}>{template(document.type).name} · </span>{document.number || "ยังไม่ระบุเลขที่"}<span className={styles.version}> · ฉบับที่ {document.version}</span></small></span></button><div className={styles.mobileMetadata}><span>{template(document.type).name} · {statusLabels[document.status]}</span>{document.signedScanCount > 0 && <span className={styles.signedBadge}><FileCheck2 size={12}/>มีฉบับลงนาม ({document.signedScanCount})</span>}</div></td>
                   <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.date ? `${document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} ${documentYear(document.date, document.yearMode)}` : "ยังไม่ระบุปี"}</small></td>
                   <td><strong className={styles.cellMain}>{document.recipient || "—"}</strong><small className={styles.cellSub}>{document.department || document.organization || "ยังไม่ระบุหน่วยงาน"}</small></td>
                   <td><strong className={styles.cellMain}>{formatter.format(new Date(document.updatedAt))}</strong><small className={styles.cellSub}>{timeFormatter.format(new Date(document.updatedAt))} น.</small></td>
-                  <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span>{document.signedScanCount>0&&<span className={styles.signedBadge}><FileCheck2 size={12}/> มีฉบับลงนาม ({document.signedScanCount})</span>}<span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : <CloudOff size={12} />}{isSynced ? "จัดเก็บแล้ว" : "รอจัดเก็บ"}</span></td>
+                  <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span>{document.signedScanCount>0&&<span className={styles.signedBadge}><FileCheck2 size={12}/> มีฉบับลงนาม ({document.signedScanCount})</span>}<span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : document.driveFileId ? <CloudOff size={12} /> : <HardDrive size={12} />}{isSynced ? "Drive ล่าสุดแล้ว" : document.driveFileId ? "มีฉบับแก้ไขในเครื่อง" : "บันทึกในเครื่องแล้ว"}</span></td>
                   <td><div className={styles.rowActions}><button title="จัดการไฟล์สแกนฉบับลงนาม" aria-label={`ไฟล์สแกนฉบับลงนามของ ${document.subject}`} onClick={()=>setScanDocument(document)}><Paperclip size={16}/></button>{document.driveFileId && <a href={`https://drive.google.com/file/d/${document.driveFileId}/view`} target="_blank" rel="noreferrer" title="เปิดไฟล์บน Drive" aria-label={`เปิด ${document.subject} บน Drive`}><ExternalLink size={16} /></a>}<button title="ทำสำเนา" aria-label={`ทำสำเนา ${document.subject}`} disabled={pending} onClick={() => onDuplicate(document)}><Copy size={16} /></button><button className={styles.delete} title="ลบร่าง" aria-label={`ลบ ${document.subject}`} disabled={pending} onClick={() => onDelete(document)}><Trash2 size={16} /></button></div></td>
                 </tr>;
               })}</tbody>

@@ -1,0 +1,41 @@
+import {test,expect} from '@playwright/test';
+import fs from 'node:fs';
+import {PDFDocument} from 'pdf-lib';
+import {templates} from '../../src/lib/templates';
+test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Only write into an isolated release fixture');
+for(const template of templates)test(`${template.id}: fill, save, reopen, edit and export PDF`,async({page})=>{
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ page.on('response',response=>{if(response.url().endsWith('/pdf'))console.log('PDF response',response.status());});
+ page.on('requestfailed',request=>console.log('Failed request',new URL(request.url()).pathname,request.failure()?.errorText));
+ await page.goto('/');await page.getByRole('button',{name:'สร้างหนังสือใหม่',exact:true}).click();
+ await page.locator('.template-card').filter({has:page.getByRole('heading',{name:template.name,exact:true})}).click();
+ await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง',exact:true}).click();
+ const label=['stamped','certificate'].includes(template.id)?'ชื่อร่างในรายการเอกสาร':template.id==='minutes'?'ชื่อการประชุม':'เรื่อง / ชื่อร่าง';
+ const subject=`ตรวจครบวงจร ${template.id} ${Date.now()}`;
+ await page.getByLabel(label).fill(subject);
+ const body=await page.locator('#document-body').inputValue();expect(body.length).toBeGreaterThan(50);
+ if(template.id==='minutes'){await expect(page.getByLabel('เริ่มประชุมเวลา')).toHaveValue('09:00');await expect(page.getByLabel('ผู้จดรายงานการประชุม')).not.toBeEmpty();}
+ const save=page.getByRole('button',{name:'บันทึกร่าง',exact:true});await save.click();
+ await expect(page.locator('.toast[role=status]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
+ await page.getByRole('button',{name:'กลับรายการ',exact:true}).click();await page.reload();
+ await page.getByLabel('ค้นหาเอกสารทุกข้อมูล').fill(subject);
+ await expect(page.getByRole('table')).toContainText('บันทึกในเครื่องแล้ว');
+ await page.getByRole('button',{name:new RegExp('^'+subject)}).click();
+ await expect(page.getByLabel(label)).toHaveValue(subject);await expect(page.locator('#document-body')).toHaveValue(body);
+ const marker='ข้อความแก้ไขหลังเปิดร่างกลับมา';await page.locator('#document-body').fill(body+'\n'+marker);await save.click();
+ await expect(page.locator('.toast[role=status]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
+ const preview=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');await expect(preview.locator('.content')).toContainText(marker);
+ const download=page.waitForEvent('download',{timeout:60000});await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();
+ const file=await download;expect(file.suggestedFilename()).toBe(subject+'.pdf');
+ const bytes=fs.readFileSync((await file.path())!);expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(0);
+ fs.mkdirSync('output/system-audit',{recursive:true});fs.writeFileSync(`output/system-audit/${template.id}.pdf`,bytes);
+ await page.screenshot({path:`output/system-audit/${template.id}-form.png`});
+ await preview.locator('.page').first().screenshot({path:`output/system-audit/${template.id}-document.png`});expect(errors).toEqual([]);
+});
+test('sample replacement can be cancelled and cannot erase the current number',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:'สร้างหนังสือใหม่',exact:true}).click();await page.locator('.template-card').filter({has:page.getByRole('heading',{name:'หนังสือภายใน',exact:true})}).click();
+ await page.locator('#document-body').fill('ข้อความที่ต้องเก็บไว้');await page.getByLabel('เลขที่หนังสือ',{exact:true}).fill('ทส ทดสอบ/999');
+ page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง',exact:true}).click();await expect(page.locator('#document-body')).toHaveValue('ข้อความที่ต้องเก็บไว้');
+ page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง',exact:true}).click();
+ await expect(page.locator('#document-body')).not.toHaveValue('ข้อความที่ต้องเก็บไว้');await expect(page.getByLabel('เลขที่หนังสือ',{exact:true})).toHaveValue('ทส ทดสอบ/999');
+});

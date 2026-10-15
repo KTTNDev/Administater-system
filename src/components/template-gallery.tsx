@@ -13,9 +13,9 @@ function Paper({type}:{type:DocumentType}){
 export function TemplateGallery({onCreate}:{onCreate:(type:DocumentType)=>void}){
  const [category,setCategory]=useState('all');
  return <main className="page-main templates-main workspace-page">
-  <WorkspaceHeading icon={Files} title="เลือกแบบหนังสือราชการ" description="เลือกแบบที่ต้องการ แล้วเริ่มกรอกพร้อมดูตัวอย่างได้เลย"/>
+  <WorkspaceHeading icon={Files} title="เลือกแบบหนังสือราชการ" description="เลือกจากลักษณะงาน แล้วเริ่มร่างได้เลย"/>
   <nav className="template-categories" aria-label="หมวดแบบหนังสือ"><button aria-pressed={category==='all'} onClick={()=>setCategory('all')}>ทั้งหมด <span>{templates.length}</span></button>{groups.map(group=><button key={group} aria-pressed={category===group} onClick={()=>setCategory(group)}>{group}</button>)}</nav>
-  <div className="template-catalogue">{templates.filter(item=>category==='all'||item.group===category).map(item=><button className={`template-card template-choice ${['external','internal'].includes(item.id)?'template-frequent':''}`} key={item.id} onClick={()=>onCreate(item.id)}><span className="template-visual"><Paper type={item.id}/></span><span className="template-choice-copy"><small>{item.group}</small><h3>{item.name}</h3><p>{item.description}</p><span className="template-source">{item.source==='DLA'?'อ้างอิงแผ่นแบบ สถ.':item.source==='CUSTOM'?'ปรับตามลักษณะงาน':'ตามหมวดระเบียบ'}</span></span><ArrowUpRight size={18} className="template-choice-arrow" aria-hidden="true"/></button>)}</div>
+  <div className="template-catalogue">{templates.filter(item=>category==='all'||item.group===category).map(item=><button className={`template-card template-choice ${['external','internal'].includes(item.id)?'template-frequent':''}`} key={item.id} onClick={()=>onCreate(item.id)}><span className="template-visual"><Paper type={item.id}/></span><span className="template-choice-copy"><h3>{item.name}</h3><p>{item.description}</p></span><ArrowUpRight size={18} className="template-choice-arrow" aria-hidden="true"/></button>)}</div>
   <DetailNote title="ที่มาของแบบหนังสือและคู่มือเพิ่มเติม"><p><BookOpen size={17}/> ภายนอก ภายใน และประทับตราอ้างอิงไฟล์ สถ. แบบอื่นใช้โครงสร้างตามระเบียบและต้องตรวจรับรูปแบบเฉพาะหน่วยงาน</p><TemplateReference/></DetailNote>
  </main>;
 }

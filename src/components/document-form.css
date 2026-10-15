@@ -88,5 +88,13 @@
 .editor-main .preview-toolbar select{font-size:12px;min-height:32px;padding:4px 7px}
 .editor-main .sample-notice{font-size:12px}
 @media(max-width:1150px){.editor-main .editor-layout{grid-template-columns:minmax(370px,48%) minmax(0,1fr)}.editor-main .form-pane{padding:18px 16px}.form-jump-nav{top:-18px}.form-jump-nav button{min-width:59px;padding:7px}.editor-main .editor-title h1{font-size:19px}.editor-main .editor-title .badge{display:none}}
-@media(max-width:800px){.editor-main .editor-layout{display:flex;flex-direction:column}.editor-main .form-pane{overflow:visible;order:0}.editor-main .preview-pane{order:1}.editor-main .editor-header{padding:12px;gap:10px;flex-wrap:wrap}.editor-main .editor-actions{width:100%;justify-content:flex-end}.form-jump-nav{top:0}.editor-main .field-grid{padding:16px}.editor-main .form-intro{gap:10px}.editor-main .form-intro h2{font-size:18px}.editor-main .form-intro p{font-size:11px}}
+@media(max-width:1000px){
+/* Let the page own vertical scrolling so sticky shortcuts follow the form. */
+.main-shell>.editor-main,.main-shell:has(>.recovery-panel)>.editor-main{height:auto;min-height:0}
+.editor-main .editor-layout{display:flex;flex-direction:column;overflow:visible}
+.editor-main .form-pane{overflow:visible;order:0;min-width:0}
+.editor-main .preview-pane{order:1}
+.form-jump-nav{top:0}
+}
+@media(max-width:800px){.editor-main .editor-header{padding:12px;gap:10px;flex-wrap:wrap}.editor-main .editor-actions{width:100%;justify-content:flex-end}.form-jump-nav{top:0}.editor-main .field-grid{padding:16px}.editor-main .form-intro{gap:10px}.editor-main .form-intro h2{font-size:18px}.editor-main .form-intro p{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.editor-main *{scroll-behavior:auto!important;transition:none!important}}

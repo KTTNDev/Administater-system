@@ -123,3 +123,26 @@
   .pagination { margin-left: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .dashboard *, .dashboard *::before { transition: none !important; animation: none !important; } }
+/* Reading view keeps the document and its state together; details remain one click away. */
+.heroTop>div{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:var(--ui-space-4);align-items:center}
+.heroTop :global(.home-page-icon){grid-row:1/3}
+.heroTop h1,.heroTop .kicker{grid-column:2}
+.heroTop h1{font-size:var(--ui-title)}
+.inlineType{display:none}
+.comfortable .table th:nth-child(2),.comfortable .table td:nth-child(2),.comfortable .table th:nth-child(3),.comfortable .table td:nth-child(3){display:none}
+.comfortable .table td{padding-block:var(--ui-space-5)}
+.comfortable .table th:first-child{width:52%}
+.comfortable .documentTitle strong{max-width:none;font-size:var(--ui-text);line-height:1.85}
+.comfortable .version,.comfortable .table td:nth-child(4) .cellSub{display:none}
+.comfortable .inlineType{display:inline}
+.comfortable .table tbody tr:hover td{background:var(--ui-subtle)}
+.comfortable .fileIcon{width:40px;height:44px;background:var(--ui-accent-soft);border:0}
+.detailed .table th:first-child{width:34%}
+@media(max-width:600px){
+ .heroTop>div{column-gap:var(--ui-space-3)}
+ .heroTop h1{font-size:24px}
+ .comfortable .table th:first-child{width:66%}
+ .comfortable .table td{padding-block:var(--ui-space-4)}
+ .comfortable .inlineType{display:none}
+ .headerActions{width:100%;justify-content:flex-end;flex-wrap:wrap}
+}

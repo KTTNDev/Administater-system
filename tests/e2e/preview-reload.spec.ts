@@ -40,10 +40,10 @@ test('a failed preview message remounts the preview automatically',async({page})
  await page.getByRole("button",{name:"สร้างหนังสือใหม่",exact:true}).click();await page.locator(".template-card").filter({has:page.getByRole("heading",{name:"หนังสือภายนอก",exact:true})}).click();
  await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง'}).click();await page.getByLabel("เลขที่หนังสือ",{exact:true}).fill("");
  const preview=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
- await expect(preview.locator('.body-text').first()).toContainText('สำนักงานเทศบาล');
+ await expect(preview.locator('.body-text').first()).toHaveText((await page.locator('#document-body').inputValue()).split('\n')[0]);
  const frame=page.locator('iframe[title="ตัวอย่างหนังสือ A4"]');
  await frame.evaluate(element=>element.setAttribute('data-test-frame','failed'));
  await preview.locator('body').evaluate(()=>parent.postMessage({source:'sarabun-preview',error:true},'*'));
  await expect(frame).not.toHaveAttribute('data-test-frame','failed',{timeout:5000});
- await expect(preview.locator('.body-text').first()).toContainText('สำนักงานเทศบาล');
+ await expect(preview.locator('.body-text').first()).toHaveText((await page.locator('#document-body').inputValue()).split('\n')[0]);
 });

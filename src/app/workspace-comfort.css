@@ -1,0 +1,101 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app
+ * audience: daily document work · tone: calm, practical · enrichment: none
+ * pre-emit critique: P4 H4 E4 S4 R5 V4 */
+html,body{overflow-x:clip}
+.app-shell .main-shell{background:var(--ui-subtle)}
+.app-shell .topbar{background:var(--ui-surface);border-bottom:1px solid var(--ui-border)}
+.app-shell .sidebar{border-right:1px solid var(--ui-border)}
+.app-shell .sidebar .brand-icon{color:var(--ui-accent);background:var(--ui-accent-soft);border:0}
+.app-shell .sidebar .brand small{color:var(--ui-muted);font-size:var(--ui-text-xs)}
+.app-shell .sidebar nav button{position:relative;min-height:42px;padding-inline:var(--ui-space-3)}
+.app-shell .sidebar nav button.active{background:var(--ui-surface);color:var(--ui-accent-hover);box-shadow:var(--ui-shadow)}
+.app-shell .sidebar nav button.active::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:var(--ui-radius-sm);background:var(--ui-accent)}
+.app-shell .sidebar nav button.active>svg{color:var(--ui-accent)}
+.app-shell .sidebar .nav-caption{font-size:var(--ui-text-xs);margin-bottom:var(--ui-space-2)}
+.app-shell .sidebar .new-document{min-height:44px}
+.app-shell .page-main{padding-top:var(--ui-space-8)}
+.app-shell .workspace-heading-copy{display:flex;gap:var(--ui-space-4);align-items:center}
+.app-shell .workspace-heading-icon,.app-shell .home-page-icon{width:48px;height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;margin:0;color:var(--ui-accent);background:var(--ui-accent-soft);border-radius:var(--ui-radius)}
+.app-shell .workspace-heading h1{font-size:var(--ui-title);margin-bottom:var(--ui-space-1)}
+.app-shell .workspace-heading p{font-size:var(--ui-text-sm)}
+.app-shell .page-main :is(h1,h2,h3){min-width:0;overflow-wrap:anywhere;font-style:normal}
+.app-shell .page-main :is(button,summary){min-height:36px}
+.app-shell .recent-work{margin-block:var(--ui-space-6)}
+.app-shell .recent-work h2{font-size:var(--ui-text-sm);color:var(--ui-ink)}
+.app-shell .recent-work-grid>button{display:grid;grid-template-columns:32px minmax(0,1fr);gap:var(--ui-space-2) var(--ui-space-3);padding:var(--ui-space-4);box-shadow:none;background:var(--ui-surface);min-height:140px}
+.app-shell .recent-document-icon{grid-column:1;grid-row:1/3;padding:0;color:var(--ui-accent)}
+.app-shell .recent-work-grid :is(small,strong){grid-column:2}
+.app-shell .recent-work-grid strong{min-height:0;line-height:1.8}
+.app-shell .recent-work-grid>button>span:last-child{grid-column:2;font-size:var(--ui-text-xs);margin-top:var(--ui-space-1)}
+.app-shell .template-catalogue{gap:var(--ui-space-3)}
+.app-shell .template-catalogue .template-choice{padding:var(--ui-space-5);grid-template-columns:64px minmax(0,1fr) 18px;gap:var(--ui-space-5)}
+.app-shell .template-visual{width:64px;height:88px;background:var(--ui-subtle);border-radius:var(--ui-radius-sm)}
+.app-shell .template-miniature{width:54px;height:72px}
+.app-shell .template-catalogue .template-choice h3{margin-bottom:var(--ui-space-2);font-size:var(--ui-text)}
+.app-shell .template-catalogue .template-choice p{margin:0;font-size:var(--ui-text-sm)}
+.app-shell .template-categories{border:0;gap:var(--ui-space-2)}
+.app-shell .template-categories button{background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm)}
+.app-shell .template-categories button[aria-pressed=true]{color:var(--ui-accent-hover);background:var(--ui-accent-soft);border-color:var(--ui-focus)}
+.app-shell .overview-metrics{border:1px solid var(--ui-border);border-radius:var(--ui-radius);padding:var(--ui-space-3)}
+.app-shell .overview-metrics>button,.app-shell .overview-metrics>div{border-radius:var(--ui-radius-sm)!important}
+.app-shell .overview-metrics>button[aria-pressed=true]{background:var(--ui-accent-soft)!important}
+.app-shell .report-totals{background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius)}
+.app-shell .report-charts>section,.app-shell .report-details>section{background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);padding:var(--ui-space-5)}
+.app-shell .settings-main .settings-card,.app-shell .settings-disclosure{background:var(--ui-surface)}
+.app-shell :is(dialog,[role=dialog]){border-radius:var(--ui-radius);color:var(--ui-ink);font-family:var(--ui-font)}
+.app-shell :is(dialog,[role=dialog])>header{position:sticky;top:0;z-index:2;background:var(--ui-surface)}
+.app-shell :is(dialog,[role=dialog]) label{font-size:var(--ui-text-sm);line-height:1.7}
+.app-shell :is(dialog,[role=dialog]) :is(input,select,textarea){font-family:var(--ui-font);font-size:var(--ui-text);border-color:var(--ui-border)}
+.app-shell .editor-main{font-family:var(--ui-font);color:var(--ui-ink)}
+.app-shell .editor-main .editor-header{padding:var(--ui-space-4) var(--ui-space-6);align-items:center;flex-shrink:0}
+.app-shell .editor-main .editor-title h1{font-size:20px;color:var(--ui-ink)}
+.app-shell .editor-main .editor-title .eyebrow{color:var(--ui-muted)}
+.app-shell .editor-main .primary{background:var(--ui-accent);border-color:var(--ui-accent);color:var(--ui-on-accent)}
+.app-shell .editor-main .primary:hover:not(:disabled){background:var(--ui-accent-hover)}
+.editor-view-controls{display:flex;align-items:center;justify-content:space-between;gap:var(--ui-space-3);padding:var(--ui-space-2) var(--ui-space-6);border-bottom:1px solid var(--ui-border);background:var(--ui-surface);flex-shrink:0;font-size:var(--ui-text-xs);color:var(--ui-muted)}
+.editor-view-controls button{font:var(--ui-text-xs)/1.6 var(--ui-font);min-height:32px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);padding:var(--ui-space-1) var(--ui-space-3);color:var(--ui-ink)}
+.editor-view-controls button:hover,.editor-view-controls button[aria-pressed=true]{background:var(--ui-accent-soft);color:var(--ui-accent-hover)}
+.app-shell .editor-main .form-pane{background:var(--ui-subtle);border-color:var(--ui-border)}
+.app-shell .editor-main .form-jump-nav{background:var(--ui-subtle);border-color:var(--ui-border);gap:var(--ui-space-1)}
+.app-shell .editor-main .form-jump-nav button{flex-direction:row;gap:var(--ui-space-1);min-width:0;min-height:40px;padding:var(--ui-space-2);border-radius:var(--ui-radius-sm);font:var(--ui-text-xs)/1.5 var(--ui-font);color:var(--ui-muted);background:transparent;border-color:transparent;white-space:nowrap}
+.app-shell .editor-main .form-jump-nav button:hover{background:var(--ui-hover);color:var(--ui-ink)}
+.app-shell .editor-main .form-jump-nav button.is-selected{background:var(--ui-surface);border-color:var(--ui-border);box-shadow:var(--ui-shadow);color:var(--ui-accent-hover)}
+.app-shell .editor-main .form-section{border-color:var(--ui-border);border-radius:var(--ui-radius);box-shadow:none}
+.app-shell .editor-main .form-section>summary{border-radius:var(--ui-radius);color:var(--ui-ink);background:var(--ui-surface);font-size:var(--ui-text-sm)}
+.app-shell .editor-main .form-section[open]>summary{border-radius:var(--ui-radius) var(--ui-radius) 0 0;border-bottom-color:var(--ui-border)}
+.app-shell .editor-main .section-icon{color:var(--ui-accent);background:var(--ui-accent-soft);border-radius:var(--ui-radius-sm);width:28px;height:28px;flex-basis:28px}
+.app-shell .editor-main label{font-size:var(--ui-text-sm);color:var(--ui-ink)}
+.app-shell .editor-main :is(input,select,textarea){font-family:var(--ui-font);color:var(--ui-ink);border-color:var(--ui-border);border-radius:var(--ui-radius-sm)}
+.app-shell .editor-main :is(.agency-fill,.body-format-toolbar,.form-help>div,.form-help>p,.inline-assistant,.attachment-card,.repeat-card){background:var(--ui-subtle);border-color:var(--ui-border);color:var(--ui-muted)}
+.app-shell .editor-main :is(.field-note,.compact-hint,.form-intro p,.field-divider,small){color:var(--ui-muted)}
+.app-shell .editor-main .form-intro h2{font-size:var(--ui-text);color:var(--ui-ink)}
+.app-shell .editor-main .review-card,.app-shell .editor-main .storage-card{border-radius:var(--ui-radius);border-color:var(--ui-border)}
+.app-shell .editor-main .preview-pane{background:var(--ui-hover)}
+.app-shell .editor-main .preview-toolbar{background:var(--ui-surface);border-color:var(--ui-border)}
+.app-shell .editor-main .preview-toolbar strong{color:var(--ui-ink);font-size:var(--ui-text-sm)}
+.app-shell .editor-main .preview-info,.app-shell .editor-main .preview-footer{color:var(--ui-muted);font-size:var(--ui-text-xs)}
+.app-shell .editor-main.editor-focus .editor-layout{grid-template-columns:minmax(0,1fr)}
+.app-shell .editor-main.editor-focus .preview-pane{display:none}
+.app-shell .editor-main.editor-focus .form-pane{padding-inline:max(var(--ui-space-6),calc((100% - 880px)/2))}
+@media(max-width:1000px){
+ .app-shell .editor-main.editor-focus .form-pane{padding-inline:var(--ui-space-4)}
+}
+@media(max-width:600px){
+ .app-shell .page-main{padding:var(--ui-space-5) var(--ui-space-4) var(--ui-space-8)}
+ .app-shell .workspace-heading{flex-direction:column;align-items:stretch;gap:var(--ui-space-4)}
+ .app-shell .workspace-heading-copy{gap:var(--ui-space-3)}
+ .app-shell .workspace-heading h1{font-size:22px}
+ .app-shell .workspace-heading-icon{width:40px;height:40px;flex-basis:40px}
+ .app-shell .workspace-heading-actions{padding:0}
+ .app-shell .recent-work-grid{grid-template-columns:minmax(0,1fr)}
+ .app-shell .recent-work-grid>button{min-height:110px}
+ .app-shell .template-catalogue .template-choice{padding:var(--ui-space-4);gap:var(--ui-space-3)}
+ .app-shell .editor-main .editor-header{padding:var(--ui-space-3);align-items:flex-start}
+ .app-shell .editor-main .editor-actions{flex-wrap:wrap}
+ .app-shell .editor-main .editor-actions button{font-size:var(--ui-text-sm);min-height:40px}
+ .editor-view-controls{padding-inline:var(--ui-space-3)}
+ .editor-view-controls>span{display:none}
+ .editor-view-controls button{margin-left:auto}
+ .app-shell .editor-main .form-jump-nav button{font-size:var(--ui-text-xs)}
+}
+@media(prefers-reduced-motion:reduce){.app-shell *, .app-shell *::before{scroll-behavior:auto!important;animation:none!important;transition:none!important}}

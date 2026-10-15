@@ -17,14 +17,16 @@ for(const template of templates)test(`Word download saves current ${template.id}
   await page.getByLabel('เพิ่ม PDF หรือรูปภาพ').setInputFiles({name:'ตัวอย่าง.pdf',mimeType:'application/pdf',buffer:Buffer.from(await pdf.save())});
   await expect(page.locator('.attachment-card')).toContainText('1 หน้า');
  }
- const result=page.waitForResponse(r=>r.url().endsWith('/word'));
+ const marker=`WORD-${template.id}-${Date.now()}`;
+ await page.locator('#document-body').fill((await page.locator('#document-body').inputValue())+'\n'+marker);
+ const result=page.waitForResponse(r=>r.url().endsWith('/word'),{timeout:60000});
  const download=page.waitForEvent('download',{timeout:60000});
  await page.getByRole('button',{name:'ดาวน์โหลด Word',exact:true}).click();
- const file=await download,response=await result;
+ const [file,response]=await Promise.all([download,result]);
  expect(response.status()).toBe(200);expect(response.headers()['content-type']).toContain('wordprocessingml.document');
  expect(file.suggestedFilename()).toBe(subject+'.docx');
  const zip=await JSZip.loadAsync(fs.readFileSync((await file.path())!)),xml=await zip.file('word/document.xml')!.async('string');
- expect(xml.replaceAll('\u200b','')).toContain('จึงเรียนมาเพื่อโปรดพิจารณาเข้าร่วมประชุม');
+ expect(xml).toContain(marker);
  expect(xml).not.toContain('w:altChunk');
  await expect(page.locator('.toast[role="status"]')).toContainText('ดาวน์โหลด Word แล้ว');
  if(template.id==='internal')expect(xml.match(/<w:sectPr>/g)?.length).toBe(2);

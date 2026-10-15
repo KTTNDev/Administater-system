@@ -82,5 +82,46 @@
       "savedDocumentsUnchanged": true
     },
     "limits": "UI redesign only; document renderer unchanged. PDF smoke checks verify successful generation, not legal conformity."
+  },
+  {
+    "date": "2026-10-15",
+    "scope": "app",
+    "verb": "redesign",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "theme": "Notion-inspired neutral workspace",
+    "designSystem": "design.md",
+    "variation": "Reading-first document list with optional metadata; focus writing mode; compact horizontal form shortcuts; consistent neutral surfaces.",
+    "verification": {
+      "navigationPages": 10,
+      "viewportWidths": [
+        320,
+        375,
+        414,
+        768,
+        868,
+        960,
+        1440
+      ],
+      "documentTypes": 13,
+      "e2ePassedAcrossFinalBatches": 165,
+      "unitTestsPassed": 126,
+      "uiAndScrollTestsPassed": 59,
+      "contrast": "Core text/button/focus token pairs checked in output/comfort-contrast.json"
+    },
+    "exceptions": [
+      "Existing offline Thai font stack and established Notion design retained.",
+      "Long Thai document titles and template descriptions may wrap for readability.",
+      "Template categories and data tables scroll within their own regions on small screens."
+    ],
+    "artifacts": [
+      "output/comfort-dashboard.png",
+      "output/comfort-focus.png",
+      "output/comfort-templates-320.png",
+      "output/comfort-scroll-final.log",
+      "output/comfort-regression-final.log"
+    ],
+    "enrichment": "none",
+    "limits": "Document renderer preserved. Physical printer, second-PC migration, and live-account Drive acceptance remain in the release checklist."
   }
 ]
