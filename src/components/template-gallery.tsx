@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {Files,ArrowUpRight,BookOpen} from 'lucide-react';
+import {Files,ArrowRight,BookOpen} from 'lucide-react';
 import {groups,templates,type DocumentType} from '@/lib/templates';
 import {WorkspaceHeading,DetailNote} from './workspace-ui';
 import {TemplateReference} from './template-reference';
@@ -15,7 +15,12 @@ export function TemplateGallery({onCreate}:{onCreate:(type:DocumentType)=>void})
  return <main className="page-main templates-main workspace-page">
   <WorkspaceHeading icon={Files} title="เลือกแบบหนังสือราชการ" description="เลือกจากลักษณะงาน แล้วเริ่มร่างได้เลย"/>
   <nav className="template-categories" aria-label="หมวดแบบหนังสือ"><button aria-pressed={category==='all'} onClick={()=>setCategory('all')}>ทั้งหมด <span>{templates.length}</span></button>{groups.map(group=><button key={group} aria-pressed={category===group} onClick={()=>setCategory(group)}>{group}</button>)}</nav>
-  <div className="template-catalogue">{templates.filter(item=>category==='all'||item.group===category).map(item=><button className={`template-card template-choice ${['external','internal'].includes(item.id)?'template-frequent':''}`} key={item.id} onClick={()=>onCreate(item.id)}><span className="template-visual"><Paper type={item.id}/></span><span className="template-choice-copy"><h3>{item.name}</h3><p>{item.description}</p></span><ArrowUpRight size={18} className="template-choice-arrow" aria-hidden="true"/></button>)}</div>
+  <div className="template-library">
+   {templates.some(item=>['external','internal'].includes(item.id)&&(category==='all'||item.group===category))&&<section className="template-featured" aria-label="แบบหนังสือใช้บ่อย">
+    <h2>ใช้บ่อย</h2><div className="template-featured-grid">{templates.filter(item=>['external','internal'].includes(item.id)&&(category==='all'||item.group===category)).map(item=><button className="template-card template-choice template-feature" key={item.id} onClick={()=>onCreate(item.id)}><span className="template-visual"><Paper type={item.id}/></span><span className="template-choice-copy"><h3>{item.name}</h3><p>{item.description}</p><span className="template-start">เริ่มร่าง <ArrowRight size={16} aria-hidden="true"/></span></span></button>)}</div>
+   </section>}
+   {groups.map(group=>{const items=templates.filter(item=>item.group===group&&!['external','internal'].includes(item.id)&&(category==='all'||category===group));return items.length>0&&<section className="template-family" key={group}><h2>{group}</h2><div className="template-register">{items.map(item=><button className="template-card template-choice template-row" key={item.id} onClick={()=>onCreate(item.id)}><span className="template-visual"><Paper type={item.id}/></span><span className="template-choice-copy"><h3>{item.name}</h3><p>{item.description}</p></span><ArrowRight size={18} aria-hidden="true"/></button>)}</div></section>})}
+  </div>
   <DetailNote title="ที่มาของแบบหนังสือและคู่มือเพิ่มเติม"><p><BookOpen size={17}/> ภายนอก ภายใน และประทับตราอ้างอิงไฟล์ สถ. แบบอื่นใช้โครงสร้างตามระเบียบและต้องตรวจรับรูปแบบเฉพาะหน่วยงาน</p><TemplateReference/></DetailNote>
  </main>;
 }

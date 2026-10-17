@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Building2, ChevronDown, FileText, ListChecks, Paperclip, PenLine, Settings2, Users } from "lucide-react";
 import type { Draft } from "@/lib/document";
+import {isSignature} from "@/lib/floating-item";
 import { organizations } from "@/lib/templates";
 import { BodyEditor } from "./body-editor";
 import { ConclusionPicker } from "./writing-assistants";
@@ -17,6 +18,7 @@ const LegalLibrary=dynamic(()=>import("./document-tools").then(m=>m.LegalLibrary
 const AttachmentEditor=dynamic(()=>import("./attachment-editor").then(m=>m.AttachmentEditor));
 const AppendixPagesEditor=dynamic(()=>import("./appendix-pages-editor").then(m=>m.AppendixPagesEditor));
 const AppendixEditor=dynamic(()=>import("./appendix-editor").then(m=>m.AppendixEditor));
+const SignatureEditor=dynamic(()=>import("./signature-editor").then(m=>m.SignatureEditor));
 const FloatingItemsEditor=dynamic(()=>import("./floating-items-editor").then(m=>m.FloatingItemsEditor));
 
 export function FormHelp({children}:{children:ReactNode}){
@@ -86,9 +88,10 @@ type Props={
   sources:Record<string,string>;
   onSources:(sources:Record<string,string>)=>void;
   pages:number;
+  onPlaceSignature:(id:string)=>void;
 };
 
-export function DocumentForm({draft:d,organization,onChange:change,onBusy,sources,onSources,pages}:Props){
+export function DocumentForm({draft:d,organization,onChange:change,onBusy,sources,onSources,pages,onPlaceSignature}:Props){
   const external=d.type==="external",memo=["internal","memorandum"].includes(d.type),minutes=d.type==="minutes";
   const correspondence=external||memo,directed=correspondence||d.type==="stamped";
   const issued=["order","regulation","rule","announcement","statement","news","certificate","stamped"].includes(d.type);
@@ -142,13 +145,14 @@ export function DocumentForm({draft:d,organization,onChange:change,onBusy,source
         {d.type==="other"&&<p className="compact-hint wide">แบบนี้ไม่มีส่วนลงนามตายตัว เพิ่มข้อความที่ต้องการไว้ในเนื้อหาได้</p>}
         {(signed||d.type==="stamped")&&<div className="wide"><FormHelp>{d.type==="stamped"?"ตรวจว่ารายการนี้เข้าเงื่อนไขหนังสือประทับตรา และต้องประทับตราชื่อส่วนราชการด้วยหมึกแดง พร้อมผู้รับผิดชอบลงชื่อย่อกำกับ":"การกรอกชื่อยังไม่ใช่การลงลายมือชื่อ ต้องตรวจอำนาจผู้ลงนามก่อนออกหนังสือ"}</FormHelp></div>}
       </>}
+      <SignatureEditor items={d.floatingItems} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems})} onSources={onSources} onBusy={onBusy} onPlace={onPlaceSignature}/>
     </Section>
     <ReviewChain draft={d} onChange={change}/>
     {!external&&attachments}
     <section id="form-options" className="form-options" aria-label="เครื่องมือเพิ่มเติม">
       <h3 className="section-heading"><Settings2 size={19}/>เครื่องมือเพิ่มเติม</h3>
       <DocumentTools draft={d} onChange={change}/>
-      <FloatingItemsEditor items={d.floatingItems} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems})} onSources={onSources} onBusy={onBusy}/>
+      <FloatingItemsEditor maxItems={30-d.floatingItems.filter(isSignature).length} items={d.floatingItems.filter(item=>!isSignature(item))} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems:[...d.floatingItems.filter(isSignature),...floatingItems]})} onSources={onSources} onBusy={onBusy}/>
       <LegalLibrary draft={d} onChange={change}/>
     </section>
   </>;

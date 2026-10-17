@@ -202,7 +202,6 @@ export function DocumentDashboard({
       <section className={styles.hero}>
         <div className={styles.heroTop}>
           <div>
-            <span className="home-page-icon" aria-hidden="true"><Files size={32}/></span>
             <h1>พื้นที่ทำงาน</h1>
             <p className={styles.kicker}>เปิดร่างที่ทำไว้ หรือเริ่มหนังสือฉบับใหม่</p>
           </div>
@@ -212,15 +211,24 @@ export function DocumentDashboard({
         </div>
       </section>
 
-      {documents.length > 0 && <section className="recent-work" aria-label="เอกสารล่าสุด"><h2>กลับมาทำต่อ</h2><div className="recent-work-grid">{[...documents].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,3).map(document=><button key={document.id} aria-label={`ทำต่อ: ${document.subject}`} onClick={()=>onOpen(document)}><span className="recent-document-icon" aria-hidden="true"><FilePenLine size={25}/></span><small>{template(document.type).name}</small><strong>{document.subject||"ยังไม่ระบุเรื่อง"}</strong><span>แก้ไข {formatter.format(new Date(document.updatedAt))}<ChevronRight size={15}/></span></button>)}</div></section>}
-
-      <section className={styles.quickCreate} aria-label="สร้างเอกสารที่ใช้บ่อย">
-        <span>สร้างด่วน</span>
-        {templates.filter((item) => ["external", "internal", "order", "announcement"].includes(item.id)).map((item) => (
-          <button key={item.id} onClick={() => onCreate(item.id)}><FilePlus2 size={15} />{item.name}</button>
-        ))}
-        <button onClick={onOpenTemplates}>แบบทั้งหมด <ChevronRight size={15} /></button>
-      </section>
+      <div className={`${styles.launchpad} ${documents.length ? "" : styles.launchpadEmpty}`}>
+        {documents.length > 0 && <section className={styles.resume} aria-label="เอกสารล่าสุด">
+          <h2>กลับมาทำต่อ</h2>
+          <div className={styles.resumeList}>{[...documents].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,3).map(document=>(
+            <button key={document.id} aria-label={`ทำต่อ: ${document.subject}`} onClick={()=>onOpen(document)}>
+              <FilePenLine size={20} aria-hidden="true"/>
+              <span><strong>{document.subject||"ยังไม่ระบุเรื่อง"}</strong><small>{template(document.type).name} · แก้ไข {formatter.format(new Date(document.updatedAt))}</small></span>
+              <ChevronRight size={16} aria-hidden="true"/>
+            </button>
+          ))}</div>
+        </section>}
+        <section className={styles.quickCreate} aria-label="สร้างเอกสารที่ใช้บ่อย">
+          <div className={styles.quickHeading}><h2>เริ่มหนังสือใหม่</h2><button onClick={onOpenTemplates}>แบบทั้งหมด <ChevronRight size={15}/></button></div>
+          <div className={styles.quickChoices}>{templates.filter((item)=>["external","internal","order","announcement"].includes(item.id)).map(item=>(
+            <button key={item.id} onClick={()=>onCreate(item.id)}><FilePlus2 size={18} aria-hidden="true"/>{item.name}</button>
+          ))}</div>
+        </section>
+      </div>
 
       <section className={styles.workspace} aria-label="รายการเอกสาร">
         <div className={styles.listHeader}>

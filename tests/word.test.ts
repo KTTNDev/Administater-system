@@ -62,3 +62,13 @@ it('keeps a long Thai paragraph intact and uses real paragraphs for explicit new
  expect(xml).toMatch(/นายกเทศมนตรี<\/w:t>[\s\S]*?<\/w:p><w:p>[\s\S]*?รักษาราชการแทน/);
  expect(await zip.file('word/styles.xml')!.async('string')).toContain('<w:noProof/>');
 },30000);
+
+it('exports a transparent signature as a positioned image in both counterparts',async()=>{
+ const bytes=fs.readFileSync('tests/fixtures/signature-synthetic.png');
+ const {source,caption,widthMm,...image}=await createAppendixImage(new File([bytes],'signature-synthetic.png',{type:'image/png'}));
+ const {xml,zip}=await inspect('signature-image',{...newDraft('external'),...base,copyMark:'สำเนาคู่ฉบับ',floatingItems:[{kind:'image',purpose:'signature',id:crypto.randomUUID(),page:1,xMm:120,yMm:200,widthMm:45,image}]});
+ expect(xml.match(/name="signature-synthetic.png"/g)?.length).toBe(2);
+ expect(xml).toContain('behindDoc="0"');expect(xml).not.toContain('ลากเพื่อปรับขนาดภาพ');
+ const media=await Promise.all(Object.entries(zip.files).filter(([name])=>name.startsWith('word/media/')&&!name.endsWith('/')).map(([,file])=>file.async('nodebuffer')));
+ expect(media.some(buffer=>buffer.equals(bytes))).toBe(true);
+},30000);

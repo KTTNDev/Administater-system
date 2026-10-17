@@ -2,20 +2,19 @@
  * audience: daily document work · tone: calm, practical · enrichment: none
  * pre-emit critique: P4 H4 E4 S4 R5 V4 */
 html,body{overflow-x:clip}
-.app-shell .main-shell{background:var(--ui-subtle)}
+.app-shell .main-shell{background:var(--ui-surface)}
 .app-shell .topbar{background:var(--ui-surface);border-bottom:1px solid var(--ui-border)}
 .app-shell .sidebar{border-right:1px solid var(--ui-border)}
 .app-shell .sidebar .brand-icon{color:var(--ui-accent);background:var(--ui-accent-soft);border:0}
 .app-shell .sidebar .brand small{color:var(--ui-muted);font-size:var(--ui-text-xs)}
 .app-shell .sidebar nav button{position:relative;min-height:42px;padding-inline:var(--ui-space-3)}
-.app-shell .sidebar nav button.active{background:var(--ui-surface);color:var(--ui-accent-hover);box-shadow:var(--ui-shadow)}
-.app-shell .sidebar nav button.active::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:var(--ui-radius-sm);background:var(--ui-accent)}
+.app-shell .sidebar nav button.active{background:var(--ui-accent-soft);color:var(--ui-accent-hover);box-shadow:none}
 .app-shell .sidebar nav button.active>svg{color:var(--ui-accent)}
 .app-shell .sidebar .nav-caption{font-size:var(--ui-text-xs);margin-bottom:var(--ui-space-2)}
 .app-shell .sidebar .new-document{min-height:44px}
 .app-shell .page-main{padding-top:var(--ui-space-8)}
 .app-shell .workspace-heading-copy{display:flex;gap:var(--ui-space-4);align-items:center}
-.app-shell .workspace-heading-icon,.app-shell .home-page-icon{width:48px;height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;margin:0;color:var(--ui-accent);background:var(--ui-accent-soft);border-radius:var(--ui-radius)}
+.app-shell .workspace-heading-icon,.app-shell .home-page-icon{width:28px;height:36px;flex:0 0 28px;display:flex;align-items:center;justify-content:center;margin:0;color:var(--ui-accent);background:transparent;border-radius:0}
 .app-shell .workspace-heading h1{font-size:var(--ui-title);margin-bottom:var(--ui-space-1)}
 .app-shell .workspace-heading p{font-size:var(--ui-text-sm)}
 .app-shell .page-main :is(h1,h2,h3){min-width:0;overflow-wrap:anywhere;font-style:normal}
@@ -85,7 +84,7 @@ html,body{overflow-x:clip}
  .app-shell .workspace-heading{flex-direction:column;align-items:stretch;gap:var(--ui-space-4)}
  .app-shell .workspace-heading-copy{gap:var(--ui-space-3)}
  .app-shell .workspace-heading h1{font-size:22px}
- .app-shell .workspace-heading-icon{width:40px;height:40px;flex-basis:40px}
+ .app-shell .workspace-heading-icon{width:24px;height:32px;flex-basis:24px}
  .app-shell .workspace-heading-actions{padding:0}
  .app-shell .recent-work-grid{grid-template-columns:minmax(0,1fr)}
  .app-shell .recent-work-grid>button{min-height:110px}
@@ -99,3 +98,57 @@ html,body{overflow-x:clip}
  .app-shell .editor-main .form-jump-nav button{font-size:var(--ui-text-xs)}
 }
 @media(prefers-reduced-motion:reduce){.app-shell *, .app-shell *::before{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Impeccable 4.6 · Operate · distill + polish · existing Notion direction retained. */
+.app-shell .page-main{background:var(--ui-surface)}
+.app-shell .sidebar .brand-icon{background:transparent;border-radius:0}
+.app-shell .sidebar .brand small{display:none}
+.app-shell .sidebar nav button{font-size:var(--ui-text-sm)}
+.app-shell .topbar .app-refresh{margin-left:auto;border:0}
+.app-shell .page-main ::selection,.app-shell .editor-main ::selection{color:var(--ui-accent-hover);background:var(--ui-accent-soft)}
+.app-shell :is(input,textarea){caret-color:var(--ui-accent)}
+.app-shell :is(.sidebar-scroll,.form-pane,.paper-scroll){scrollbar-color:var(--ui-paper-rule) transparent;scrollbar-width:thin}
+.app-shell :is(button,a,summary):focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px}
+.app-shell .page-main :is(input,textarea,select):focus{outline:2px solid var(--ui-focus);outline-offset:1px}
+.app-shell .page-main button:disabled{cursor:not-allowed}
+.template-library{display:grid;gap:var(--ui-space-8)}
+.app-shell .template-library h2{font:600 var(--ui-text-sm)/1.7 var(--ui-font);color:var(--ui-muted);margin:0 0 var(--ui-space-4)}
+.template-featured-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ui-space-5)}
+.app-shell .template-feature{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;text-align:left;gap:var(--ui-space-6);padding:var(--ui-space-6);min-width:0;border:0;border-radius:var(--ui-radius);background:var(--ui-subtle);box-shadow:none}
+.app-shell .template-feature .template-visual{width:100px;height:140px;background:transparent}
+.app-shell .template-feature .template-miniature{width:98px;height:132px}
+.app-shell .template-choice-copy h3{font:600 18px/1.6 var(--ui-font);margin:0 0 var(--ui-space-2);color:var(--ui-ink)}
+.app-shell .template-choice-copy p{font:var(--ui-text-sm)/1.8 var(--ui-font);margin:0;color:var(--ui-muted)}
+.template-start{display:flex;align-items:center;gap:var(--ui-space-2);color:var(--ui-accent-hover);font:var(--ui-text-sm)/1.6 var(--ui-font);margin-top:var(--ui-space-5)}
+.template-register{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--ui-space-8)}
+.app-shell .template-row{display:grid;grid-template-columns:36px minmax(0,1fr) 18px;gap:var(--ui-space-4);align-items:center;text-align:left;min-width:0;padding:var(--ui-space-4) 0;border:0;border-bottom:1px solid var(--ui-border);border-radius:0;box-shadow:none;background:transparent}
+.app-shell .template-row .template-visual{width:36px;height:48px;background:transparent}
+.app-shell .template-row .template-miniature{width:34px;height:45px}
+.app-shell .template-row h3{font-size:var(--ui-text);margin-bottom:var(--ui-space-1)}
+.app-shell .template-row>svg{color:var(--ui-muted)}
+.app-shell .template-feature:hover{background:var(--ui-accent-soft);transform:none}
+.app-shell .template-row:hover h3{color:var(--ui-accent-hover);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:1100px){.template-featured-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.template-register{grid-template-columns:minmax(0,1fr)}.app-shell .template-feature{grid-template-columns:72px minmax(0,1fr);gap:var(--ui-space-4);padding:var(--ui-space-4)}.app-shell .template-feature .template-visual{width:72px;height:100px}.app-shell .template-feature .template-miniature{width:70px;height:94px}.app-shell .template-choice-copy h3{font-size:var(--ui-text)}.template-start{margin-top:var(--ui-space-3)}}
+
+/* Signature placement stays beside the signer's details, outside the printed form. */
+.signature-editor{border-top:1px solid var(--ui-border);padding-top:var(--ui-space-4);margin-top:var(--ui-space-2)}
+.signature-editor>summary{display:flex;align-items:center;gap:var(--ui-space-2);cursor:pointer;min-height:40px}
+.signature-editor>summary>span{margin-left:auto;color:var(--ui-muted);font-size:var(--ui-text-xs)}
+.signature-editor-body{display:grid;gap:var(--ui-space-3);padding-top:var(--ui-space-3)}
+.signature-upload{justify-self:start}
+.signature-entry{padding-top:var(--ui-space-4);border-top:1px solid var(--ui-border);display:grid;gap:var(--ui-space-3);min-width:0}
+.signature-entry-heading{display:flex;align-items:center;gap:var(--ui-space-3);min-width:0}
+.signature-entry-heading>span{flex:1;min-width:0;overflow-wrap:anywhere;font-size:var(--ui-text-sm)}
+.signature-entry-heading>button{color:var(--ui-danger);min-width:40px;min-height:40px}
+.signature-image{width:90px;height:48px;background:var(--ui-surface);border:1px solid var(--ui-border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.signature-image img{max-width:100%;max-height:100%;object-fit:contain}
+.signature-controls{display:flex;align-items:end;justify-content:space-between;gap:var(--ui-space-3);flex-wrap:wrap}
+.signature-controls label{display:flex;align-items:center;gap:var(--ui-space-2)}
+.signature-controls select{width:70px}
+.signature-size{display:flex;align-items:center;gap:var(--ui-space-2);min-width:0}
+.signature-size button{min-height:40px;min-width:36px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm)}
+.signature-size input[type=range]{padding:0;min-width:0;width:100%;flex:1;accent-color:var(--ui-accent)}
+.signature-size output{white-space:nowrap;font-size:var(--ui-text-xs);color:var(--ui-muted)}
+.signature-placement{display:flex;justify-content:space-between;align-items:center;gap:var(--ui-space-3);padding:var(--ui-space-3) var(--ui-space-4);background:var(--ui-accent-soft);color:var(--ui-accent-hover);font-size:var(--ui-text-sm)}
+.signature-placement button{flex-shrink:0;min-height:36px;text-decoration:underline;text-underline-offset:3px}
