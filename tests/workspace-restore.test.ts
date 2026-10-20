@@ -1,3 +1,6 @@
+import {saveRegister,listRegister,registerHistory} from '../src/lib/correspondence-db';
+import {newRegister} from '../src/lib/correspondence';
+import {randomUUID} from 'node:crypto';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {createHash} from 'node:crypto';import {DatabaseSync} from 'node:sqlite';
@@ -64,4 +67,14 @@ it('restores the signed original alongside its draft',async()=>{
  activateBackupRestore(preview.token,'กู้คืนข้อมูล');
  expect(readDraft(original.id).signedScanCount).toBe(1);
  expect(readSignedScan(scan.id).file.toString()).toBe('%PDF-1.4\n%%EOF');
+});
+
+it('restores register serials and event snapshots, preserving operators and rejecting stale edits',async()=>{
+ const input={...newRegister('กองทดสอบ'),from:'ต้นทาง',to:'ปลายทาง',subject:'สำรองทะเบียน'};
+ const first=saveRegister({input,actor:'ผู้ลงรับ',requestId:randomUUID(),startNumber:49});
+ const backup=exportWorkspace();saveRegister({input:{...input,subject:'แก้หลังสำรอง'},actor:'ผู้แก้',requestId:randomUUID(),id:first.id,version:first.version,reason:'ทดสอบ'});
+ const preview=await prepareBackupRestore(path.basename(backup.folder));activateBackupRestore(preview.token,'กู้คืนข้อมูล');
+ const restored=listRegister()[0];expect(restored.serial).toBe(49);expect(restored.subject).toBe(input.subject);expect(restored.createdBy).toBe('ผู้ลงรับ');expect(registerHistory(first.id)).toHaveLength(1);
+ expect(()=>saveRegister({input,actor:'ข้อมูลเก่า',requestId:randomUUID(),id:first.id,version:first.version,reason:'ค้างไว้'})).toThrow();
+ expect(saveRegister({input,actor:'ผู้รับใหม่',requestId:randomUUID()}).serial).toBe(50);
 });

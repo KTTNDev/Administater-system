@@ -1,7 +1,8 @@
 import {templates,type DocumentType} from './templates';
-export type SearchDestination='budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
+export type SearchDestination='register'|'budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
 export type WorkAction={id:string;title:string;description:string;view:SearchDestination;documentType?:DocumentType;terms:string[]};
 export const workActions:WorkAction[]=[
+ {id:'register',title:'ทะเบียนรับ–ส่งหนังสือ',description:'ลงรับ ลงส่ง ค้นผู้ดำเนินการ และสถิติรายปีงบประมาณ',view:'register',terms:['ลงรับ','ลงส่ง','ทะเบียนรับ','ทะเบียนส่ง','เล่มทะเบียน','ผู้รับหนังสือ','สถิติรับส่ง']},
  {id:'budget',title:'โอนงบประมาณ',description:'จัดทำคำขอโอนลด–โอนเพิ่ม เลือกครุภัณฑ์และอ้างระเบียบ',view:'budget',terms:['โอนงบ','โอนลด','โอนเพิ่ม','งบประมาณ','ซื้อคอม','ซื้ออุปกรณ์','ครุภัณฑ์','ราคามาตรฐาน']},
  {id:'bookings',title:'จองห้องประชุม',description:'เลือกห้องและช่วงเวลา ตรวจตารางการจอง',view:'bookings',terms:['จองห้อง','ห้องประชุม','ห้องว่าง','จองประชุม','สถานที่ประชุม','ประชุม']},
  {id:'calendar',title:'ปฏิทินและนัดหมาย',description:'ลงนัดประชุม ศึกษาดูงาน และเชื่อมหนังสือที่เกี่ยวข้อง',view:'calendar',terms:['นัดประชุม','นัดหมาย','ปฏิทิน','ศึกษาดูงาน','ตารางงาน','วันนี้','พรุ่งนี้','ประชุม','แนบหนังสือ']},

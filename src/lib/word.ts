@@ -1,3 +1,4 @@
+import {MissingOverlayPageError} from "./export-validation";
 import 'server-only';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -120,6 +121,8 @@ export async function renderWord(draft: Draft): Promise<Buffer> {
     const page=await browser.newPage();await page.route('**/*',route=>route.abort());
     await page.setContent(documentHtml(draft,assets,appendixSources(draft),{wordParagraphs:true}),{waitUntil:'load'});
     await page.waitForFunction(()=> (window as unknown as {__paginationDone:boolean}).__paginationDone,undefined,{timeout:15000});
+    const missing=await page.evaluate(()=> (window as unknown as {__missingOverlayPages:number[]}).__missingOverlayPages);
+    if(missing.length)throw new MissingOverlayPageError(missing);
     if(await page.evaluate(()=> (window as unknown as {__overflow:boolean}).__overflow))throw new Error('มีเนื้อหาบางส่วนเกินหน้ากระดาษ กรุณาตรวจตัวอย่างก่อนส่งออก Word');
     const pages=await page.evaluate(extractWordPages);
     const attachments=await attachedPages(page,draft);

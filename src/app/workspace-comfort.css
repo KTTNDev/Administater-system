@@ -74,7 +74,7 @@ html,body{overflow-x:clip}
 .app-shell .editor-main .preview-toolbar strong{color:var(--ui-ink);font-size:var(--ui-text-sm)}
 .app-shell .editor-main .preview-info,.app-shell .editor-main .preview-footer{color:var(--ui-muted);font-size:var(--ui-text-xs)}
 .app-shell .editor-main.editor-focus .editor-layout{grid-template-columns:minmax(0,1fr)}
-.app-shell .editor-main.editor-focus .preview-pane{display:none}
+.app-shell .editor-main.editor-focus .preview-pane{display:flex;position:fixed;inset:0 auto auto 0;width:min(794px,100vw);height:1123px;visibility:hidden;pointer-events:none;overflow:hidden;z-index:-1}
 .app-shell .editor-main.editor-focus .form-pane{padding-inline:max(var(--ui-space-6),calc((100% - 880px)/2))}
 @media(max-width:1000px){
  .app-shell .editor-main.editor-focus .form-pane{padding-inline:var(--ui-space-4)}

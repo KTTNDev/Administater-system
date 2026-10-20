@@ -2,11 +2,11 @@
 import {useEffect,useRef} from "react";
 import {BarChart3,BookOpen,BriefcaseBusiness,CalendarDays,ChevronRight,Cloud,DoorOpen,Files,FolderOpen,HelpCircle,LogOut,PanelLeftClose,PanelLeftOpen,Plus,Settings2,Wallet,X} from "lucide-react";
 
-export type WorkspaceView="budget"|"dashboard"|"templates"|"editor"|"settings"|"guide"|"office"|"bookings"|"calendar"|"laws"|"reports";
-const shortLabels:Partial<Record<WorkspaceView,string>>={dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
+export type WorkspaceView="register"|"budget"|"dashboard"|"templates"|"editor"|"settings"|"guide"|"office"|"bookings"|"calendar"|"laws"|"reports";
+const shortLabels:Partial<Record<WorkspaceView,string>>={register:"ทะเบียนรับ–ส่ง",dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
 const groups=[
  {label:"เอกสาร",items:[{view:"dashboard",label:"แดชบอร์ดเอกสาร",icon:FolderOpen},{view:"templates",label:"แบบหนังสือราชการ",icon:Files},{view:"reports",label:"ภาพรวมและรายงาน",icon:BarChart3}]},
- {label:"งานประจำ",items:[{view:"office",label:"งานธุรการเทศบาล",icon:BriefcaseBusiness},{view:"budget",label:"โอนงบประมาณ",icon:Wallet},{view:"calendar",label:"ปฏิทินงาน",icon:CalendarDays},{view:"bookings",label:"จองห้องประชุม",icon:DoorOpen}]},
+ {label:"งานประจำ",items:[{view:"register",label:"ทะเบียนรับ–ส่งหนังสือ",icon:BookOpen},{view:"office",label:"งานธุรการเทศบาล",icon:BriefcaseBusiness},{view:"budget",label:"โอนงบประมาณ",icon:Wallet},{view:"calendar",label:"ปฏิทินงาน",icon:CalendarDays},{view:"bookings",label:"จองห้องประชุม",icon:DoorOpen}]},
  {label:"คลังและการตั้งค่า",items:[{view:"laws",label:"คลังกฎหมายและระเบียบ",icon:BookOpen},{view:"guide",label:"คู่มือและแหล่งอ้างอิง",icon:HelpCircle},{view:"settings",label:"ตั้งค่าหน่วยงานและ Drive",icon:Settings2}]},
 ] as const;
 type Props={view:WorkspaceView;count:number;connected:boolean;local:boolean;organization:string;collapsed:boolean;mobileOpen:boolean;onToggle:()=>void;onClose:()=>void;onNavigate:(view:WorkspaceView)=>void;onLogout:()=>void};

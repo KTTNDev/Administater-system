@@ -12,6 +12,8 @@ import {db,setSetting} from '../src/lib/db';
 import {createAttachment} from '../src/lib/attachments';
 import {createAppendixImage} from '../src/lib/appendix';
 import {renderWord} from '../src/lib/word';
+import {renderPdf} from '../src/lib/pdf';
+import {MissingOverlayPageError} from '../src/lib/export-validation';
 const folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-word-'));
 beforeAll(()=>{process.env.DATABASE_PATH=path.join(folder,'data.sqlite');setSetting('storage:local',folder);fs.mkdirSync('output/word-check',{recursive:true});});
 afterAll(()=>db().close());
@@ -71,4 +73,10 @@ it('exports a transparent signature as a positioned image in both counterparts',
  expect(xml).toContain('behindDoc="0"');expect(xml).not.toContain('ลากเพื่อปรับขนาดภาพ');
  const media=await Promise.all(Object.entries(zip.files).filter(([name])=>name.startsWith('word/media/')&&!name.endsWith('/')).map(([,file])=>file.async('nodebuffer')));
  expect(media.some(buffer=>buffer.equals(bytes))).toBe(true);
+},30000);
+
+for(const copyMark of ['none', 'สำเนาคู่ฉบับ'] as const)it(`refuses to lose an overlay on a nonexistent original page (${copyMark||'original'})`,async()=>{
+ const draft:Draft={...newDraft('internal'),...base,body:'จึงเรียนมาเพื่อโปรดพิจารณา',copyMark,floatingItems:[{kind:'text',id:'missing-page',page:2,xMm:30,yMm:50,widthMm:75,fontPt:16,bold:false,text:'ข้อความต้องไม่หาย'}]};
+ await expect(renderWord(draft)).rejects.toBeInstanceOf(MissingOverlayPageError);
+ await expect(renderPdf(draft)).rejects.toBeInstanceOf(MissingOverlayPageError);
 },30000);

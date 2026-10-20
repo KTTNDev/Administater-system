@@ -8,12 +8,15 @@ import {exportWorkspace} from './storage';
 import {restoreCatalogBackup} from './backup-catalog';
 import {documentSchema} from './document';
 import {budgetSchema} from './budget';
+import {registerSchema,registerTableSql,registerEventSql} from './correspondence';
 import {officeSchema} from './office';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ correspondence_entries:registerTableSql,
+ correspondence_events:registerEventSql,
  documents:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,drive_file_id TEXT,synced_version INTEGER,deleted_at TEXT',
  document_numbers:'id TEXT PRIMARY KEY,year INTEGER NOT NULL,number TEXT NOT NULL,document_id TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(year,number)',
  recovery_drafts:'id TEXT PRIMARY KEY,scope TEXT NOT NULL,sequence INTEGER NOT NULL,data TEXT NOT NULL,updated_at TEXT NOT NULL',
@@ -49,7 +52,7 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
-  const models={documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
+  const models={correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));
@@ -58,6 +61,9 @@ function inspect(file:string){
   const images=new Set(data.document_appendix_images.map(row=>String(row.id)));
   for(const row of data.documents){const doc=documentSchema.parse(JSON.parse(String(row.data)));if(doc.attachmentFiles.some(item=>!attachments.has(item.id))||doc.appendixImages.some(item=>!images.has(item.id))||doc.floatingItems.some(item=>item.kind==='image'&&!images.has(item.image.id)))throw new Error('ชุดสำรองขาดไฟล์แนบที่หนังสืออ้างถึง');}
   for(const row of data.signed_scans)if(!documents.has(String(row.document_id))||Number(row.bytes)!==(row.file as Uint8Array).byteLength)throw new Error('ชุดสำรองมีไฟล์สแกนที่ไม่ตรงกับรายการเอกสาร');
+  const registerIds=new Set(data.correspondence_entries.map(r=>String(r.id)));
+  for(const row of data.correspondence_entries){const entry=registerSchema.parse(JSON.parse(String(row.data)));if(entry.attachmentFiles.some(a=>!attachments.has(a.id))||entry.relatedId&&!registerIds.has(entry.relatedId))throw Error('ชุดสำรองขาดรายการหรือไฟล์ที่ทะเบียนอ้างถึง');}
+  for(const row of data.correspondence_events){const entry=registerSchema.parse(JSON.parse(String(row.snapshot)));if(!registerIds.has(String(row.entry_id))||entry.attachmentFiles.some(a=>!attachments.has(a.id)))throw Error('ชุดสำรองมีประวัติทะเบียนไม่ครบ');}
   // Older versions kept links to deleted generated letters. Preserve the budget and detach that link.
   for(const row of data.budget_transfers)if(row.document_id&&!documents.has(String(row.document_id))){row.document_id=null;row.generated_version=null;}
   return data;

@@ -145,7 +145,10 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   content=document.createElement('div');content.className='content';page.append(content);root.append(page)};
   const fits=()=>content.scrollHeight<=content.clientHeight+1;
   const sourceNodes=Array.from(document.getElementById('source').children).map(node=>node.cloneNode(true));
-  const paginate=async(nodes,copy=false)=>{next(copy);for(let node of nodes){if((node.classList.contains('appendix-sheet')||node.classList.contains('appendix-page-start'))&&content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();if(!node.classList.contains('body-text')&&!node.classList.contains('appendix-text')&&node.tagName!=='TABLE'){if(content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();}
+  // An iframe may run before its parent has completed layout. Zero-sized pages
+  // falsely make every paragraph fit; wait for measurable paper before splitting.
+  const waitForPaper=async()=>{for(let attempt=0;attempt<120&&(content.clientHeight<1||content.clientWidth<1);attempt++)await new Promise(resolve=>setTimeout(resolve,16));if(content.clientHeight<1||content.clientWidth<1)throw new Error('Paper is not measurable')};
+  const paginate=async(nodes,copy=false)=>{next(copy);await waitForPaper();for(let node of nodes){if((node.classList.contains('appendix-sheet')||node.classList.contains('appendix-page-start'))&&content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();if(!node.classList.contains('body-text')&&!node.classList.contains('appendix-text')&&node.tagName!=='TABLE'){if(content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();}
     if(node.tagName==='TABLE'){
       const tableRows=Array.from(node.querySelectorAll('tbody tr')).map(row=>row.cloneNode(true));
       if(!tableRows.length){content.append(node);overflow=true;continue}
@@ -189,8 +192,11 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   }
   const production=root.querySelector('.production');if(production){const parentBox=production.parentElement.getBoundingClientRect(),box=production.getBoundingClientRect();const gap=parentBox.bottom-box.bottom;if(gap>0)production.style.marginTop=(parseFloat(getComputedStyle(production).marginTop)+gap)+'px'}
   ${previewOverlayScript}
+  const originalPages=root.querySelectorAll('.page:not(.counterpart-page)').length;
+  const missingOverlayPages=[...new Set(overlays.filter(item=>item.page>originalPages).map(item=>item.page))].sort((a,b)=>a-b);
+  window.__missingOverlayPages=missingOverlayPages;
   document.getElementById('source').remove();window.__paginationDone=true;window.__pageCount=count;window.__overflow=overflow;
-  parent.postMessage({source:'sarabun-preview',pages:count,height:document.body.scrollHeight,overflow,compactSignoff:document.body.classList.contains('compact-signoff')},'*');
+  parent.postMessage({source:'sarabun-preview',pages:count,height:document.body.scrollHeight,overflow,missingOverlayPages,compactSignoff:document.body.classList.contains('compact-signoff')},'*');
   })().catch(()=>{window.__paginationError=true;parent.postMessage({source:'sarabun-preview',error:true},'*')});
   </script></body></html>`;
 }

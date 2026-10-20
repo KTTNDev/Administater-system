@@ -1,3 +1,4 @@
+import {MissingOverlayPageError} from "@/lib/export-validation";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
@@ -12,5 +13,5 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   try {
     const data=await renderPdf(draft);
     return new NextResponse(new Uint8Array(data),{headers:{"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="draft-${id}.pdf"; filename*=UTF-8''${encodeURIComponent(draft.subject+".pdf")}`,"Cache-Control":"private, no-store"}});
-  }catch{return NextResponse.json({error:"สร้าง PDF ไม่สำเร็จ ตรวจการติดตั้ง Chromium และความยาวส่วนหัวของหนังสือ"},{status:500});}
+  }catch(error){if(error instanceof MissingOverlayPageError)return NextResponse.json({error:error.message},{status:422});return NextResponse.json({error:"สร้าง PDF ไม่สำเร็จ ตรวจการติดตั้ง Chromium และความยาวส่วนหัวของหนังสือ"},{status:500});}
 }

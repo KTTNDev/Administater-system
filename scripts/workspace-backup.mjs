@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 // Shared by manual exports and the background worker; never include credentials.
 export function exportDatabase(databaseFile,localFolder,sourceRoot){
- const tables=['documents','document_numbers','recovery_drafts','budget_transfers','office_items','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
+ const tables=['documents','document_numbers','recovery_drafts','budget_transfers','office_items','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
  const source=new DatabaseSync(databaseFile,{readOnly:true});
  let snapshot,definitions;
  try{
