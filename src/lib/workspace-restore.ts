@@ -9,12 +9,14 @@ import {restoreCatalogBackup} from './backup-catalog';
 import {documentSchema} from './document';
 import {budgetSchema} from './budget';
 import {registerSchema,registerTableSql,registerEventSql} from './correspondence';
+import {organizationInputSchema,organizationDirectorySql} from './organization-directory';
 import {officeSchema} from './office';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ organization_directory:organizationDirectorySql,
  correspondence_entries:registerTableSql,
  correspondence_events:registerEventSql,
  documents:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,drive_file_id TEXT,synced_version INTEGER,deleted_at TEXT',
@@ -52,7 +54,7 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
-  const models={correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
+  const models={organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));

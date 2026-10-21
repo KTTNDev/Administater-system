@@ -1,0 +1,18 @@
+/* Hallmark · component: organization directory · Workbench · P4 H4 E4 S5 R5 V4 */
+.manager{min-width:0;font-family:var(--ui-font);color:var(--ui-ink)}
+.header,.tools,.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header{justify-content:space-between;margin-bottom:20px}.header h2{display:flex;align-items:center;gap:8px;margin:0;font-size:20px}
+.header p,.count,.empty{color:var(--ui-muted);font-size:var(--ui-text-xs);line-height:1.7}
+.manager button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;white-space:nowrap;font:inherit}
+.manager button:disabled{opacity:.5;cursor:not-allowed}.manager :focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px}.manager button:active{transform:translateY(1px)}
+.manager label{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:var(--ui-text-sm)}
+.manager input,.manager textarea{width:100%;box-sizing:border-box;min-width:0;padding:10px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);font:inherit;background:var(--ui-surface);color:var(--ui-ink)}
+.manager textarea{resize:vertical}.manager fieldset{border:0;padding:0;min-width:0}
+.tools{align-items:flex-end}.tools label{flex:1}.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:16px 0;border-top:1px solid var(--ui-border)}
+.list li>div:first-child{min-width:0;overflow-wrap:anywhere}.list strong{font-weight:600}.list span,.list small{display:block}.list small,.list div>span{color:var(--ui-muted);font-size:var(--ui-text-xs);line-height:1.8}
+.list .actions{flex-shrink:0;gap:4px}.editor{background:var(--ui-subtle);border:1px solid var(--ui-border);padding:16px;border-radius:var(--ui-radius);margin-bottom:20px}.editor h3{margin:0 0 16px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}.wide{grid-column:1/-1}
+.error,.notice{padding:12px;line-height:1.7;border-radius:var(--ui-radius-sm)}.error{background:var(--ui-danger-soft);color:var(--ui-danger)}.notice{background:var(--ui-accent-soft);color:var(--ui-accent)}
+@media(hover:hover){.list li:hover{background:var(--ui-subtle)}.manager button:not(:disabled):hover{filter:brightness(.97)}}
+@media(max-width:600px){.fields{grid-template-columns:minmax(0,1fr)}.list li{align-items:flex-start;flex-direction:column;gap:8px}.tools label{flex-basis:100%}.header h2{font-size:18px}.editor{padding:12px}}

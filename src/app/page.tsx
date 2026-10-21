@@ -3,6 +3,7 @@ import { authenticated,localDemo,loginRequired } from "@/lib/auth";
 import { listDrafts,getSetting } from "@/lib/db";
 import { driveStatus } from "@/lib/drive";
 import { documentAssets } from "@/lib/assets";
+import {listDirectory} from '@/lib/organization-directory-db';
 import { Workspace } from "@/components/workspace";
 import { listOffice } from "@/lib/office-db";
 import { bookingSnapshot } from "@/lib/booking-db";
@@ -11,5 +12,5 @@ export const dynamic="force-dynamic";
 export const runtime="nodejs";
 export default async function Page({searchParams}:{searchParams:Promise<{view?:string;google?:string}>}) {
   if(!await authenticated())redirect("/login"); const params=await searchParams;
-  return <Workspace initialCalendar={listCalendar()} initialBookings={bookingSnapshot()} initialOffice={listOffice()} initialDocuments={listDrafts()} assets={documentAssets()} drive={driveStatus()} local={!loginRequired()||localDemo()} initialView={params.view} googleResult={params.google} savedOrganization={getSetting("organization")?JSON.parse(getSetting("organization")!):null}/>;
+  return <Workspace initialDirectory={listDirectory()} initialCalendar={listCalendar()} initialBookings={bookingSnapshot()} initialOffice={listOffice()} initialDocuments={listDrafts()} assets={documentAssets()} drive={driveStatus()} local={!loginRequired()||localDemo()} initialView={params.view} googleResult={params.google} savedOrganization={getSetting("organization")?JSON.parse(getSetting("organization")!):null}/>;
 }

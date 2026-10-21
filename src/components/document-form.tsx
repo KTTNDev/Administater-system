@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Building2, ChevronDown, FileText, ListChecks, Paperclip, PenLine, Settings2, Users } from "lucide-react";
 import type { Draft } from "@/lib/document";
 import {isSignature} from "@/lib/floating-item";
-import { organizations } from "@/lib/templates";
+import type {DirectoryOrganization,OrganizationInput} from "@/lib/organization-directory";
 import { BodyEditor } from "./body-editor";
 import { ConclusionPicker } from "./writing-assistants";
 
@@ -82,7 +82,9 @@ export function DocumentFormNav({external}:{external:boolean}){
 
 type Props={
   draft:Draft;
-  organization:typeof organizations[number];
+  organization:OrganizationInput;
+  directory:DirectoryOrganization[];
+  onManageOrganizations:()=>void;
   onChange:(patch:Partial<Draft>)=>void;
   onBusy:(busy:boolean)=>void;
   sources:Record<string,string>;
@@ -91,7 +93,7 @@ type Props={
   onPlaceSignature:(id:string)=>void;
 };
 
-export function DocumentForm({draft:d,organization,onChange:change,onBusy,sources,onSources,pages,onPlaceSignature}:Props){
+export function DocumentForm({draft:d,organization,directory,onManageOrganizations,onChange:change,onBusy,sources,onSources,pages,onPlaceSignature}:Props){
   const external=d.type==="external",memo=["internal","memorandum"].includes(d.type),minutes=d.type==="minutes";
   const correspondence=external||memo,directed=correspondence||d.type==="stamped";
   const issued=["order","regulation","rule","announcement","statement","news","certificate","stamped"].includes(d.type);
@@ -115,7 +117,7 @@ export function DocumentForm({draft:d,organization,onChange:change,onBusy,source
   return <>
     <Section id="header" title={minutes?"ข้อมูลการประชุม":"ส่วนหัวหนังสือ"} icon={<Building2 size={19}/>}>
       {["stamped","certificate"].includes(d.type)&&field("subject","ชื่อร่างในรายการเอกสาร",{wide:true,required:true})}
-      {!minutes&&<div className="agency-fill wide"><label>กรอกข้อมูลหน่วยงานอัตโนมัติ<select value="" onChange={e=>{const org=e.target.value==="saved"?organization:organizations[Number(e.target.value)];if(org)change({organization:org.name,department:org.department,address:org.address,phone:org.phone})}}><option value="">เลือกหน่วยงาน หรือพิมพ์เอง</option>{organization.name&&<option value="saved">{organization.name}</option>}{organizations.map((org,i)=><option key={i} value={i}>{org.name}</option>)}</select></label></div>}
+      {!minutes&&<div className="agency-fill wide"><label>กรอกข้อมูลหน่วยงานอัตโนมัติ<select value="" onChange={e=>{const org=directory.find(o=>o.id===e.target.value);if(org)change({organization:org.name,department:org.department,address:org.address,phone:org.phone})}}><option value="">เลือกหน่วยงาน หรือพิมพ์เอง</option>{directory.map(org=><option key={org.id} value={org.id}>{org.name}{org.department?' · '+org.department:''}</option>)}</select></label><button type="button" className="agency-manage-button" onClick={onManageOrganizations}><Settings2 size={15}/>จัดการรายชื่อหน่วยงาน</button></div>}
       {<details className="header-marks wide" open={d.urgency!=="ปกติ"||d.confidentiality!=="ปกติ"}><summary>ชั้นความเร็ว / ชั้นความลับ <span>{[d.urgency,d.confidentiality].filter(v=>v!=="ปกติ").join(" · ")||"ปกติ"}</span></summary><div className="field-grid"><label>ชั้นความเร็ว<select aria-label="ชั้นความเร็ว" value={d.urgency} onChange={e=>change({urgency:e.target.value as Draft["urgency"]})}>{["ปกติ","ด่วน","ด่วนมาก","ด่วนที่สุด"].map(v=><option key={v}>{v}</option>)}</select></label><label>ชั้นความลับ<select aria-label="ชั้นความลับ" value={d.confidentiality} onChange={e=>change({confidentiality:e.target.value as Draft["confidentiality"]})}>{["ปกติ","ลับ","ลับมาก","ลับที่สุด"].map(v=><option key={v}>{v}</option>)}</select></label>{d.confidentiality!=="ปกติ"&&<>{field("secretSetNumber","เลขที่ชุด",{type:"number"})}{field("secretSetTotal","จำนวนชุดทั้งหมด",{type:"number"})}</>}</div></details>}
       {minutes?<>{subject}{field("meetingNo","ครั้งที่",{required:true})}{date}{field("location","สถานที่",{required:true,wide:true})}<details className="header-marks wide" open={!d.organization}><summary>หน่วยงานเจ้าของรายงาน</summary>{agency}</details></>:memo?<>{agency}{contact}{field("number","เลขที่หนังสือ")}{date}{subject}</>:external||d.type==="certificate"?<>{field("number","เลขที่หนังสือ")}{agency}{field("address","ที่อยู่ส่วนราชการ",{textarea:true,wide:true})}{external&&<>{date}{subject}</>}</>:<>
         {d.type!=="stamped"&&agency}

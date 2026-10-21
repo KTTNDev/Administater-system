@@ -1,3 +1,5 @@
+import {listDirectory,saveDirectory,deleteDirectory} from '../src/lib/organization-directory-db';
+import {emptyOrganization} from '../src/lib/organization-directory';
 import {saveRegister,listRegister,registerHistory} from '../src/lib/correspondence-db';
 import {newRegister} from '../src/lib/correspondence';
 import {randomUUID} from 'node:crypto';
@@ -77,4 +79,21 @@ it('restores register serials and event snapshots, preserving operators and reje
  const restored=listRegister()[0];expect(restored.serial).toBe(49);expect(restored.subject).toBe(input.subject);expect(restored.createdBy).toBe('ผู้ลงรับ');expect(registerHistory(first.id)).toHaveLength(1);
  expect(()=>saveRegister({input,actor:'ข้อมูลเก่า',requestId:randomUUID(),id:first.id,version:first.version,reason:'ค้างไว้'})).toThrow();
  expect(saveRegister({input,actor:'ผู้รับใหม่',requestId:randomUUID()}).serial).toBe(50);
+});
+
+it('backs up and restores editable agency names, retaining an intentionally empty directory',async()=>{
+ const a=saveDirectory({id:randomUUID(),version:0,input:{...emptyOrganization(),name:'หน่วยงานสำรอง',department:'กองคลัง'}});
+ const backup=exportWorkspace();
+ deleteDirectory(a.id,a.version);
+ const preview=await prepareBackupRestore(path.basename(backup.folder));
+ expect(preview.counts.organization_directory).toBe(4);
+ activateBackupRestore(preview.token,'กู้คืนข้อมูล');
+ const restored=listDirectory().find(e=>e.id===a.id)!;
+ expect(restored.name).toBe(a.name);expect(restored.version).toBeGreaterThan(a.version);
+ expect(()=>saveDirectory({id:a.id,version:a.version,input:a})).toThrow(/เปลี่ยน/);
+ for(const entry of listDirectory())deleteDirectory(entry.id,entry.version);
+ const empty=exportWorkspace();
+ saveDirectory({id:randomUUID(),version:0,input:{...emptyOrganization(),name:'เพิ่มทีหลัง'}});
+ const emptyPreview=await prepareBackupRestore(path.basename(empty.folder));activateBackupRestore(emptyPreview.token,'กู้คืนข้อมูล');
+ expect(listDirectory()).toEqual([]);
 });
