@@ -1,19 +1,18 @@
 {
-  "date": "2026-10-10",
+  "date": "2026-10-22",
   "scope": "app",
   "framework": {
-    "next": "16.3.4",
+    "next": "16.4.0",
     "react": "19.2.8",
     "source": "package.json"
   },
   "existing": {
-    "fonts": "Local Leelawadee UI, Tahoma, Segoe UI; printed document uses embedded TH Sarabun New",
-    "palette": "Muted green #226b55 with near-white surfaces",
-    "source": "src/app/system-theme.css:2",
-    "motion": "CSS transitions and existing smooth section scrolling; no motion library",
+    "fonts": "Tahoma, Segoe UI offline; document fonts remain separate",
+    "palette": "Locked warm neutral and blue tokens in src/app/workspace-tokens.css",
+    "motion": "CSS transitions and section scrolling; no animation library",
     "icons": "lucide-react"
   },
-  "decision": "User explicitly selected Notion. Use quiet neutral navigation, blue primary actions, recent drafts, visual template choices, and collapsible secondary details. Preserve official document forms and rendering.",
+  "decision": "Keep design.md and existing routes/forms; refine command search, keyboard feedback, navigation legibility and restrained CSS frost without new dependencies.",
   "genre": "modern-minimal",
   "macrostructure": "Workbench",
   "theme": "Notion-inspired neutral workspace",

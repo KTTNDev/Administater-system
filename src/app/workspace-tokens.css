@@ -34,5 +34,12 @@
   --ui-hover: #eeedea;
   --ui-paper-rule: #d4d1cb;
   --ui-shadow: 0 2px 8px #37352f08;
+  --ui-border-strong: #cbc9c3;
+  --ui-glass-surface: #fffffff2;
+  --ui-backdrop: #37352f52;
+  --ui-overlay-shadow: 0 20px 64px #37352f26;
+  --ui-motion-fast: 140ms;
+  --ui-motion-enter: 180ms;
+  --ui-ease-out: cubic-bezier(.2,.8,.2,1);
   --sidebar-width: 248px;
 }

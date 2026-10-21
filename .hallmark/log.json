@@ -123,5 +123,51 @@
     ],
     "enrichment": "none",
     "limits": "Document renderer preserved. Physical printer, second-PC migration, and live-account Drive acceptance remain in the release checklist."
+  },
+  {
+    "date": "2026-10-22",
+    "scope": "app",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "theme": "Notion-inspired neutral workspace",
+    "targets": [
+      "action-search",
+      "shared navigation",
+      "document row feedback"
+    ],
+    "preEmitCritique": {
+      "P": 5,
+      "H": 4,
+      "E": 4,
+      "S": 5,
+      "R": 5,
+      "V": 4
+    },
+    "enrichment": "Existing Lucide icons, restrained CSS frost and motion; no new runtime dependency",
+    "validation": {
+      "typecheck": "passed",
+      "unit": "147 passed",
+      "uiFinal": "23 passed; 56 unchanged form flow/scroll cases passed in the broad run",
+      "widths": [
+        320,
+        375,
+        414,
+        768,
+        1440
+      ],
+      "shortViewport": "375x450 passed",
+      "contrast": "5 token pairs checked; output/quiet-contrast.json"
+    },
+    "artifacts": [
+      "docs/UI-REFERENCES.md",
+      "output/quiet-final-e2e.log",
+      "output/quiet-search-320.png",
+      "output/quiet-search-1440.png"
+    ],
+    "exceptions": [
+      "Existing offline font and document rendering retained.",
+      "Secondary result descriptions wrap for Thai readability; action titles stay on one line.",
+      "System colors used in forced-colors mode."
+    ]
   }
 ]

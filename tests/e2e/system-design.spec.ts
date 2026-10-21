@@ -69,6 +69,14 @@ test('small screens support closing the menu with Escape and navigating without 
 });
 
 test('document search, status filters and row actions fit narrow screens',async({page})=>{
+ test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Create the document only in a disposable release fixture.');
+ await page.getByRole('button',{name:'สร้างหนังสือ',exact:true}).click();
+ await page.locator('.template-card').filter({has:page.getByRole('heading',{name:'หนังสือภายใน',exact:true})}).click();
+ await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง',exact:true}).click();
+ await page.getByLabel('เรื่อง / ชื่อร่าง').fill('เอกสารทดสอบปุ่มบนจอแคบ '+Date.now());
+ await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();
+ await expect(page.locator('.toast[role=status]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
+ await page.getByRole('button',{name:'กลับรายการ',exact:true}).click();
  for(const width of [320,375,414,768]){
   await page.setViewportSize({width,height:900});
   const list=page.getByRole('region',{name:'รายการเอกสาร',exact:true});
