@@ -1,6 +1,6 @@
 import {authenticated} from '@/lib/auth';
 import {listRegister,readRegister,registerHistory} from '@/lib/correspondence-db';
-import {filterRegister} from '@/lib/correspondence';
+import {filterRegister,registerFilterSchema} from '@/lib/correspondence';
 import {csv,registerCsv,statisticsRows,historyCsv,registerHtml} from '@/lib/correspondence-export';
 import {documentAssets} from '@/lib/assets';
 import {chromium} from 'playwright';
@@ -11,8 +11,10 @@ export async function GET(request:Request){
  if(!await authenticated())return Response.json({error:'กรุณาเข้าสู่ระบบ'},{status:401});
  try{
  const query=new URL(request.url).searchParams,mode=z.enum(['csv','stats-csv','history-csv','pdf','stats-pdf','stamp-pdf']).parse(query.get('mode')||'csv');
- const filter=Object.fromEntries(['direction','department','start','end','query','status'].map(k=>[k,query.get(k)||'']));
- if(filter.start&&filter.end&&filter.start>filter.end)return Response.json({error:'ช่วงวันที่ไม่ถูกต้อง'},{status:400});
+ const recordExport=mode==='stamp-pdf'||mode==='history-csv';
+ const parsedFilter=registerFilterSchema.safeParse(recordExport?{}:Object.fromEntries(['direction','department','start','end','query','status'].map(k=>[k,query.get(k)||''])));
+ if(!parsedFilter.success)return Response.json({error:'เงื่อนไขรายงานไม่ถูกต้อง: '+parsedFilter.error.issues[0].message},{status:400});
+ const filter=parsedFilter.data;
  const id=query.get('id'),entries=mode==='stamp-pdf'?[readRegister(z.string().uuid().parse(id))]:filterRegister(listRegister(),filter);
  const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
  if(mode.endsWith('csv')){const body=mode==='history-csv'?historyCsv(registerHistory(z.string().uuid().parse(id))):mode==='stats-csv'?csv(statisticsRows(entries)):registerCsv(entries);return new Response(body,{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="correspondence-${mode}.csv"`}});}

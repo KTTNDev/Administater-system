@@ -9,6 +9,14 @@ function decode(r:Record<string,unknown>):RegisterEntry{return {...registerSchem
 export function listRegister(){registerTables();return db().prepare(`SELECT e.*,(SELECT group_concat(actor||' '||reason,' ') FROM correspondence_events h WHERE h.entry_id=e.id) history_text FROM correspondence_entries e ORDER BY e.year DESC,e.serial DESC,e.created_at DESC`).all().map(decode);}
 export function readRegister(id:string){registerTables();const row=db().prepare('SELECT * FROM correspondence_entries WHERE id=?').get(id);if(!row)throw Error('ไม่พบรายการทะเบียน');return decode(row);}
 export function registerHistory(id:string):RegisterEvent[]{registerTables();return db().prepare("SELECT * FROM correspondence_events WHERE entry_id=? ORDER BY json_extract(snapshot,'$.version'),at,id").all(id).map(r=>({id:String(r.id),entryId:String(r.entry_id),action:String(r.action),actor:String(r.actor),at:String(r.at),reason:String(r.reason),snapshot:JSON.parse(String(r.snapshot))}));}
+// Read fields and history from the same database snapshot, including changes in other windows.
+export function registerDetail(id:string){
+ registerTables();
+ return db().transaction(()=>{
+  const entry=readRegister(id),history=registerHistory(id);
+  return {entry:{...entry,historyText:history.map(h=>h.actor+' '+h.reason).join(' ')},history};
+ })();
+}
 const command=z.object({input:registerSchema,actor:z.string().trim().min(1,'ระบุชื่อผู้ดำเนินการ').max(200),reason:z.string().trim().max(2000).default(''),id:z.string().uuid().optional(),version:z.number().int().positive().optional(),requestId:z.string().uuid(),startNumber:z.number().int().min(1).max(9999999).default(1)});
 export function saveRegister(value:unknown){const c=command.parse(value),input=c.input;registerTables();validateAttachments(input);
  return db().transaction(()=>{

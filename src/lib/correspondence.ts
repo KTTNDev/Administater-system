@@ -23,11 +23,24 @@ export const fiscalRange=(year:number)=>({start:`${year-544}-10-01`,end:`${year-
 export const thaiDay=(value:string)=>value&&!Number.isNaN(Date.parse(value))?new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(value.length===10?value+'T00:00:00+07:00':value)):'';
 export const thaiTime=(value:string)=>new Intl.DateTimeFormat('th-TH',{dateStyle:'medium',timeStyle:'medium',timeZone:'Asia/Bangkok'}).format(new Date(value));
 export function newRegister(department:string,direction:RegisterInput['direction']='incoming'):RegisterInput{return {department,direction,registeredDate:todayBangkok(),registeredTime:new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'}).format(new Date()),number:'',documentDate:todayBangkok(),from:direction==='outgoing'?department:'',to:direction==='incoming'?department:'',subject:'',practice:'',notes:'',owner:'',status:'new',urgency:'normal',documentId:'',relatedId:'',attachmentFiles:[]};}
-export type RegisterFilter={direction?:string;department?:string;start?:string;end?:string;query?:string;status?:string};
+export const registerFilterSchema=z.object({
+ direction:z.union([z.literal(''),z.enum(['incoming','outgoing'])]).optional(),
+ department:z.string().max(500).optional(),
+ start:z.union([z.literal(''),day]).optional(),end:z.union([z.literal(''),day]).optional(),
+ query:z.string().max(2000).optional(),
+ status:z.union([z.literal(''),z.enum(['new','working','done','cancelled'])]).optional(),
+}).refine(f=>!f.start||!f.end||f.start<=f.end,{message:'วันเริ่มต้นต้องไม่อยู่หลังวันสิ้นสุด',path:['end']});
+export type RegisterFilter=z.infer<typeof registerFilterSchema>;
+function searchableDates(date:string){
+ const year=Number(date.slice(0,4)),month=Number(date.slice(5,7)),day=Number(date.slice(8,10));
+ const aliases=[date,thaiDay(date)];
+ for(const y of [year,year+543])for(const m of [String(month),String(month).padStart(2,'0')])for(const d of [String(day),String(day).padStart(2,'0')])aliases.push(d+'/'+m+'/'+y);
+ return aliases;
+}
 export const normalizeSearch=(s:string)=>s.normalize('NFKC').replace(/[๐-๙]/g,c=>String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c))).toLocaleLowerCase('th').replace(/\s+/g,' ').trim();
 export function filterRegister(entries:RegisterEntry[],f:RegisterFilter){const terms=normalizeSearch(f.query||'').split(' ').filter(Boolean);return entries.filter(e=>{
  if(f.direction&&e.direction!==f.direction||f.department&&e.department!==f.department||f.start&&e.registeredDate<f.start||f.end&&e.registeredDate>f.end||f.status&&e.status!==f.status)return false;
- const dates=[e.registeredDate,e.documentDate].flatMap(d=>[d,thaiDay(d),`${d.slice(8,10)}/${d.slice(5,7)}/${Number(d.slice(0,4))+543}`]);
+ const dates=[e.registeredDate,e.documentDate].flatMap(searchableDates);
  const text=normalizeSearch([e.serial,e.year+543,...Object.values(e).filter(x=>typeof x==='string'),...dates,statusLabels[e.status],e.attachmentFiles.map(a=>a.name+' '+a.description).join(' ')].join(' '));return terms.every(t=>text.includes(t));
 });}
 export function registerStats(entries:RegisterEntry[]){const months=new Map<string,{month:string;incoming:number;outgoing:number;done:number;pending:number;cancelled:number}>();for(const e of entries){const month=e.registeredDate.slice(0,7);const row=months.get(month)||{month,incoming:0,outgoing:0,done:0,pending:0,cancelled:0};if(e.status==='cancelled')row.cancelled++;else{row[e.direction]++;if(e.status==='done')row.done++;else row.pending++;}months.set(month,row);}return [...months.values()].sort((a,b)=>a.month.localeCompare(b.month));}

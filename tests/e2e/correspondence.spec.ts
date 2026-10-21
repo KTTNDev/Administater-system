@@ -39,7 +39,7 @@ test('outgoing book starts independently, cancellation retains numbers, and navi
 for(const width of [320,375,414,768,1440])test(`register page and paper form fit ${width}px without outer horizontal overflow`,async({page})=>{
  await page.setViewportSize({width,height:900});const form=await openNew(page);
  await expect(form.getByLabel('เรื่อง',{exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
- await form.getByLabel('เรื่อง',{exact:true}).fill('ทดสอบหน้าจอ');await form.getByLabel('หมายเหตุ',{exact:true}).fill('ข้อความยาว '.repeat(100));await form.getByLabel('ผู้ลงรับ / ลงส่ง').scrollIntoViewIfNeeded();
+ await form.getByLabel('เรื่อง',{exact:true}).fill('ทดสอบหน้าจอ');await form.getByRole('textbox',{name:'หมายเหตุ',exact:true}).fill('ข้อความยาว '.repeat(100));await form.getByLabel('ผู้ลงรับ / ลงส่ง').scrollIntoViewIfNeeded();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);await page.screenshot({path:`output/register-${width}.png`,fullPage:true});
 });
 
@@ -52,4 +52,71 @@ test('ledger paginates while search and CSV still cover every matching record',a
  await page.reload();await page.getByLabel('ค้นในทะเบียน',{exact:false}).fill(department);await expect(page.getByRole('table').locator('tbody tr')).toHaveCount(50);
  await page.getByRole('navigation',{name:'หน้าทะเบียน'}).getByRole('button',{name:'ถัดไป',exact:true}).click();await expect(page.getByRole('table').locator('tbody tr')).toHaveCount(1);
  const download=await request.get((await page.getByRole('link',{name:'Excel (CSV)'}).getAttribute('href'))!);expect((await download.text()).split('\r\n')).toHaveLength(52);
+});
+
+test('reopening from a stale list reads the latest version and concurrent edits cannot overwrite it',async({page,context})=>{
+ const form=await openNew(page),subject=token();
+ await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);
+ await form.getByLabel('จาก',{exact:true}).fill('สำนักงานจังหวัด');
+ await form.getByLabel('ถึง',{exact:true}).fill('กองช่าง');
+ await form.getByLabel('เรื่อง',{exact:true}).fill(subject);
+ await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้รับคนแรก');
+ await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();
+ await expect(page.getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
+ const other=await context.newPage();
+ try{
+  await other.goto('/?view=register');
+  await other.getByLabel('ค้นในทะเบียน',{exact:false}).fill(subject);
+  await expect(other.getByRole('table').locator('tbody tr')).toHaveCount(1);
+  await form.getByLabel('ผู้รับผิดชอบเรื่อง').fill('เจ้าหน้าที่คนล่าสุด');
+  await form.getByLabel('เหตุผล / รายละเอียดการแก้ไข').fill('ส่งต่อให้ผู้รับผิดชอบ');
+  await form.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+  await expect(form.getByRole('heading',{name:'ประวัติรายการ (2)'})).toBeVisible();
+  await other.getByRole('table').getByRole('button').first().click();
+  const otherForm=other.getByRole('form',{name:'กรอกทะเบียนหนังสือ'});
+  await expect(otherForm.getByLabel('ผู้รับผิดชอบเรื่อง')).toHaveValue('เจ้าหน้าที่คนล่าสุด');
+  await expect(otherForm.getByRole('heading',{name:'ประวัติรายการ (2)'})).toBeVisible();
+  await expect(other.getByRole('table')).toContainText('เจ้าหน้าที่คนล่าสุด');
+  await form.getByRole('textbox',{name:'หมายเหตุ',exact:true}).fill('ข้อมูลใหม่จากหน้าต่างแรก');
+  await form.getByLabel('เหตุผล / รายละเอียดการแก้ไข').fill('เพิ่มเติมหมายเหตุ');
+  await form.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+  await expect(form.getByRole('heading',{name:'ประวัติรายการ (3)'})).toBeVisible();
+  await otherForm.getByRole('textbox',{name:'หมายเหตุ',exact:true}).fill('ข้อมูลจากหน้าต่างเก่า');
+  await otherForm.getByLabel('เหตุผล / รายละเอียดการแก้ไข').fill('พยายามแก้ข้อมูลเก่า');
+  await otherForm.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+  await expect(other.getByRole('alert').filter({hasText:'รายการถูกแก้ไขแล้ว'})).toContainText('รายการถูกแก้ไขแล้ว');
+  await expect(otherForm.getByRole('textbox',{name:'หมายเหตุ',exact:true})).toHaveValue('ข้อมูลจากหน้าต่างเก่า');
+  other.once('dialog',d=>d.accept());
+  await otherForm.getByRole('button',{name:'ปิดรายการ'}).click();
+  await other.getByRole('table').getByRole('button').first().click();
+  await expect(otherForm.getByRole('textbox',{name:'หมายเหตุ',exact:true})).toHaveValue('ข้อมูลใหม่จากหน้าต่างแรก');
+  await expect(otherForm.getByRole('heading',{name:'ประวัติรายการ (3)'})).toBeVisible();
+ }finally{await other.close();}
+});
+test('invalid report periods block export while saved record history remains downloadable',async({page,request})=>{
+ const form=await openNew(page),subject=token();
+ await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);
+ await form.getByLabel('จาก',{exact:true}).fill('สำนักงานจังหวัด');
+ await form.getByLabel('ถึง',{exact:true}).fill('กองช่าง');
+ await form.getByLabel('เรื่อง',{exact:true}).fill(subject);
+ await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้ลงรับ');
+ await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();
+ await expect(page.getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
+ await page.getByRole('combobox',{name:'ช่วงเวลา',exact:true}).selectOption('custom');
+ await page.getByLabel('ตั้งแต่',{exact:true}).fill('2026-10-21');
+ await page.getByLabel('ถึง',{exact:true}).and(page.locator('input[type=date]')).fill('2026-10-01');
+ await expect(page.getByRole('alert').filter({hasText:'ตรวจช่วงวันที่'})).toContainText('ตรวจช่วงวันที่');
+ for(const label of ['Excel (CSV)','พิมพ์ / PDF']){
+  const link=page.getByRole('link',{name:label,exact:true});
+  await expect(link).toHaveAttribute('aria-disabled','true');
+  await expect(link).not.toHaveAttribute('href');
+ }
+ const history=await request.get((await form.getByRole('link',{name:'ดาวน์โหลดประวัติ CSV'}).getAttribute('href'))!);
+ expect(history.status()).toBe(200);expect(await history.text()).toContain(subject);
+ for(const params of ['start=2026-02-30','end=garbage','start=2026-10-21&end=2026-10-01','direction=wrong','status=wrong']){
+  const response=await request.get('/api/correspondence/export?mode=csv&'+params);
+  expect(response.status()).toBe(400);expect((await response.json()).error).toContain('เงื่อนไขรายงานไม่ถูกต้อง');
+ }
+ await page.getByLabel('ตั้งแต่',{exact:true}).fill('2026-10-01');
+ await expect(page.getByRole('link',{name:'Excel (CSV)',exact:true})).toHaveAttribute('href',/mode=csv/);
 });

@@ -1,8 +1,8 @@
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';
 import {db} from '../src/lib/db';
-import {saveRegister,listRegister,readRegister,registerHistory} from '../src/lib/correspondence-db';
-import {newRegister,filterRegister,fiscalRange,fiscalYear,registerStats,registerSchema} from '../src/lib/correspondence';
+import {saveRegister,listRegister,readRegister,registerHistory,registerDetail} from '../src/lib/correspondence-db';
+import {newRegister,filterRegister,fiscalRange,fiscalYear,registerStats,registerSchema,registerFilterSchema} from '../src/lib/correspondence';
 import {csv,registerCsv,registerHtml} from '../src/lib/correspondence-export';
 let folder:string;
 beforeEach(()=>{folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-register-'));vi.stubEnv('DATABASE_PATH',path.join(folder,'test.sqlite'));});
@@ -42,4 +42,27 @@ it('exports safe CSV and escaped print content without altering actual data',()=
  const a=saveRegister({...command(),input:{...input(),subject:'=HYPERLINK("x")',notes:'<script>bad()</script>'}});
  expect(csv([['  +SUM(1,2)','ordinary','a"b']])).toContain('"\'  +SUM(1,2)"');expect(registerCsv([a])).toContain('"\'=HYPERLINK');
  const html=registerHtml([a],{mode:'book',description:'<bad>',font:'',bold:''});expect(html).not.toContain('<script>');expect(html).toContain('&lt;script&gt;');expect(html).toContain('เลขทะเบียนรับ');expect(readRegister(a.id).subject).toBe('=HYPERLINK("x")');
+});
+
+it('opens current fields and matching history after another window has edited a record',()=>{
+ const original=saveRegister(command());
+ const updated=saveRegister({...command(),id:original.id,version:original.version,input:{...original,owner:'มาลี',notes:'เอกสารเพิ่มเติม'},actor:'ผู้แก้ไขคนที่สอง',reason:'แนบข้อมูลเพิ่ม'});
+ const detail=registerDetail(original.id);
+ expect(detail.entry.version).toBe(updated.version);
+ expect(detail.entry.owner).toBe('มาลี');
+ expect(detail.history.at(-1)?.snapshot.version).toBe(detail.entry.version);
+ expect(filterRegister([detail.entry],{query:'ผู้แก้ไขคนที่สอง แนบข้อมูลเพิ่ม'})).toHaveLength(1);
+ expect(()=>registerDetail(randomUUID())).toThrow(/ไม่พบ/);
+});
+it('finds dates with Thai or Arabic digits, Buddhist or Gregorian years and optional leading zeroes',()=>{
+ const entry=saveRegister({...command(),input:{...input(),registeredDate:'2026-02-03',documentDate:'2026-01-02'}});
+ for(const query of ['3/2/2569','03/02/2569','03/2/2026','3/02/2026','๓/๒/๒๕๖๙','2/1/2569','02/01/2026','2026-02-03','3 กุมภาพันธ์'])
+  expect(filterRegister([entry],{query}),query).toHaveLength(1);
+ expect(filterRegister([entry],{query:'3/2/2568'})).toHaveLength(0);
+});
+it('validates report calendar dates, range order and enumerated filters',()=>{
+ for(const filter of [{start:'2026-02-30'},{end:'not-a-date'},{start:'2026-10-02',end:'2026-10-01'},{direction:'wrong'},{status:'wrong'}])
+  expect(registerFilterSchema.safeParse(filter).success).toBe(false);
+ for(const filter of [{},{start:'2024-02-29'},{end:'2026-10-01'},{start:'2026-10-01',end:'2026-10-01'},{direction:'',status:''}])
+  expect(registerFilterSchema.safeParse(filter).success).toBe(true);
 });
