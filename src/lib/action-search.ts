@@ -1,5 +1,5 @@
 import {templates,type DocumentType} from './templates';
-export type SearchDestination='register'|'budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
+export type SearchDestination='inventory'|'register'|'budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
 export type WorkAction={id:string;title:string;description:string;view:SearchDestination;documentType?:DocumentType;terms:string[]};
 export const workActions:WorkAction[]=[
  {id:'register',title:'ทะเบียนรับ–ส่งหนังสือ',description:'ลงรับ ลงส่ง ค้นผู้ดำเนินการ และสถิติรายปีงบประมาณ',view:'register',terms:['ลงรับ','ลงส่ง','ทะเบียนรับ','ทะเบียนส่ง','เล่มทะเบียน','ผู้รับหนังสือ','สถิติรับส่ง']},
@@ -8,6 +8,7 @@ export const workActions:WorkAction[]=[
  {id:'calendar',title:'ปฏิทินและนัดหมาย',description:'ลงนัดประชุม ศึกษาดูงาน และเชื่อมหนังสือที่เกี่ยวข้อง',view:'calendar',terms:['นัดประชุม','นัดหมาย','ปฏิทิน','ศึกษาดูงาน','ตารางงาน','วันนี้','พรุ่งนี้','ประชุม','แนบหนังสือ']},
  {id:'laws',title:'คลังกฎหมายและระเบียบ',description:'ค้นหา อ่าน เก็บไฟล์กฎหมายและบันทึกโน้ต',view:'laws',terms:['กฎหมาย','ระเบียบ','คลังกฎหมาย','อ่านกฎหมาย','ข้อกฎหมาย','ค้นระเบียบ','อ้างอิง','โน้ต','กฏหมาย']},
  {id:'documents',title:'ค้นหาเอกสารในทะเบียน',description:'ค้นหนังสือจากเรื่อง เลขที่ หน่วยงาน และเนื้อหา',view:'dashboard',terms:['ค้นหนังสือ','ค้นหาเอกสาร','หาเอกสาร','หนังสือเก่า','ทะเบียน','เลขที่','ค้นหาเรื่อง','ประวัติหนังสือ']},
+ {id:'inventory',title:'พัสดุและครุภัณฑ์',description:'รับเข้า เบิกจ่าย ยืมคืน และจัดการรูปภาพ',view:'inventory',terms:['วัสดุ','ครุภัณฑ์','คลัง','สต็อก','เบิก','ยืม','pos']},
  {id:'office',title:'งานธุรการเทศบาล',description:'จัดการงานรับ–ส่งหนังสือและติดตามงานธุรการ',view:'office',terms:['ธุรการ','หนังสือเข้า','หนังสือออก','รับหนังสือ','ส่งหนังสือ','ติดตามงาน','รับส่ง']},
  {id:'reports',title:'ภาพรวมและรายงาน',description:'ดูสถิติเอกสาร ปฏิทิน ห้องประชุม และการใช้งาน',view:'reports',terms:['รายงาน','สถิติ','ภาพรวม','แดชบอร์ด','สรุปงาน','จำนวนหนังสือ']},
  {id:'drive',title:'เชื่อมและซิงก์ Google Drive',description:'เปิดตั้งค่าเพื่อเชื่อมบัญชี ทดสอบ และอัปโหลดข้อมูล',view:'settings',terms:['drive','google','ไดรฟ์','ไดร์ฟ','ไดร์','ซิงก์','ซิงค์','sync','อัปโหลด','อัพโหลด','คลาวด์']},

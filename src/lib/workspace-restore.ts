@@ -10,12 +10,15 @@ import {documentSchema} from './document';
 import {budgetSchema} from './budget';
 import {registerSchema,registerTableSql,registerEventSql} from './correspondence';
 import {organizationInputSchema,organizationDirectorySql} from './organization-directory';
+import {inventorySchemas,inventoryItemSchema,movementSchema} from './inventory';
+import {validateInventoryBackup} from './inventory-validation';
 import {officeSchema} from './office';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ ...inventorySchemas,
  organization_directory:organizationDirectorySql,
  correspondence_entries:registerTableSql,
  correspondence_events:registerEventSql,
@@ -54,8 +57,9 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
-  const models={organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
+  const models={inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
+  validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));
   for(const row of data.document_numbers)if(!documents.has(String(row.document_id)))throw new Error('ชุดสำรองมีเลขทะเบียนที่ไม่ตรงกับเอกสาร');
@@ -107,6 +111,7 @@ export function activateBackupRestore(token:string,confirmation:string){
     const row={...input};
     // Keep stale editor tabs from matching a restored record's old version (ABA).
     if(table!=='audit'&&typeof row.version==='number')row.version=Math.max(row.version,floor[table])+1;
+    if(table==='inventory_files')row.drive_id='';
     if(table==='documents'){row.drive_file_id=null;row.synced_version=null;}
     if(table==='budget_transfers')row.generated_version=null;
     const keys=Object.keys(row);

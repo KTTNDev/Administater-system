@@ -169,5 +169,42 @@
       "Secondary result descriptions wrap for Thai readability; action titles stay on one line.",
       "System colors used in forced-colors mode."
     ]
+  },
+  {
+    "date": "2026-10-22",
+    "scope": "inventory workspace",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "theme": "existing locked design.md",
+    "scores": {
+      "P": 5,
+      "H": 4,
+      "E": 4,
+      "S": 4,
+      "R": 5,
+      "V": 4
+    },
+    "validation": {
+      "e2e": "16 passed on release build",
+      "unit": "154 passed in full suite; final inventory 9 and Drive mock 3 passed",
+      "widths": [
+        320,
+        375,
+        414,
+        768,
+        1440
+      ],
+      "print": "receipt, loan, 60-line 7-page form visually inspected"
+    },
+    "artifacts": [
+      "docs/INVENTORY.md",
+      "output/inventory-verified-e2e.log",
+      "output/inventory-320.png",
+      "output/inventory-1440.png",
+      "output/inventory-long-last.png"
+    ],
+    "exceptions": [
+      "Offline fonts and existing design tokens retained. Real-account Drive upload not executed; tested folder organization and retries with mocked Google API."
+    ]
   }
 ]

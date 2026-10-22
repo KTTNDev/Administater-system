@@ -128,3 +128,18 @@ export async function verifyDriveFolder(id:string,privateOnly:boolean){
  return {id,name:"โฟลเดอร์ Drive ที่กำหนด",publicAccess:null};
 }
 export async function uploadBackupFile(file:string,root:string,batch:string,rootVerified=false){if(!rootVerified)await verifyDriveFolder(root,true);const drive=await driveClient(),backupRoot=await ensureFolder(drive,"สำรองข้อมูลระบบ",root),folder=await ensureFolder(drive,batch,backupRoot);const bytes=fs.readFileSync(file),hash=createHash("sha256").update(bytes).digest("hex"),key=`drive:backup:${getSetting("google:account")}:${root}:${batch}:${path.basename(file)}:${hash}`;let id=getSetting(key);if(id){try{const f=await drive.files.get({fileId:id,fields:"id,trashed"});if(!f.data.trashed)return id;id=undefined;}catch(e){if((e as {code?:number}).code!==404)throw e;}}if(!id){id=(await drive.files.generateIds({count:1})).data.ids?.[0];if(!id)throw new Error("สร้างรหัสไฟล์ไม่สำเร็จ");setSetting(key,id);}await drive.files.create({requestBody:{id,name:path.basename(file),parents:[folder],appProperties:{application:"sarabun",hash}},media:{mimeType:file.endsWith(".pdf")?"application/pdf":"application/json",body:Readable.from(bytes)},fields:"id"});return id;}
+
+export async function uploadInventoryFile(input:{id:string;ownerId:string;folder:string;kind:string;name:string;mime:string;bytes:Buffer;hash:string}){
+ const run=async()=>{
+ const drive=await driveClient(),root=storageConfig().driveRoot.trim()||await ensureFolder(drive,"สารบรรณ");
+ const base=await ensureFolder(drive,"พัสดุและครุภัณฑ์",root),kind=await ensureFolder(drive,input.kind,base),folder=await ensureFolder(drive,input.folder,kind);
+ const key="drive:inventory:"+getSetting("google:account")+":"+input.id+":"+input.hash;
+ let id=getSetting(key);
+ if(!id){const found=await drive.files.list({q:"trashed=false and appProperties has { key='inventoryFileId' and value='"+escapeDriveQuery(input.id)+"' } and appProperties has { key='hash' and value='"+escapeDriveQuery(input.hash)+"' }",fields:'files(id)',pageSize:1});id=found.data.files?.[0]?.id||undefined;if(id)setSetting(key,id);}
+ if(id){try{const f=await drive.files.get({fileId:id,fields:"id,trashed"});if(!f.data.trashed)return id;id=undefined;}catch(e){if((e as {code?:number}).code!==404)throw e;}}
+ if(!id){id=(await drive.files.generateIds({count:1})).data.ids?.[0];if(!id)throw Error("สร้างรหัสไฟล์ไม่สำเร็จ");setSetting(key,id);}
+ await drive.files.create({requestBody:{id,name:input.name,parents:[folder],appProperties:{application:"sarabun",inventoryId:input.ownerId,inventoryFileId:input.id,hash:input.hash}},media:{mimeType:input.mime,body:Readable.from(input.bytes)},fields:"id"});
+ return id;
+ };
+ const pending=(shared.sarabunSyncQueue||Promise.resolve()).then(run,run);shared.sarabunSyncQueue=pending.catch(()=>{});return pending;
+}

@@ -4,7 +4,7 @@ import {Search,ArrowUpRight,X,FilePlus2,BookOpen,Wallet,DoorOpen,CalendarDays,Fo
 import {searchWorkActions,workActions,type WorkAction,type SearchDestination} from '@/lib/action-search';
 import s from './action-search.module.css';
 
-const icons:Record<SearchDestination,LucideIcon>={register:BookOpen,budget:Wallet,bookings:DoorOpen,calendar:CalendarDays,laws:BookOpen,dashboard:FolderOpen,office:BriefcaseBusiness,reports:ChartNoAxesCombined,settings:Settings2,templates:Files,guide:HelpCircle};
+const icons:Record<SearchDestination,LucideIcon>={inventory:BriefcaseBusiness,register:BookOpen,budget:Wallet,bookings:DoorOpen,calendar:CalendarDays,laws:BookOpen,dashboard:FolderOpen,office:BriefcaseBusiness,reports:ChartNoAxesCombined,settings:Settings2,templates:Files,guide:HelpCircle};
 const quickStarts=['create-external','create-internal'].map(id=>workActions.find(action=>action.id===id)!);
 
 export function ActionSearch({onChoose}:{onChoose:(action:WorkAction)=>void}){
