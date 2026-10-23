@@ -14,6 +14,8 @@ import {createAppendixImage} from '../src/lib/appendix';
 import {renderWord} from '../src/lib/word';
 import {renderPdf} from '../src/lib/pdf';
 import {MissingOverlayPageError} from '../src/lib/export-validation';
+// Text may span styled runs and explicit no-break groups; assert logical paragraphs, not ZIP serialization boundaries.
+const paragraphTexts=(xml:string)=>Array.from(xml.matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g),p=>Array.from(p[1].matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g),m=>m[1]).join('').replaceAll('\u2060',''));
 const folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-word-'));
 beforeAll(()=>{process.env.DATABASE_PATH=path.join(folder,'data.sqlite');setSetting('storage:local',folder);fs.mkdirSync('output/word-check',{recursive:true});});
 afterAll(()=>db().close());
@@ -27,8 +29,8 @@ async function inspect(name:string,draft:Draft){
 }
 for(const t of templates)it(`exports editable ${t.id} text, bold runs and native tables`,async()=>{
  const {xml}=await inspect(t.id,{...newDraft(t.id),...base});
- expect(xml).toContain('อุปกรณ์สำนักงาน');expect(xml).toContain('<w:tbl>');expect(xml).toContain('<w:b/>');
- expect(xml).toContain('w:tblHeader');expect(xml).toContain('จึงเรียนมาเพื่อโปรดพิจารณา');
+ expect(paragraphTexts(xml).join('')).toContain('อุปกรณ์สำนักงาน');expect(xml).toContain('<w:tbl>');expect(xml).toContain('<w:b/>');
+ expect(xml).toContain('w:tblHeader');expect(paragraphTexts(xml).join('')).toContain('จึงเรียนมาเพื่อโปรดพิจารณา');
 },30000);
 it('exports budget memo including all budget lines and opinions',async()=>{
  const {xml}=await inspect('budget',budgetDraft(budgetSample('2026-10-12')));
@@ -52,16 +54,16 @@ it('preserves long native tables and underlined structured sections without losi
  const {xml}=await inspect('long-internal',{...newDraft('internal'),...base,bodyMode:'structured',background:'เรื่องเดิมสำหรับตรวจสอบ',facts:'| รหัส | รายละเอียด |\n| --- | --- |\n'+rows,legalBasis:'ระเบียบที่เกี่ยวข้อง',consideration:'เห็นควรดำเนินการ',proposal:'จึงเรียนมาเพื่อโปรดพิจารณา',opinions:[{title:'ความเห็นหัวหน้าสำนักปลัด',comment:'เห็นควรดำเนินการตามเสนอ',name:'ผู้ตรวจทาน',position:'หัวหน้าสำนักปลัด',showDate:true,lines:1}]});
  expect(xml.match(/<w:tbl>/g)!.length).toBeGreaterThan(1);
  for(let n=1;n<=70;n++)expect(xml).toContain(`>R${n}</w:t>`);
- expect(xml).toContain('w:u');expect(xml).toContain('หัวหน้าสำนักปลัด');
+ expect(xml).toContain('w:u');expect(paragraphTexts(xml).join('')).toContain('หัวหน้าสำนักปลัด');
 },30000);
 
 it('keeps a long Thai paragraph intact and uses real paragraphs for explicit newlines',async()=>{
  const text='เทศบาลมีความประสงค์ตรวจสอบอุปกรณ์สำนักงานเพื่อจัดทำข้อมูลประกอบการพิจารณาดำเนินการตามระเบียบที่เกี่ยวข้อง '.repeat(50).trim();
  const {xml,zip}=await inspect('thai-paragraphs',{...newDraft('internal'),...base,body:text+'\nย่อหน้าใหม่สำหรับข้อเสนอ',position:'นายกเทศมนตรี\nรักษาราชการแทน',floatingItems:[{kind:'text',id:crypto.randomUUID(),page:1,xMm:20,yMm:270,widthMm:100,fontPt:16,bold:false,text:'บรรทัดแรก\nบรรทัดถัดไป'}]});
- expect(xml).toContain(text);
+ expect(paragraphTexts(xml)).toContain(text);
  expect(xml).toContain('<w:jc w:val="thaiDistribute"/>');
  expect(xml).toContain('ย่อหน้าใหม่สำหรับข้อเสนอ');
- expect(xml).toMatch(/นายกเทศมนตรี<\/w:t>[\s\S]*?<\/w:p><w:p>[\s\S]*?รักษาราชการแทน/);
+ expect(xml.replaceAll('\u2060','')).toMatch(/นายกเทศมนตรี<\/w:t>[\s\S]*?<\/w:p><w:p>[\s\S]*?รักษาราชการแทน/);
  expect(await zip.file('word/styles.xml')!.async('string')).toContain('<w:noProof/>');
 },30000);
 
@@ -79,4 +81,20 @@ for(const copyMark of ['none', 'สำเนาคู่ฉบับ'] as const)
  const draft:Draft={...newDraft('internal'),...base,body:'จึงเรียนมาเพื่อโปรดพิจารณา',copyMark,floatingItems:[{kind:'text',id:'missing-page',page:2,xMm:30,yMm:50,widthMm:75,fontPt:16,bold:false,text:'ข้อความต้องไม่หาย'}]};
  await expect(renderWord(draft)).rejects.toBeInstanceOf(MissingOverlayPageError);
  await expect(renderPdf(draft)).rejects.toBeInstanceOf(MissingOverlayPageError);
+},30000);
+
+it('centers formal titles on the same page axis as the garuda in Word',async()=>{
+ for(const type of ['order','announcement','statement','regulation','rule','internal','memorandum'] as const){
+  const {xml}=await inspect('center-'+type,{...newDraft(type),...base});
+  const paragraphs=Array.from(xml.matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g)).map(m=>m[1]);
+  const title=paragraphs.find(p=>p.includes('w:val="center"')&&p.includes(['internal','memorandum'].includes(type)?'บันทึกข้อความ':'การตรวจสอบ'))!;
+  expect(title).toBeTruthy();
+  const pageWidth=Number(xml.match(/<w:pgSz[^>]*w:w="(\d+)"/)![1]),margin=xml.match(/<w:pgMar[^>]*w:right="(\d+)"[^>]*w:left="(\d+)"/)!;
+  const indent=title.match(/<w:ind w:left="(\d+)" w:right="(\d+)"/)!;
+  const center=(Number(margin[2])+Number(indent[1])+pageWidth-Number(margin[1])-Number(indent[2]))/2;
+  expect(Math.abs(center-pageWidth/2)).toBeLessThan(2);
+  if(['internal','memorandum'].includes(type))continue; // Memo garuda intentionally stays at the left margin.
+  const anchor=xml.match(/<wp:positionH[^>]*><wp:posOffset>(\d+)<\/wp:posOffset><\/wp:positionH>[\s\S]*?<wp:extent cx="(\d+)"/)!;
+  expect(Math.abs((Number(anchor[1])+Number(anchor[2])/2)/635-center)).toBeLessThan(2);
+ }
 },30000);

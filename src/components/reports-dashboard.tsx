@@ -1,6 +1,9 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {BarChart3,Files,ClipboardList,CalendarDays,DoorOpen,Download,RefreshCw,ArrowUpRight} from 'lucide-react';
+import {InventoryAnalysis} from './inventory-analysis';
+import {loadInventory} from '@/app/inventory-actions';
+import {type InventorySnapshot} from '@/lib/inventory';
 import {getReports} from '@/app/storage-actions';
 import {today} from '@/lib/document';
 import {template} from '@/lib/templates';
@@ -9,7 +12,8 @@ import {WorkspaceHeading,DetailNote} from './workspace-ui';
 
 export function ReportsDashboard(){
  const [data,setData]=useState<Awaited<ReturnType<typeof getReports>>|null>(null),[month,setMonth]=useState(today().slice(0,7)),[error,setError]=useState('');
- function refresh(){setError('');getReports().then(setData).catch(()=>setError('โหลดรายงานไม่สำเร็จ'));}
+ const [inventory,setInventory]=useState<InventorySnapshot|null>(null),[showInventory,setShowInventory]=useState(false);
+ function refresh(){loadInventory().then(setInventory).catch(()=>setError('โหลดข้อมูลพัสดุไม่สำเร็จ'));setError('');getReports().then(setData).catch(()=>setError('โหลดรายงานไม่สำเร็จ'));}
  useEffect(()=>{refresh();},[]);
  if(!data)return <main className="page-main workspace-page"><WorkspaceHeading icon={BarChart3} title="ภาพรวมและรายงานระบบ"/><p role="status">{error||'กำลังรวบรวมสถิติ…'}</p>{error&&<button onClick={refresh}>ลองโหลดใหม่</button>}</main>;
  const inMonth=(v:string)=>!month||v?.startsWith(month);
@@ -20,8 +24,9 @@ export function ReportsDashboard(){
  const docTypes=Array.from(new Set(docs.map(d=>d.type))).map(type=>({label:template(type).name,value:docs.filter(d=>d.type===type).length}));
  const lawTypes=Array.from(new Set(data.laws.map(l=>l.category||'อื่น ๆ'))).map(category=>({label:category,value:data.laws.filter(l=>(l.category||'อื่น ๆ')===category).length}));
  function csv(){const rows=[...cards.map(c=>[c.label,c.value]),['คลังกฎหมายทั้งหมด',data!.laws.length],['ห้องประชุมทั้งหมด',data!.rooms],['หนังสือรอซิงก์',pending],['งานค้างเกินกำหนด (ทุกเดือน)',overdue]];const text='\ufeff'+[['รายการ','จำนวน'],...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`รายงานระบบ-${month||'ทั้งหมด'}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ if(showInventory&&inventory)return <main className="page-main workspace-page reports-overview"><button className="secondary" onClick={()=>setShowInventory(false)}>กลับรายงานระบบ</button><InventoryAnalysis data={inventory} organization="รายงานระบบ"/></main>;
  return <main className="page-main workspace-page reports-overview"><WorkspaceHeading icon={BarChart3} title="ภาพรวมและรายงานระบบ" description="ภาพรวมจากข้อมูลที่บันทึกไว้" actions={<button className="secondary" onClick={refresh}><RefreshCw size={16}/>โหลดล่าสุด</button>}/>
-  <div className="report-controls"><label>ช่วงเวลา<input aria-label="เดือนรายงาน" type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label><button className="secondary" onClick={()=>setMonth('')}>ทุกช่วงเวลา</button><button className="secondary report-export" onClick={csv}><Download size={16}/>ส่งออกรายงาน CSV</button></div>
+  <div className="report-controls"><button className="secondary" disabled={!inventory} onClick={()=>setShowInventory(true)}><BarChart3 size={16}/>วิเคราะห์พัสดุและครุภัณฑ์</button><label>ช่วงเวลา<input aria-label="เดือนรายงาน" type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label><button className="secondary" onClick={()=>setMonth('')}>ทุกช่วงเวลา</button><button className="secondary report-export" onClick={csv}><Download size={16}/>ส่งออกรายงาน CSV</button></div>
   {error&&<p role="alert">{error}</p>}
   <div className="report-totals">{cards.map(({icon:Icon,...card})=><a key={card.url} href={`/?view=${card.url}`}><span><Icon size={20} aria-hidden="true"/>{card.label}<ArrowUpRight size={15}/></span><strong>{card.value.toLocaleString('th-TH')}</strong><small>ในช่วงที่เลือก</small></a>)}</div>
   <section className="report-followup"><h2>งานที่ต้องติดตาม</h2><div><a href="/?view=dashboard"><span>หนังสือรอซิงก์</span><strong>{pending}</strong></a><a href="/?view=office"><span>เกินกำหนด · ทุกเดือน</span><strong>{overdue}</strong></a><span>นัดหมายเสร็จสิ้น <strong>{calendar.filter(e=>e.status==='done').length}</strong></span><span>ยกเลิกการจอง <strong>{bookings.filter(b=>b.status==='cancelled').length}</strong></span></div></section>

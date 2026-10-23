@@ -1,2 +1,3 @@
 # Preserve upstream runtime license formatting.
 scripts/runtime-licenses/* -whitespace
+public/dictionaries/* text eol=lf

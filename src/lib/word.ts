@@ -1,3 +1,4 @@
+import {wordJoin} from './thai-dictionary';
 import {MissingOverlayPageError} from "./export-validation";
 import 'server-only';
 import fs from 'node:fs';
@@ -18,8 +19,8 @@ const twip = (px: number) => Math.round(px * 15);
 const emu = (px: number) => Math.round(px * 9525);
 const decode = (source: string) => Buffer.from(source.slice(source.indexOf(',')+1),'base64');
 function textRuns(runs: WordRun[]) {
-  // Keep the author's text intact. Word owns Thai line wrapping, including after edits.
-  return runs.flatMap(run => run.text.split(/(\t)/).filter(Boolean).map(text => new TextRun({
+  // Word owns paragraph wrapping. Invisible word joiners preserve explicit compound-word groups.
+  return runs.flatMap((run,index) => (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).map(text => new TextRun({
     ...(text==='\t'?{children:[new Tab()]}:{text}),
     font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,
     color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
@@ -29,7 +30,7 @@ function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
   const options: IParagraphOptions = {
     children:textRuns(p.runs),alignment:p.align==='center'?AlignmentType.CENTER:p.align==='right'?AlignmentType.RIGHT:p.align==='justify'?AlignmentType.THAI_DISTRIBUTE:AlignmentType.LEFT,
     spacing:{before:twip(before),after:0,line:twip(p.border?p.height:p.line),lineRule:LineRuleType.EXACT},
-    indent:{left:twip(Math.max(0,p.x-left)),right:twip(Math.max(0,width-(p.x-left)-p.width-4)),firstLine:twip(p.indent)},
+    indent:{left:twip(Math.max(0,p.x-left)),right:twip(Math.max(0,width-(p.x-left)-p.width-(p.align==='center'?0:4))),firstLine:twip(p.indent)},
     tabStops:p.tabs.map(position=>({type:'left' as const,position:twip(position)})),
     keepNext:p.keep,keepLines:p.keep||p.border,widowControl:false,
     border:p.border?{bottom:{style:BorderStyle.DOTTED,color:'555555',size:4}}:undefined,
@@ -132,4 +133,21 @@ export async function renderWord(draft: Draft): Promise<Buffer> {
       fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:ordered.map(section)});
     return await Packer.toBuffer(document);
   } finally {await browser.close();}
+}
+
+
+// Inventory documents share the measured paper, Thai typography and editable Word writer.
+export async function renderWordHtml(html:string,title:string):Promise<Buffer>{
+ const assets=documentAssets();
+ const executablePath=process.env.CHROMIUM_EXECUTABLE_PATH||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+ const browser=await chromium.launch({headless:true,executablePath});
+ try{
+  const page=await browser.newPage();await page.route('**/*',route=>route.abort());await page.setContent(html,{waitUntil:'load'});
+  await page.waitForFunction(()=>(window as unknown as {__paginationDone:boolean}).__paginationDone,undefined,{timeout:15000});
+  if(await page.evaluate(()=>(window as unknown as {__overflow:boolean}).__overflow))throw new Error('มีรายการสูงเกินหน้ากระดาษ กรุณาตรวจตัวอย่างก่อนส่งออก Word');
+  const pages=await page.evaluate(extractWordPages);
+  return await Packer.toBuffer(new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title,
+   styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
+   fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:pages.map(section)}));
+ }finally{await browser.close();}
 }

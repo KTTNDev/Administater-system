@@ -1,0 +1,8 @@
+{
+  "source": "PyThaiNLP words_th.txt",
+  "commit": "8b2b9a6d0f69846364f37e8c16ffc31177f6151c",
+  "license": "CC0-1.0",
+  "sha256": "35f65d43ea83b5b981134d5edc3b9afcb64b4ba96146900fc4d312f2940c3265",
+  "words": 62106,
+  "retrieved": "2026-10-23"
+}

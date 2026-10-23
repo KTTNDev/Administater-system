@@ -10,6 +10,7 @@ test('receives, issues, prints, manages pictures and keeps the workspace respons
  const name='กระดาษทดสอบ '+Date.now(),code='P'+Date.now();
  await page.goto('/?view=inventory');
  const app=page.getByRole('region',{name:'คลังพัสดุและครุภัณฑ์'});
+ await app.getByRole('button',{name:'คลังและรูปภาพ',exact:true}).click();
  await expect(app.getByRole('button',{name:'เพิ่มรายการ',exact:true})).toBeVisible();
  await app.getByRole('button',{name:'เพิ่มรายการ',exact:true}).click();
  const editor=app.getByRole('form',{name:'ข้อมูลพัสดุ'});

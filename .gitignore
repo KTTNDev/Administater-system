@@ -23,3 +23,5 @@ references/*-probe.tgz
 .next-desktop/
 .desktop/
 releases/
+
+references/inventory/

@@ -1,3 +1,4 @@
+import {saveThaiTerm,listThaiTerms} from '../src/lib/thai-dictionary-db';
 import {listDirectory,saveDirectory,deleteDirectory} from '../src/lib/organization-directory-db';
 import {emptyOrganization} from '../src/lib/organization-directory';
 import {saveRegister,listRegister,registerHistory} from '../src/lib/correspondence-db';
@@ -96,4 +97,10 @@ it('backs up and restores editable agency names, retaining an intentionally empt
  saveDirectory({id:randomUUID(),version:0,input:{...emptyOrganization(),name:'เพิ่มทีหลัง'}});
  const emptyPreview=await prepareBackupRestore(path.basename(empty.folder));activateBackupRestore(emptyPreview.token,'กู้คืนข้อมูล');
  expect(listDirectory()).toEqual([]);
+});
+
+it('restores custom Thai words and invalidates stale dictionary edits',async()=>{
+ const [word]=saveThaiTerm({word:'กล้องวีดิโอ',keepTogether:true});const backup=exportWorkspace();saveThaiTerm({word:'เปลี่ยนแล้ว'},word.id,word.version);
+ const preview=await prepareBackupRestore(path.basename(backup.folder));expect(preview.counts.thai_dictionary).toBe(1);activateBackupRestore(preview.token,'กู้คืนข้อมูล');
+ expect(listThaiTerms()[0].word).toBe('กล้องวีดิโอ');expect(()=>saveThaiTerm({word:'เก่า'},word.id,word.version)).toThrow();
 });

@@ -1,11 +1,13 @@
+import {defaultThaiPairs} from './thai-dictionary';
+import {thaiLayoutScript} from './thai-layout';
 import {previewOverlayScript} from "./preview-overlays";
 import { type Draft, thaiDate, documentYear, numerals, bodySections } from "./document";
 import { template } from "./templates";
-export type DocumentAssets = { regular: string; bold: string; garuda: string; routingStamp: string; copyMark: string };
+export type DocumentAssets = { thaiTerms?:string[]; regular: string; bold: string; garuda: string; routingStamp: string; copyMark: string };
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const isTableRule=(line:string)=>/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line.trim());
 const cells=(line:string)=>line.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(x=>x.trim());
-export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Record<string,string>={}, options:{wordParagraphs?:boolean}={}): string {
+export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Record<string,string>={}, options:{wordParagraphs?:boolean;bodyBlocks?:string[]}={}): string {
   const e=(s:string)=>escapeHtml(numerals(s,d.numeralStyle)), t=template(d.type), date=thaiDate(d.date), blocks:string[]=[];
   const inline=(s:string)=>e(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
   const p=(content:string,cls="") => blocks.push(`<p class="${cls}">${content || "&nbsp;"}</p>`);
@@ -20,7 +22,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
       }else p(inline(lines[i]),cls);
     }
   };
-  const body=() => d.contentBlocks.length&&!(d.type==='minutes'&&d.minutesMode==='agenda')?d.contentBlocks.forEach(b=>{
+  const body=() => options.bodyBlocks ? blocks.push(...options.bodyBlocks) : d.contentBlocks.length&&!(d.type==='minutes'&&d.minutesMode==='agenda')?d.contentBlocks.forEach(b=>{
     if(b.kind==='line')p(`<span class="budget-label">${inline(b.label)}</span><span>${inline(b.text)}</span>`,"budget-line");
     else if(b.kind==='budget-money')p(`<span>${inline(b.label)}</span><span>เป็นเงิน</span><span>${inline(b.text)}</span><span>บาท</span>`,"budget-money");
     else p(inline(b.text),b.kind==='heading'?"title budget-heading":b.kind==='budget-detail'?"budget-detail":b.kind==='budget-spec'?"budget-spec":"body-text");
@@ -49,7 +51,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
       blocks.push(`<div class="memo-head">${d.type==="internal"||d.memoEmblem?emblem:""}<strong>บันทึกข้อความ</strong></div>`);
       field("ส่วนราชการ",[...(d.layout==='budget-reference'?[d.department,d.organization]:[d.organization,d.department]),d.phone?"โทร. "+d.phone:""].filter(Boolean).join("  "),"memo-field");
       blocks.push(`<div class="memo-row"><p class="memo-field"><b>ที่</b><span class="memo-value">${e(d.number)||'&nbsp;'}</span></p><p class="memo-field"><b>วันที่</b><span class="memo-value">${e(date)||'&nbsp;'}</span></p></div>`);
-      field("เรื่อง",d.subject,"memo-field"); field(d.salutation,d.recipient,"salutation"); body(); if(d.attachmentFiles.length)p(e(d.attachmentPhrase+" ได้แก่ "+d.attachmentFiles.map((a,i)=>`${i+1}. ${attachmentLabel(a)}`).join("; ")),"body-text"); signature(); break;
+      field("เรื่อง",d.subject,"memo-field"); field(d.salutation,d.recipient,"salutation"); body(); if(d.attachmentFiles.length)p(e(d.attachmentPhrase+" ได้แก่ "+d.attachmentFiles.map((a,i)=>`${i+1}. ${attachmentLabel(a)}`).join("; ")),"body-text"); if(!options.bodyBlocks)signature(); break;
     case "stamped":
       blocks.push(`<div class="letter-head">${emblem}<div class="letter-number">ที่ ${e(d.number)}</div></div>`);
       field("ถึง",d.recipient); body(); p(e(d.organization),"closing"); p(e(date),"closing");
@@ -100,7 +102,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   @font-face{font-family:DocumentThai;src:url('${assets.regular}') format('truetype');font-weight:400;font-display:block}
   @font-face{font-family:DocumentThai;src:url('${assets.bold}') format('truetype');font-weight:700;font-display:block}
   *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#e8edec;color:#111;font-family:DocumentThai,serif;font-size:16pt;line-height:normal}
-  .page{position:relative;width:210mm;height:297mm;background:white;margin:0 auto 7mm;padding:25mm 20mm 20mm 30mm;break-after:page;overflow:hidden}
+  .page{--center-inset:10mm;position:relative;width:210mm;height:297mm;background:white;margin:0 auto 7mm;padding:25mm 20mm 20mm 30mm;break-after:page;overflow:hidden}
   .page:first-child,.counterpart-first-page{padding-top:${d.firstPageTop==='25'?25:15}mm}.page:last-child{margin-bottom:0;break-after:auto}
   .content{height:240mm;display:flow-root}.page:first-child .content,.counterpart-first-page .content{height:${d.firstPageTop==='25'?240:250}mm}
   p{margin:0 0 6pt;white-space:pre-wrap;overflow-wrap:anywhere;orphans:2;widows:2}.body-text{text-indent:25mm}
@@ -108,11 +110,11 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   .body-text.paragraph-continues,.appendix-text.paragraph-continues{text-align-last:justify}
   .garuda{position:relative;display:inline-block;overflow:hidden;flex-shrink:0;height:30mm;width:calc(30mm * 1194 / 1340)}.garuda-source{position:absolute;max-width:none;width:calc(100% * 2320 / 1194);height:calc(100% * 1811 / 1340);left:calc(-100% * 498 / 1194);top:calc(-100% * 324 / 1340)}.letter-head{position:relative;min-height:38mm;padding-top:23mm;margin-bottom:6pt;display:flex;justify-content:space-between;gap:8mm}
   .letter-head .garuda{position:absolute;top:0;left:calc(50% - 5mm);transform:translateX(-50%)}.letter-number{max-width:50%}.letter-agency{width:65mm;padding-left:10mm;white-space:pre-wrap;overflow-wrap:anywhere}
-  .date{margin-left:75mm}.memo-head{position:relative;height:${d.urgency!=="ปกติ"?27:18}mm;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3pt}
-  .memo-head strong{font-size:29pt;line-height:35pt}.memo-head .garuda{position:absolute;height:15mm;width:calc(15mm * 1194 / 1340);left:0;top:0}
+  .date{margin-left:75mm}.memo-head{padding-right:var(--center-inset);position:relative;height:${d.urgency!=="ปกติ"?27:18}mm;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3pt}
+  .memo-head strong{flex:1;min-width:0;text-align:center;font-size:29pt;line-height:35pt}.memo-head .garuda{position:absolute;height:15mm;width:calc(15mm * 1194 / 1340);left:0;top:0}
   .memo-field{display:flex;align-items:baseline;gap:2mm}.memo-value{flex:1;min-width:0;position:relative;white-space:pre-wrap;overflow-wrap:anywhere}.memo-value:after{content:"";position:absolute;left:0;right:0;bottom:2pt;border-bottom:1px dotted #888;pointer-events:none}.memo-field .label,.memo-field b{font-size:20pt;font-weight:700;white-space:nowrap}.memo-row{display:flex;gap:5mm}.memo-row p:first-child{width:49%}.memo-row p:last-child{flex:1}
   .enclosure-row{display:grid;grid-template-columns:31mm minmax(0,1fr);gap:2mm;break-inside:avoid;text-indent:0;white-space:pre-wrap}.enclosure-row .label{white-space:nowrap}.enclosure-value{min-width:0;overflow-wrap:anywhere}.closing,.signature{white-space:pre-wrap}.closing{margin-top:12pt}.signature{break-inside:avoid;margin-left:70mm;text-align:center}.sign-space{height:3lh}.signature p{margin:0;white-space:pre-wrap}.contact{margin-top:3lh}
-  .budget-line{display:flex;gap:4mm;text-indent:0}.budget-label{flex:0 0 53mm;font-weight:bold}.budget-line>span:last-child{flex:1;min-width:0}.center{text-align:center}.title{font-weight:700}.structured-section-title{margin-left:25mm;text-decoration:underline;text-underline-offset:2pt}.center-emblem{text-align:center;margin-left:-10mm;margin-bottom:8pt}.issued{text-indent:25mm;margin-top:12pt}.divider{margin-bottom:12pt}
+  .budget-line{display:flex;gap:4mm;text-indent:0}.budget-label{flex:0 0 53mm;font-weight:bold}.budget-line>span:last-child{flex:1;min-width:0}.center{text-align:center;margin-right:var(--center-inset)}.title{font-weight:700}.structured-section-title{margin-left:25mm;text-decoration:underline;text-underline-offset:2pt}.center-emblem{text-align:center;margin-right:var(--center-inset);margin-bottom:8pt}.issued{text-indent:25mm;margin-top:12pt}.divider{margin-bottom:12pt}
   .urgency{font-weight:bold;font-size:32pt;color:#f00;position:absolute;left:${compact?52:30}mm;top:${d.copyMark!=="none"?29:16}mm;line-height:1}.copy-mark{position:absolute;left:50%;top:1mm;transform:translateX(-50%);width:38mm;height:auto;z-index:21;pointer-events:none}.copy-mark-text{left:0;right:0;width:auto;transform:none;text-align:center;white-space:nowrap;font-size:32pt;font-weight:bold;color:#174890}.routing-stamp{position:absolute;right:5mm;bottom:5mm;width:82mm;height:auto;z-index:21;pointer-events:none}.counterpart-start{display:none}.opinion{margin-top:8mm;break-inside:avoid}.opinion-line{height:8mm;border-bottom:1px dotted #555}.opinion-sign{margin-top:8mm;text-align:center;margin-left:70mm}.opinion-sign p{margin-bottom:0}.production{margin:12mm 0 0 auto;width:85mm;break-inside:avoid}.production p{margin-bottom:2mm}.stamp-placeholder{margin:8mm 0 0 70mm;text-align:center;color:#777;font-size:14pt}
   .continuation-cue{position:absolute;right:20mm;bottom:20mm;max-width:90mm;text-align:right;white-space:nowrap;font-size:16pt;line-height:normal}.page-number{position:absolute;top:14mm;left:0;right:0;text-align:center}.security{position:absolute;top:1mm;left:0;right:0;text-align:center;color:#f00;font-weight:700;font-size:32pt;line-height:1}.security.bottom{top:auto;bottom:2mm}
   .budget-document{line-height:normal}.budget-document p{margin-bottom:0}.budget-document .body-text{text-indent:25mm}
@@ -128,7 +130,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   .appendix-sheet{height:100%;min-height:100%;display:flex;flex-direction:column;gap:6mm;break-inside:avoid;overflow:hidden}.appendix-heading{flex:none;margin:0 0 1mm;text-align:center;font-size:20pt;font-weight:700;text-decoration:underline}.appendix-figures{flex:1;min-height:0;display:grid;grid-template-columns:1fr;align-content:center;gap:9mm}.appendix-figure{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;margin:0;text-align:center}.appendix-image{display:block;max-width:100%;height:auto;object-fit:contain}.appendix-figure figcaption{font-size:16pt;line-height:1.1}.appendix-image-missing{width:100%;height:50mm;display:grid;place-items:center;background:#f1f4f2;color:#66766d}.appendix-sheet.landscape-pair .appendix-figure img{max-height:98mm}.appendix-sheet.portrait-pair .appendix-figures{grid-template-columns:repeat(2,minmax(0,1fr));gap:8mm}.appendix-sheet.portrait-pair .appendix-figure img{max-height:145mm}.appendix-sheet.mixed-pair .appendix-figures{grid-template-columns:repeat(2,minmax(0,1fr));gap:5mm 8mm}.appendix-sheet.mixed-pair .appendix-figure.landscape{grid-column:1/-1}.appendix-sheet.mixed-pair .appendix-figure.landscape img{max-height:78mm}.appendix-sheet.mixed-pair .appendix-figure.portrait{grid-column:1/-1;width:80mm;justify-self:center}.appendix-sheet.mixed-pair .appendix-figure.portrait img{max-height:112mm}.appendix-sheet.single-image .appendix-figure img{max-height:190mm}
   .floating-item{position:absolute;z-index:24;background:transparent;border:0;padding:0;margin:0;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.15;cursor:move;touch-action:none}.floating-item img{display:block;width:100%;height:auto;pointer-events:none}.floating-item:focus-visible{outline:1px dashed #17685b}@media print{.floating-item{cursor:auto;outline:0!important}}
   .floating-item.overlay-selected{outline:1px dashed #176fa8}.overlay-resize{display:none;position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;padding:0;border:2px solid white;background:#176fa8;box-shadow:0 0 0 1px #176fa8;cursor:nwse-resize;touch-action:none}.overlay-selected .overlay-resize{display:block}.placing-overlay .page,.placing-overlay .page *{cursor:crosshair!important}@media print{.overlay-resize{display:none!important}.floating-item.overlay-selected{outline:0!important}}
-  #source{display:none}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
+  #source{display:none}.thai-keep{white-space:nowrap;word-break:keep-all;overflow-wrap:normal}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
   </style></head><body class="${d.type==="external"?"external-document correspondence ":["internal","memorandum"].includes(d.type)?"correspondence ":""}${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
   <script>
@@ -144,6 +146,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   for(const item of overlays.filter(item=>item.page===localPage)){const node=document.createElement('div');node.className='floating-item';node.dataset.overlayId=item.id;node.style.left=item.xMm+'mm';node.style.top=item.yMm+'mm';node.style.width=item.widthMm+'mm';if(item.kind==='text'){node.textContent=item.text;node.style.fontSize=item.fontPt+'pt';node.style.fontWeight=item.bold?'700':'400';node.setAttribute('aria-label','กล่องข้อความอิสระ')}else if(item.source){const img=document.createElement('img');img.src=item.source;img.alt=item.image.name;node.append(img);node.setAttribute('aria-label',item.purpose==='signature'?'ภาพลายเซ็น':'ภาพอิสระ')}else continue;page.append(node)}
   content=document.createElement('div');content.className='content';page.append(content);root.append(page)};
   const fits=()=>content.scrollHeight<=content.clientHeight+1;
+  ${thaiLayoutScript(assets.thaiTerms||defaultThaiPairs)}
   const sourceNodes=Array.from(document.getElementById('source').children).map(node=>node.cloneNode(true));
   // An iframe may run before its parent has completed layout. Zero-sized pages
   // falsely make every paragraph fit; wait for measurable paper before splitting.
@@ -161,14 +164,15 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
     ${options.wordParagraphs ? `// Word must keep one logical paragraph, even when it flows across pages.
     content.append(node);continue;` : ''}
     const segmenter=new Intl.Segmenter('th',{granularity:'word'});const words=Array.from(node.textContent.matchAll(/\\S+\\s*|\\s+/g),match=>match[0]).flatMap(token=>token.length>120?Array.from(segmenter.segment(token),part=>part.segment):[token]);node.remove();let offset=0;
-    const boundaries=[0];for(const word of words)boundaries.push(boundaries[boundaries.length-1]+word.length);
+    let boundaries=[0];for(const word of words)boundaries.push(boundaries[boundaries.length-1]+word.length);
+    const protectedRanges=keepRanges(node.textContent);boundaries=boundaries.filter(n=>!protectedRanges.some(r=>n>r.start&&n<r.end));const unitCount=boundaries.length-1;
     const textNodes=[],walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);while(walker.nextNode())textNodes.push(walker.currentNode);
     const point=index=>{let remaining=index;for(const textNode of textNodes){if(remaining<=textNode.textContent.length)return [textNode,remaining];remaining-=textNode.textContent.length}const last=textNodes[textNodes.length-1];return [last,last.textContent.length]};
     const fragment=(from,to)=>{const range=document.createRange(),start=point(boundaries[from]),end=point(boundaries[to]);range.setStart(start[0],start[1]);range.setEnd(end[0],end[1]);return range.cloneContents()};
-    while(offset<words.length){const part=node.cloneNode(false);content.append(part);let low=1,high=words.length-offset,best=0;
+    while(offset<unitCount){const part=node.cloneNode(false);content.append(part);let low=1,high=unitCount-offset,best=0;
       while(low<=high){const mid=Math.floor((low+high)/2);part.replaceChildren(fragment(offset,offset+mid));if(fits()){best=mid;low=mid+1}else high=mid-1}
       if(best===0){part.remove();if(!content.children.length){overflow=true;part.replaceChildren(fragment(offset,offset+1));content.append(part);offset++}next(copy);continue}
-      part.replaceChildren(fragment(offset,offset+best));if(offset>0)part.style.textIndent='0';offset+=best;part.classList.toggle('paragraph-continues',offset<words.length);if(offset<words.length)next(copy);
+      part.replaceChildren(fragment(offset,offset+best));if(offset>0)part.style.textIndent='0';offset+=best;part.classList.toggle('paragraph-continues',offset<unitCount);if(offset<unitCount)next(copy);
     }
   }};
   await paginate(sourceNodes,false);
@@ -195,6 +199,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   const originalPages=root.querySelectorAll('.page:not(.counterpart-page)').length;
   const missingOverlayPages=[...new Set(overlays.filter(item=>item.page>originalPages).map(item=>item.page))].sort((a,b)=>a-b);
   window.__missingOverlayPages=missingOverlayPages;
+  for(const span of root.querySelectorAll('.thai-keep')){const block=span.closest('p,td,figcaption');if(block&&span.getBoundingClientRect().width>block.getBoundingClientRect().width+1)overflow=true;}
   document.getElementById('source').remove();window.__paginationDone=true;window.__pageCount=count;window.__overflow=overflow;
   parent.postMessage({source:'sarabun-preview',pages:count,height:document.body.scrollHeight,overflow,missingOverlayPages,compactSignoff:document.body.classList.contains('compact-signoff')},'*');
   })().catch(()=>{window.__paginationError=true;parent.postMessage({source:'sarabun-preview',error:true},'*')});

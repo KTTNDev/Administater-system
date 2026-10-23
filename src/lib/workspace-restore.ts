@@ -1,4 +1,5 @@
 import 'server-only';
+import {thaiTermSchema,thaiDictionarySql} from './thai-dictionary';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
@@ -11,6 +12,7 @@ import {budgetSchema} from './budget';
 import {registerSchema,registerTableSql,registerEventSql} from './correspondence';
 import {organizationInputSchema,organizationDirectorySql} from './organization-directory';
 import {inventorySchemas,inventoryItemSchema,movementSchema} from './inventory';
+import {inventoryFormSchema} from './inventory-forms';
 import {validateInventoryBackup} from './inventory-validation';
 import {officeSchema} from './office';
 import {roomSchema,bookingSchema} from './booking';
@@ -18,6 +20,7 @@ import {calendarSchema} from './calendar';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ thai_dictionary:thaiDictionarySql,
  ...inventorySchemas,
  organization_directory:organizationDirectorySql,
  correspondence_entries:registerTableSql,
@@ -57,7 +60,7 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
-  const models={inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
+  const models={thai_dictionary:thaiTermSchema,inventory_form_drafts:inventoryFormSchema,inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.

@@ -28,6 +28,7 @@ export const movementLabels={receive:'รับเข้า',issue:'เบิก
 export const movementStatuses={draft:'รอจ่าย / ตรวจสอบ',posted:'บันทึกแล้ว',cancelled:'ยกเลิก',returned:'คืนแล้ว'};
 export const emptyInventoryItem=():InventoryInput=>({code:'',name:'',kind:'supply',unit:'ชิ้น',category:'',location:'',serial:'',minimum:0,notes:'',active:true});
 export const inventorySchemas={
+ inventory_form_drafts:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL',
  inventory_items:'id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,data TEXT NOT NULL,version INTEGER NOT NULL,balance INTEGER NOT NULL DEFAULT 0,updated_at TEXT NOT NULL',
  inventory_movements:'id TEXT PRIMARY KEY,number TEXT NOT NULL UNIQUE,data TEXT NOT NULL,version INTEGER NOT NULL',
  inventory_files:'id TEXT PRIMARY KEY,owner_id TEXT NOT NULL,owner_type TEXT NOT NULL,name TEXT NOT NULL,mime TEXT NOT NULL,file BLOB NOT NULL,drive_id TEXT NOT NULL DEFAULT \'\',created_at TEXT NOT NULL',
