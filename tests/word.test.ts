@@ -98,3 +98,14 @@ it('centers formal titles on the same page axis as the garuda in Word',async()=>
   expect(Math.abs((Number(anchor[1])+Number(anchor[2])/2)/635-center)).toBeLessThan(2);
  }
 },30000);
+
+it('exports matching editable field and signature guides without duplicating header content',async()=>{
+ const draft={...newDraft('internal'),...base,subject:'DOT-GUIDE-CHECK',opinions:[{title:'ความเห็น',name:'',position:'เจ้าหน้าที่',comment:'',lines:2,showDate:true}]};
+ const {xml}=await inspect('dot-guides',draft);
+ const anchors=Array.from(xml.matchAll(/<wp:anchor[\s\S]*?<\/wp:anchor>/g),m=>m[0]);
+ const guides=anchors.filter(a=>/<w:t[^>]*>\.+<\/w:t>/.test(a));
+ expect(guides).toHaveLength(6);
+ for(const guide of guides){expect(guide).toContain('w:val="32"');expect(guide).toContain('w:val="111111"');expect(guide).toContain('TH Sarabun New');expect(guide).toContain('wps:txbx');}
+ expect(paragraphTexts(xml).filter(t=>t.includes('DOT-GUIDE-CHECK'))).toHaveLength(1);
+ expect(paragraphTexts(xml).find(t=>t.includes('DOT-GUIDE-CHECK'))).not.toContain('...');
+},30000);

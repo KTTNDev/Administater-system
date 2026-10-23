@@ -17,7 +17,7 @@ export function extractWordPages(): WordPage[] {
     const runs = (el: Element): WordRun[] => {
       const result: WordRun[] = [];
       const walk = (node: Node) => {
-        if (node instanceof Element && !visible(node)) return;
+        if (node instanceof Element && (!visible(node)||node.classList.contains('document-dot-guide'))) return;
         if (node.nodeType === Node.TEXT_NODE || node instanceof HTMLBRElement) {
           const parent = node.parentElement!, css = getComputedStyle(parent);
           const rgb = css.color.match(/\d+/g)?.slice(0,3).map(n => Number(n).toString(16).padStart(2,'0')).join('') || '111111';
@@ -39,7 +39,7 @@ export function extractWordPages(): WordPage[] {
           text.push(...runs(child));
         });
       }
-      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling, border:el.classList.contains('opinion-line') };
+      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling, border:false };
     };
     const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),blocks:[],overlays:[]};
     const walk = (el: Element, floating = false) => {
@@ -72,6 +72,11 @@ export function extractWordPages(): WordPage[] {
       if(el===content) Array.from(el.children).forEach(child=>walk(child));
       else walk(el,true);
     });
+    // Decorative field guides are separate editable text overlays in Word.
+    // Keep them out of the logical header text and preserve their measured position.
+    for(const guide of page.querySelectorAll<HTMLElement>('.document-dot-guide')){
+      const b=box(guide);result.overlays.push({...b,kind:'paragraph',runs:[{text:guide.textContent||'',bold:false,underline:false,size:16,color:'111111'}],align:'left',indent:0,line:b.height,tabs:[],keep:false,border:false});
+    }
     return result;
   });
 }
