@@ -25,3 +25,6 @@ references/*-probe.tgz
 releases/
 
 references/inventory/
+
+# Temporary PDF rendering and visual checks
+tmp/pdfs/

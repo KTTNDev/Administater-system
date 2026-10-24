@@ -27,6 +27,8 @@
 
 ## พัฒนาและทดสอบ
 
+- [คู่มือนักพัฒนา 1.4.1: PDF และแบบฝึก TypeScript](docs/handbooks/README.md)
+
 ใช้ Node.js 22.13 ขึ้นไป ติดตั้งด้วย `npm ci` แล้วคัดลอก `.env.example` เป็น `.env.local` และตั้ง SESSION_SECRET ของตัวเอง หยุดโปรแกรม desktop ก่อนรัน dev เพื่อไม่ชนพอร์ต 3000
 
 ```powershell

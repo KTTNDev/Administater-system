@@ -1,0 +1,20 @@
+{
+  "version": "1.4.1",
+  "sourceCommit": "ce439486e3c824eecc31f496279bc055ad471335",
+  "pages": 47,
+  "chapters": 44,
+  "tocDestinationsVerified": 44,
+  "sourcePathsVerified": 66,
+  "embeddedFonts": {
+    "/AAAAAA+ArialMT": true,
+    "/BAAAAA+THSarabunNew-Bold": true,
+    "/CAAAAA+THSarabunNew": true,
+    "/DAAAAA+Consolas": true,
+    "/EAAAAA+SegoeUISymbol": true,
+    "/FAAAAA+Arial-BoldMT": true
+  },
+  "textIssues": [],
+  "layoutIssues": [],
+  "examples": "tsc strict passed; 11 assertions passed",
+  "scope": "Documentation only; no production data changed; visual review of every page plus full-resolution samples."
+}
