@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {torDetailSections} from "./minutes-presets";
 import { templates, type DocumentType } from "./templates";
 const text = z.string().max(2000).default("");
 export const documentSchema = z.object({
@@ -30,10 +31,24 @@ export const documentSchema = z.object({
   certificatePhotoArea:z.boolean().default(false),
   certificateRecipient:text,
   minutesMode:z.enum(['free','agenda']).default('free'),
+  minutesPreset:z.enum(['general','tor-purchase','tor-service']).default('general'),
+  minutesTitle:z.string().max(300).default(''),
+  minutesAttendanceMode:z.enum(['text','table']).default('text'),
+  meetingMembers:z.array(z.object({name:z.string().max(300),position:z.string().max(500),role:z.string().max(200),status:z.enum(['present','absent','participant']),note:z.string().max(1000)})).max(60).default([]),
+  recorderPosition:z.string().max(500).default(''),
+  recorderRole:z.string().max(200).default('ผู้จดรายงานการประชุม'),
+  meetingSigners:z.array(z.object({name:z.string().max(300),position:z.string().max(500),role:z.string().max(200)})).max(20).default([]),
+  minutesTor:z.object({
+    appointmentNumber:z.string().max(200).default(''),appointmentDate:z.string().max(10).refine(v=>!v||(/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v),'วันที่คำสั่งไม่ถูกต้อง').default(''),
+    authority:z.string().max(500).default(''),budget:z.string().max(500).default(''),priceReference:z.string().max(2000).default(''),
+    sections:z.array(z.object({title:z.string().max(300),body:z.string().max(20000)})).max(30).default([])
+  }).default({appointmentNumber:'',appointmentDate:'',authority:'',budget:'',priceReference:'',sections:[]}),
   minutesIntroduction:z.string().max(10000).default(''),
   meetingAgenda:z.array(z.object({
     title:z.string().max(300).default(''),
     discussion:z.string().max(10000).default(''),
+    torDetails:z.boolean().optional(),
+    speeches:z.array(z.object({speaker:z.string().max(300),role:z.string().max(200),text:z.string().max(10000)})).max(50).optional(),
     resolution:z.string().max(5000).default(''),
     resolutionLabel:z.enum(['มติที่ประชุม','ข้อยุติ','ข้อสรุป']).default('มติที่ประชุม'),
   })).max(50).default([]),
@@ -93,9 +108,16 @@ export function reviewIssues(d: Draft): string[] {
   if (d.type === "minutes") {
     if(d.minutesMode==='agenda') {
       if(!d.meetingAgenda.length) issues.push('เพิ่มอย่างน้อยหนึ่งวาระการประชุม');
-      if(d.meetingAgenda.some(a=>!a.title.trim()||!a.discussion.trim())) issues.push('ระบุหัวข้อและข้ออภิปรายของทุกวาระ (มติกรอกเมื่อมี)');
+      if(d.meetingAgenda.some(a=>!a.title.trim()||(!a.discussion.trim()&&!a.speeches?.some(s=>s.text.trim())&&!(a.torDetails&&d.minutesTor.sections.some(s=>s.body.trim()))))) issues.push('ระบุหัวข้อและข้ออภิปรายของทุกวาระ (มติกรอกเมื่อมี)');
     }
-    for (const [field, label] of [["meetingNo", "ครั้งที่ประชุม"], ["location", "สถานที่ประชุม"], ["attendees", "ผู้มาประชุม"], ["startTime", "เวลาเริ่มประชุม"], ["endTime", "เวลาเลิกประชุม"], ["recorder", "ผู้จดรายงานการประชุม"]] as const) if (!d[field].trim()) issues.push("ระบุ" + label);
+    if(d.minutesAttendanceMode==='table'){
+      if(!d.meetingMembers.some(m=>m.status==='present'&&m.name.trim()))issues.push('เพิ่มผู้มาประชุมอย่างน้อยหนึ่งคนในตาราง');
+      if(d.meetingMembers.some(m=>!m.name.trim()||!m.position.trim()))issues.push('ระบุชื่อและตำแหน่งผู้เข้าประชุมในตารางให้ครบ');
+    }else if(!d.attendees.trim())issues.push('ระบุผู้มาประชุม');
+    if(d.meetingSigners.some(m=>!m.name.trim()||!m.role.trim()))issues.push('ระบุชื่อและบทบาทผู้ลงนามท้ายรายงานให้ครบ');
+    if(d.minutesMode==='agenda'&&d.meetingAgenda.some(a=>a.torDetails)&&d.minutesTor.sections.some(s=>!s.title.trim()||!s.body.trim()))issues.push('กรอกหัวข้อและรายละเอียด TOR ให้ครบ หรือลบหัวข้อที่ไม่ใช้');
+    if(d.minutesMode==='agenda'&&d.meetingAgenda.some(a=>a.speeches?.some(s=>!s.speaker.trim()||!s.text.trim())))issues.push('ระบุผู้พูดและข้อความอภิปรายให้ครบ');
+    for (const [field, label] of [["meetingNo", "ครั้งที่ประชุม"], ["location", "สถานที่ประชุม"], ["startTime", "เวลาเริ่มประชุม"], ["endTime", "เวลาเลิกประชุม"], ["recorder", "ผู้จดรายงานการประชุม"]] as const) if (!d[field].trim()) issues.push("ระบุ" + label);
   }
   if(d.type==='certificate'&&d.certificatePhotoArea&&!d.certificateRecipient.trim()) issues.push('ระบุชื่อผู้ได้รับการรับรองใต้ช่องรูปถ่าย');
   return issues;
@@ -108,9 +130,12 @@ export function numerals(value:string,style:Draft["numeralStyle"]) {
 }
 export function bodySections(d:Draft) {
   if(d.type==='minutes'&&d.minutesMode==='agenda') return [
+    ...((d.minutesTor.appointmentNumber||d.minutesTor.appointmentDate||d.minutesTor.authority||d.minutesTor.budget||d.minutesTor.priceReference)&&d.meetingAgenda.some(a=>a.torDetails)?[{title:'ข้อมูลประกอบการพิจารณา',text:[d.minutesTor.appointmentNumber?'คำสั่งแต่งตั้งเลขที่ '+d.minutesTor.appointmentNumber:'',d.minutesTor.appointmentDate?'ลงวันที่ '+thaiDate(d.minutesTor.appointmentDate):'',d.minutesTor.authority?'ผู้แต่งตั้ง / หน่วยงาน '+d.minutesTor.authority:'',d.minutesTor.budget?'วงเงินงบประมาณ '+d.minutesTor.budget:'',d.minutesTor.priceReference?'แหล่งอ้างอิงราคา / มาตรฐาน '+d.minutesTor.priceReference:''].filter(Boolean).join('\n')}]:[]),
     {title:'',text:d.minutesIntroduction},
     ...d.meetingAgenda.flatMap((a,i)=>[
       {title:`ระเบียบวาระที่ ${i+1}  ${a.title}`,text:a.discussion},
+      ...(a.torDetails?torDetailSections(d):[]),
+      ...(a.speeches||[]).map(s=>({title:[s.role,s.speaker?'('+s.speaker+')':''].filter(Boolean).join(' '),text:s.text})),
       ...(a.resolution.trim()?[{title:a.resolutionLabel,text:a.resolution}]:[]),
     ]),
   ];

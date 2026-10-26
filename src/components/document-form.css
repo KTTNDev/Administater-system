@@ -105,3 +105,10 @@
 .organization-directory-dialog::backdrop{background:color-mix(in srgb,var(--ui-ink) 30%,transparent)}
 .directory-dialog-close{display:flex;justify-content:flex-end;margin-bottom:20px}.directory-dialog-close button{display:inline-flex;align-items:center;gap:6px;min-height:44px}
 @media(max-width:600px){.organization-directory-dialog{padding:16px}}
+/* Meeting presets retain the existing form hierarchy. */
+.minutes-preset{padding:16px;border:1px solid var(--ui-border,#dce5e0);border-radius:9px;background:var(--ui-surface,#fff)}
+.minutes-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.minutes-controls button{display:inline-flex;align-items:center;gap:6px}
+.minutes-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.minutes-members label,.minutes-signing label,.tor-details label,.minutes-preset label{display:block;margin:10px 0}
+.minutes-members .agenda-card,.minutes-signing .agenda-card,.tor-details .agenda-card,.minutes-speeches .agenda-card{padding:14px;margin:12px 0;border:1px solid var(--ui-border,#dce5e0);border-radius:8px;background:var(--ui-surface,#fff)}
+.tor-details{margin:18px 0;padding:16px;background:var(--ui-bg,#f8faf8);border-radius:9px}.tor-details>h4{margin:0 0 12px}.tor-details summary,.minutes-signing summary,.minutes-speeches summary{cursor:pointer;padding:8px 0;font-weight:600}.minutes-speeches{margin:14px 0}
+@media(max-width:620px){.minutes-fields{grid-template-columns:1fr}}

@@ -11,6 +11,9 @@ import { BodyEditor } from "./body-editor";
 import { ConclusionPicker } from "./writing-assistants";
 
 const MinutesEditor=dynamic(()=>import("./minutes-editor").then(m=>m.MinutesEditor));
+const MinutesPresetPicker=dynamic(()=>import("./minutes-details").then(m=>m.MinutesPresetPicker));
+const MinutesMembersEditor=dynamic(()=>import("./minutes-details").then(m=>m.MinutesMembersEditor));
+const MinutesSigningEditor=dynamic(()=>import("./minutes-details").then(m=>m.MinutesSigningEditor));
 const DocumentTools=dynamic(()=>import("./document-tools").then(m=>m.DocumentTools));
 const StructuredBody=dynamic(()=>import("./document-tools").then(m=>m.StructuredBody));
 const ReviewChain=dynamic(()=>import("./document-tools").then(m=>m.ReviewChain));
@@ -108,9 +111,9 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
     <h3 className="section-heading"><span className="section-icon"><Paperclip size={19}/></span>{external?"สิ่งที่ส่งมาด้วย":"เอกสารแนบท้าย"}<span className="section-count">{attachmentCount?`${attachmentCount} รายการ`:"ถ้ามี"}</span></h3>
     {external&&<div className="field-grid"><label className="wide">สิ่งที่ส่งมาด้วยเพิ่มเติม (ถ้ามี)<textarea rows={2} maxLength={2000} value={d.additionalEnclosures} onChange={e=>change({additionalEnclosures:e.target.value})} placeholder="รายการที่ส่งแยก เช่น แบบแปลน จำนวน 1 ชุด"/></label><p className="compact-hint wide">เอกสารและรูปที่เพิ่มด้านล่างจะปรากฏในสิ่งที่ส่งมาด้วยให้อัตโนมัติ</p></div>}
     <div className="attachment-options">
-      {correspondence&&<AppendixPagesEditor pages={d.appendixPages} onChange={appendixPages=>change({appendixPages})}/>}
+      {(correspondence||minutes)&&<AppendixPagesEditor pages={d.appendixPages} onChange={appendixPages=>change({appendixPages})}/>}
       <AppendixEditor title={d.appendixTitle} layout={d.appendixLayout} images={d.appendixImages} sources={sources} onTitle={appendixTitle=>change({appendixTitle})} onLayout={appendixLayout=>change({appendixLayout})} onImages={appendixImages=>change({appendixImages})} onSources={onSources} onBusy={onBusy}/>
-      {correspondence&&<AttachmentEditor draft={d} onChange={attachmentFiles=>change({attachmentFiles})} onBusy={onBusy} onPhrase={attachmentPhrase=>change({attachmentPhrase})}/>}
+      {(correspondence||minutes)&&<AttachmentEditor draft={d} onChange={attachmentFiles=>change({attachmentFiles})} onBusy={onBusy} onPhrase={attachmentPhrase=>change({attachmentPhrase})}/>}
     </div>
   </section>;
 
@@ -119,7 +122,7 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
       {["stamped","certificate"].includes(d.type)&&field("subject","ชื่อร่างในรายการเอกสาร",{wide:true,required:true})}
       {!minutes&&<div className="agency-fill wide"><label>กรอกข้อมูลหน่วยงานอัตโนมัติ<select value="" onChange={e=>{const org=directory.find(o=>o.id===e.target.value);if(org)change({organization:org.name,department:org.department,address:org.address,phone:org.phone})}}><option value="">เลือกหน่วยงาน หรือพิมพ์เอง</option>{directory.map(org=><option key={org.id} value={org.id}>{org.name}{org.department?' · '+org.department:''}</option>)}</select></label><button type="button" className="agency-manage-button" onClick={onManageOrganizations}><Settings2 size={15}/>จัดการรายชื่อหน่วยงาน</button></div>}
       {<details className="header-marks wide" open={d.urgency!=="ปกติ"||d.confidentiality!=="ปกติ"}><summary>ชั้นความเร็ว / ชั้นความลับ <span>{[d.urgency,d.confidentiality].filter(v=>v!=="ปกติ").join(" · ")||"ปกติ"}</span></summary><div className="field-grid"><label>ชั้นความเร็ว<select aria-label="ชั้นความเร็ว" value={d.urgency} onChange={e=>change({urgency:e.target.value as Draft["urgency"]})}>{["ปกติ","ด่วน","ด่วนมาก","ด่วนที่สุด"].map(v=><option key={v}>{v}</option>)}</select></label><label>ชั้นความลับ<select aria-label="ชั้นความลับ" value={d.confidentiality} onChange={e=>change({confidentiality:e.target.value as Draft["confidentiality"]})}>{["ปกติ","ลับ","ลับมาก","ลับที่สุด"].map(v=><option key={v}>{v}</option>)}</select></label>{d.confidentiality!=="ปกติ"&&<>{field("secretSetNumber","เลขที่ชุด",{type:"number"})}{field("secretSetTotal","จำนวนชุดทั้งหมด",{type:"number"})}</>}</div></details>}
-      {minutes?<>{subject}{field("meetingNo","ครั้งที่",{required:true})}{date}{field("location","สถานที่",{required:true,wide:true})}<details className="header-marks wide" open={!d.organization}><summary>หน่วยงานเจ้าของรายงาน</summary>{agency}</details></>:memo?<>{agency}{contact}{field("number","เลขที่หนังสือ")}{date}{subject}</>:external||d.type==="certificate"?<>{field("number","เลขที่หนังสือ")}{agency}{field("address","ที่อยู่ส่วนราชการ",{textarea:true,wide:true})}{external&&<>{date}{subject}</>}</>:<>
+      {minutes?<><MinutesPresetPicker draft={d} onChange={change}/>{subject}{field("meetingNo","ครั้งที่",{required:true})}{date}{field("location","สถานที่",{required:true,wide:true})}<details className="header-marks wide" open={!d.organization}><summary>หน่วยงานเจ้าของรายงาน</summary>{agency}</details></>:memo?<>{agency}{contact}{field("number","เลขที่หนังสือ")}{date}{subject}</>:external||d.type==="certificate"?<>{field("number","เลขที่หนังสือ")}{agency}{field("address","ที่อยู่ส่วนราชการ",{textarea:true,wide:true})}{external&&<>{date}{subject}</>}</>:<>
         {d.type!=="stamped"&&agency}
         {!["news","other","announcement"].includes(d.type)&&field("number",["regulation","rule","statement"].includes(d.type)?"ฉบับที่ (ถ้ามี)":"เลขที่หนังสือ")}
         {d.type!=="stamped"&&subject}
@@ -128,7 +131,7 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
       {directed&&<>{correspondence&&<label>คำขึ้นต้น<select value={d.salutation} onChange={e=>change({salutation:e.target.value})}><option>เรียน</option><option>กราบเรียน</option><option>นมัสการ</option></select></label>}{field("recipient",d.type==="stamped"?"ถึง":"ผู้รับหนังสือ",{required:true,wide:!correspondence})}{external&&field("reference","อ้างถึง (ถ้ามี)",{textarea:true,wide:true,placeholder:"ชื่อหนังสือ เลขที่ และวันที่"})}</>}
     </Section>
     {external&&attachments}
-    {minutes&&<Section id="attendees" title="ผู้เข้าประชุม" icon={<Users size={19}/>}>{field("attendees","ผู้มาประชุม",{textarea:true,wide:true,required:true})}{field("absentees","ผู้ไม่มาประชุม พร้อมเหตุผล",{textarea:true,wide:true})}{field("participants","ผู้เข้าร่วมประชุม",{textarea:true,wide:true})}{field("startTime","เริ่มประชุมเวลา",{type:"time",required:true})}</Section>}
+    {minutes&&<Section id="attendees" title="ผู้เข้าประชุม" icon={<Users size={19}/>}>{<MinutesMembersEditor draft={d} onChange={change}/>}{field("attendees",d.minutesAttendanceMode==="table"?"รายชื่อผู้มาประชุมเพิ่มเติม (ข้อความ)":"ผู้มาประชุม",{textarea:true,wide:true,required:d.minutesAttendanceMode==="text"})}{field("absentees","ผู้ไม่มาประชุม พร้อมเหตุผล",{textarea:true,wide:true})}{field("participants","ผู้เข้าร่วมประชุม",{textarea:true,wide:true})}{field("startTime","เริ่มประชุมเวลา",{type:"time",required:true})}</Section>}
     <Section id="body" title={minutes?"เนื้อหาการประชุม":"เนื้อหาหนังสือ"} icon={<FileText size={19}/>} tone="blue">
       {minutes&&<MinutesEditor draft={d} onChange={change}/>}
       {!(minutes&&d.minutesMode==="agenda")&&<><StructuredBody draft={d} onChange={change}/>{d.bodyMode==="free"&&<div className="wide"><label htmlFor="document-body">{minutes?"ระเบียบวาระ ความคิดเห็น และมติที่ประชุม":"ข้อความ"}<span className="required"> *</span></label><BodyEditor id="document-body" value={d.body} required onChange={body=>change({body})}/><ConclusionPicker draft={d} onChange={change}/></div>}</>}
@@ -136,7 +139,7 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
       <div className="wide"><FormHelp>ขึ้นบรรทัดใหม่เพื่อเริ่มย่อหน้า ระบบย่อหน้า 2.5 ซม. ให้อัตโนมัติ เลือกข้อความแล้วกดตัวหนา หรือแทรกตารางจากแถบเครื่องมือได้</FormHelp></div>
     </Section>
     <Section id="signing" title={minutes?"ปิดการประชุม":signed?"ส่วนท้ายและผู้ลงนาม":"ส่วนท้ายหนังสือ"} icon={<PenLine size={19}/>} tone="violet">
-      {minutes?<>{field("endTime","เลิกประชุมเวลา",{type:"time",required:true})}{field("recorder","ผู้จดรายงานการประชุม",{required:true,wide:true})}</>:<>
+      {minutes?<>{field("endTime","เลิกประชุมเวลา",{type:"time",required:true})}{field("recorder","ผู้จดรายงานการประชุม",{required:true,wide:true})}<MinutesSigningEditor draft={d} onChange={change}/></>:<>
         {external&&field("closing","คำลงท้าย",{wide:true,required:true})}
         {d.type==="stamped"&&agency}
         {issued&&!["regulation","rule"].includes(d.type)&&date}

@@ -39,7 +39,7 @@ export function extractWordPages(): WordPage[] {
           text.push(...runs(child));
         });
       }
-      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling, border:false };
+      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling), border:false };
     };
     const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),blocks:[],overlays:[]};
     const walk = (el: Element, floating = false) => {

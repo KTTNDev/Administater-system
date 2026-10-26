@@ -26,7 +26,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
     if(b.kind==='line')p(`<span class="budget-label">${inline(b.label)}</span><span>${inline(b.text)}</span>`,"budget-line");
     else if(b.kind==='budget-money')p(`<span>${inline(b.label)}</span><span>เป็นเงิน</span><span>${inline(b.text)}</span><span>บาท</span>`,"budget-money");
     else p(inline(b.text),b.kind==='heading'?"title budget-heading":b.kind==='budget-detail'?"budget-detail":b.kind==='budget-spec'?"budget-spec":"body-text");
-  }):bodySections(d).filter(s=>s.text.trim()||(d.type==='minutes'&&d.minutesMode==='agenda'&&s.title)).forEach(s=>{if(s.title&&(d.sectionHeadings||d.type==='minutes'&&d.minutesMode==='agenda'))p(inline(s.title),d.bodyMode==='structured'&&!(d.type==='minutes'&&d.minutesMode==='agenda')?"title structured-section-title":"title");formattedLines(s.text);});
+  }):bodySections(d).filter(s=>s.text.trim()||(d.type==='minutes'&&d.minutesMode==='agenda'&&s.title)).forEach(s=>{if(s.title&&(d.sectionHeadings||d.type==='minutes'&&d.minutesMode==='agenda'))p(inline(s.title),d.bodyMode==='structured'&&!(d.type==='minutes'&&d.minutesMode==='agenda')?"title structured-section-title":d.type==='minutes'?"title minutes-section-title":"title");formattedLines(s.text);});
   const signatureMarkup=() => `<div class="signature"><div class="sign-space"></div><p>(${e(d.signer)})</p><p>${e(d.position)}</p></div>`;
   const signature=() => blocks.push(signatureMarkup());
   const contact=() => { if(d.department) p(e(d.department),"contact"); if(d.phone) field("โทร.",d.phone); if(d.email) p(`<span class="label">ไปรษณีย์อิเล็กทรอนิกส์</span> ${escapeHtml(d.email)}`); };
@@ -73,10 +73,30 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
       body(); p(`ให้ไว้ ณ วันที่ ${e(date)}`,"issued"); signature();
       if(d.certificatePhotoArea) blocks.push(`<div class="certificate-photo-area"><div class="certificate-photo">รูปถ่าย<br>(ถ้ามี)<br>${e("ขนาด 4 × 6 ซม.")}</div><p>ลงชื่อ ................................................</p><p>(${e(d.certificateRecipient)})</p><p>ผู้ได้รับการรับรอง</p><p class="certificate-seal">(ประทับตราชื่อส่วนราชการ)</p></div>`);
       break;
-    case "minutes":
-      p(`รายงานการประชุม${e(d.subject)}`,"center title"); p(`ครั้งที่ ${e(d.meetingNo)}`,"center"); p(`เมื่อ ${e(date)}`,"center"); p(`ณ ${e(d.location)}`,"center"); p("____________________","center divider");
-      field("ผู้มาประชุม",d.attendees); field("ผู้ไม่มาประชุม",d.absentees||"ไม่มี"); field("ผู้เข้าร่วมประชุม",d.participants||"ไม่มี");
-      field("เริ่มประชุมเวลา",d.startTime); body(); field("เลิกประชุมเวลา",d.endTime); p(`${e(d.recorder)}\nผู้จดรายงานการประชุม`,"closing"); break;
+    case "minutes": {
+      if(d.minutesTitle.trim()){p(e(d.minutesTitle),"center title");p(e(d.subject),"center title");}
+      else p(`รายงานการประชุม${e(d.subject)}`,"center title");
+      p(`ครั้งที่ ${e(d.meetingNo)}`,"center");p(`เมื่อ ${e(date)}`,"center");p(`ณ ${e(d.location)}`,"center");p("____________________","center divider");
+      if(d.minutesAttendanceMode==='table'){
+        const attendanceTable=(status:'present'|'participant',label:string)=>{
+          const members=d.meetingMembers.filter(m=>m.status===status);if(!members.length)return;
+          p(e(label),'title minutes-roster-heading');
+          blocks.push(`<table class="document-table minutes-attendance"><thead><tr><th style="width:10%">ลำดับ</th><th style="width:25%">ชื่อ - สกุล</th><th style="width:30%">ตำแหน่ง / หน้าที่</th><th style="width:20%">ลายมือชื่อ</th><th style="width:15%">หมายเหตุ</th></tr></thead><tbody>${members.map((m,i)=>`<tr><td>${e(String(i+1))}</td><td>${e(m.name)}</td><td>${e(m.position)}${m.role?'<br>'+e(m.role):''}</td><td>&nbsp;</td><td>${e(m.note)}</td></tr>`).join('')}</tbody></table>`);
+        };
+        attendanceTable('present','ผู้มาประชุม');if(d.attendees.trim())field('ผู้มาประชุมเพิ่มเติม',d.attendees);
+        const absent=d.meetingMembers.filter(m=>m.status==='absent').map(m=>[m.name,m.position,m.role,m.note?'เหตุผล: '+m.note:''].filter(Boolean).join('  '));
+        field('ผู้ไม่มาประชุม',[...absent,d.absentees].filter(Boolean).join('\n')||'ไม่มี');
+        attendanceTable('participant','ผู้เข้าร่วมประชุม');if(d.participants.trim()||!d.meetingMembers.some(m=>m.status==='participant'))field('ผู้เข้าร่วมประชุม',d.participants||'ไม่มี');
+      }else{field('ผู้มาประชุม',d.attendees);field('ผู้ไม่มาประชุม',d.absentees||'ไม่มี');field('ผู้เข้าร่วมประชุม',d.participants||'ไม่มี');}
+      field('เริ่มประชุมเวลา',d.startTime);body();
+      if(enclosures.length){p('เอกสารประกอบการประชุม','title');enclosures.forEach((item,index)=>p(e(`${index+1}. ${item}`)));}
+      field('เลิกประชุมเวลา',d.endTime);
+      if(d.minutesAttendanceMode==='table'||d.recorderPosition||d.meetingSigners.length){
+        const people=[{name:d.recorder,position:d.recorderPosition,role:d.recorderRole},...d.meetingSigners];
+        for(const person of people)blocks.push(`<div class="signature minutes-signature"><div class="sign-space"></div><p>ลงชื่อ ................................................</p><p>(${e(person.name)})</p>${person.position?`<p>${e(person.position)}</p>`:''}<p>${e(person.role)}</p></div>`);
+      }else p(`${e(d.recorder)}\n${e(d.recorderRole)}`,"closing");
+      break;
+    }
     case "other": p(e(d.subject),"center title"); p(e(d.organization),"center"); p(e(date),"center"); body(); break;
   }
   if(["internal","memorandum"].includes(d.type)) {
@@ -117,6 +137,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   .budget-line{display:flex;gap:4mm;text-indent:0}.budget-label{flex:0 0 53mm;font-weight:bold}.budget-line>span:last-child{flex:1;min-width:0}.center{text-align:center;margin-right:var(--center-inset)}.title{font-weight:700}.structured-section-title{margin-left:25mm;text-decoration:underline;text-underline-offset:2pt}.center-emblem{text-align:center;margin-right:var(--center-inset);margin-bottom:8pt}.issued{text-indent:25mm;margin-top:12pt}.divider{margin-bottom:12pt}
   .urgency{font-weight:bold;font-size:32pt;color:#f00;position:absolute;left:${compact?52:30}mm;top:${d.copyMark!=="none"?29:16}mm;line-height:1}.copy-mark{position:absolute;left:50%;top:1mm;transform:translateX(-50%);width:38mm;height:auto;z-index:21;pointer-events:none}.copy-mark-text{left:0;right:0;width:auto;transform:none;text-align:center;white-space:nowrap;font-size:32pt;font-weight:bold;color:#174890}.routing-stamp{position:absolute;right:5mm;bottom:5mm;width:82mm;height:auto;z-index:21;pointer-events:none}.counterpart-start{display:none}.opinion{margin-top:8mm;break-inside:avoid}.opinion-line{position:relative;height:8mm}.opinion-sign{margin-top:8mm;text-align:center;margin-left:70mm}.opinion-sign p{margin-bottom:0}.production{margin:12mm 0 0 auto;width:85mm;break-inside:avoid}.production p{margin-bottom:2mm}.stamp-placeholder{margin:8mm 0 0 70mm;text-align:center;color:#777;font-size:14pt}
   .continuation-cue{position:absolute;right:20mm;bottom:20mm;max-width:90mm;text-align:right;white-space:nowrap;font-size:16pt;line-height:normal}.page-number{position:absolute;top:14mm;left:0;right:0;text-align:center}.security{position:absolute;top:1mm;left:0;right:0;text-align:center;color:#f00;font-weight:700;font-size:32pt;line-height:1}.security.bottom{top:auto;bottom:2mm}
+  .minutes-attendance td{min-height:12mm;padding:7pt 4pt}.minutes-attendance td:first-child{text-align:center}.minutes-attendance th:first-child{white-space:nowrap}.minutes-roster-heading{text-decoration:underline}.minutes-signature{width:100mm;margin-left:auto;margin-top:6pt}.minutes-signature .sign-space{height:12mm}
   .budget-document{line-height:normal}.budget-document p{margin-bottom:0}.budget-document .body-text{text-indent:25mm}
   .budget-document .memo-field{margin-bottom:6pt}.budget-document .memo-row .memo-field{margin-bottom:6pt}.budget-document .memo-head{margin-bottom:6pt}
   .budget-document .budget-heading{margin-top:6pt;text-indent:25.4mm}.budget-document .budget-line{margin-left:25.4mm;gap:0;line-height:18.1pt}.budget-document .budget-label{flex-basis:25.4mm;font-weight:400}
@@ -151,7 +172,10 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   // An iframe may run before its parent has completed layout. Zero-sized pages
   // falsely make every paragraph fit; wait for measurable paper before splitting.
   const waitForPaper=async()=>{for(let attempt=0;attempt<120&&(content.clientHeight<1||content.clientWidth<1);attempt++)await new Promise(resolve=>setTimeout(resolve,16));if(content.clientHeight<1||content.clientWidth<1)throw new Error('Paper is not measurable')};
-  const paginate=async(nodes,copy=false)=>{next(copy);await waitForPaper();for(let node of nodes){if((node.classList.contains('appendix-sheet')||node.classList.contains('appendix-page-start'))&&content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();if(!node.classList.contains('body-text')&&!node.classList.contains('appendix-text')&&node.tagName!=='TABLE'){if(content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();}
+  const paginate=async(nodes,copy=false)=>{next(copy);await waitForPaper();for(let node of nodes){if((node.classList.contains('appendix-sheet')||node.classList.contains('appendix-page-start'))&&content.children.length)next(copy);content.append(node);
+    // Meeting headings need room for the next lines, rather than sitting alone at a page foot.
+    if(node.classList.contains('minutes-section-title')&&content.children.length>1){const probe=document.createElement('div');probe.style.height=((parseFloat(getComputedStyle(node).lineHeight)||parseFloat(getComputedStyle(node).fontSize)*1.2)*3)+'px';content.append(probe);const room=fits();probe.remove();if(!room){node.remove();next(copy);content.append(node)}}
+    if(fits())continue;node.remove();if(!node.classList.contains('body-text')&&!node.classList.contains('appendix-text')&&node.tagName!=='TABLE'){if(content.children.length)next(copy);content.append(node);if(fits())continue;node.remove();}
     if(node.tagName==='TABLE'){
       const tableRows=Array.from(node.querySelectorAll('tbody tr')).map(row=>row.cloneNode(true));
       if(!tableRows.length){content.append(node);overflow=true;continue}
