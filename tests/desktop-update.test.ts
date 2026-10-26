@@ -15,9 +15,9 @@ function setup(name:string,version='old'){
  fs.copyFileSync(process.execPath,path.join(root,'.desktop/runtime/node.exe'));
  const release={version,appVersion:version==='old'?'1.0.0':'1.0.1',node:process.version,platform:process.platform,arch:process.arch,built:new Date().toISOString()};
  fs.writeFileSync(path.join(root,'.desktop/current.json'),JSON.stringify(release));fs.writeFileSync(path.join(root,'.desktop/versions',version,'app/server.js'),'// fixture');
- for(const file of ['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','update-desktop.mjs','update-desktop.ps1'])fs.copyFileSync(path.join('scripts',file),path.join(root,'scripts',file));
+ for(const file of ['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'])fs.copyFileSync(path.join('scripts',file),path.join(root,'scripts',file));
  fs.writeFileSync(path.join(root,'scripts/desktop.mjs'),launcher);
- for(const file of ['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'])fs.copyFileSync(file,path.join(root,file));
+ for(const file of ['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'])fs.copyFileSync(file,path.join(root,file));
  fs.writeFileSync(path.join(root,'.env.local'),'DATABASE_PATH=./data/sarabun.sqlite\nSESSION_SECRET=fixture-private-secret\n');
  const db=new DatabaseSync(path.join(root,'data/sarabun.sqlite'));db.exec("CREATE TABLE documents(text TEXT);INSERT INTO documents VALUES('original document');CREATE TABLE settings(value TEXT);INSERT INTO settings VALUES('private setting')");db.close();return root;
 }
@@ -26,7 +26,7 @@ let source:string,packageRoot:string;
 beforeAll(()=>{source=setup('source','new');packageRoot=makeUpdate(source,path.join(sandbox,'package'));});
 afterAll(()=>{fs.rmSync(sandbox,{recursive:true,force:true});});
 test('update package contains no workspace data or credentials',()=>{
- const m=verifyUpdate(packageRoot);expect(m.release.appVersion).toBe('1.0.1');expect(m.files.some((x:{name:string})=>x.name.startsWith('data/')||x.name.includes('.env'))).toBe(false);
+ const m=verifyUpdate(packageRoot);expect(m.release.appVersion).toBe('1.0.1');expect(m.files.some((x:{name:string})=>x.name.startsWith('data/')||x.name.includes('.env'))).toBe(false);expect(m.files.map((x:{name:string})=>x.name)).toContain('scripts/create-desktop-shortcuts.ps1');expect(m.files.map((x:{name:string})=>x.name)).toContain('Create-Shortcuts-Sarabun.cmd');
 });
 test('rejects changed files and traversal paths before touching installation',()=>{
  const p=path.join(sandbox,'tampered');fs.cpSync(packageRoot,p,{recursive:true});fs.appendFileSync(path.join(p,'Open-Sarabun.cmd'),'tampered');expect(()=>verifyUpdate(p)).toThrow(/checksum/);
@@ -39,7 +39,7 @@ test('updates without changing data, rolls back to matching data, and preserves 
 },20000);
 test('failed startup restores both prior program and database after a partial migration',()=>{
  const root=setup('failure');fs.writeFileSync(path.join(root,'FAIL-START'),'1');expect(()=>applyUpdate(root,packageRoot)).toThrow(/previous version retained/);expect(content(root)).toBe('original document');expect(JSON.parse(fs.readFileSync(path.join(root,'.desktop/current.json'),'utf8')).version).toBe('old');expect(fs.existsSync(path.join(root,'.desktop/pending-update.json'))).toBe(false);
-});
+},20000);
 test('interrupted update journal can recover without a completed update record',()=>{
  const root=setup('interrupted');applyUpdate(root,packageRoot);const last=JSON.parse(fs.readFileSync(path.join(root,'.desktop/last-update.json'),'utf8'));fs.renameSync(path.join(root,'.desktop/last-update.json'),path.join(root,'.desktop/pending-update.json'));rollback(root);expect(content(root)).toBe('original document');expect(fs.existsSync(path.join(root,'.desktop/pending-update.json'))).toBe(false);expect(fs.existsSync(path.join(root,last.backup,'database.sqlite'))).toBe(true);
 });

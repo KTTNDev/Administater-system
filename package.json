@@ -1,6 +1,6 @@
 {
   "name": "sarabun-workspace",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
@@ -34,7 +34,7 @@
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
     "sharp": "0.35.5",
-    "zod": "4.5.4"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -25,8 +25,8 @@ try {
   fs.cpSync(path.join(root, '.desktop', 'runtime'), path.join(target, '.desktop', 'runtime'), { recursive: true });
   fs.copyFileSync(path.join(root, '.desktop', 'current.json'), path.join(target, '.desktop', 'current.json'));
   fs.mkdirSync(path.join(target, 'scripts'));
-  for (const file of ['update-desktop.mjs', 'update-desktop.ps1', 'backup-worker.mjs', 'workspace-backup.mjs', 'desktop.mjs', 'export-desktop.mjs', 'restore-backup.mjs', 'configure-production.mjs', 'setup-production.ps1']) fs.copyFileSync(path.join(root, 'scripts', file), path.join(target, 'scripts', file));
-  for (const file of ['Update-Sarabun.cmd', 'Rollback-Sarabun.cmd', 'CHANGELOG.md', 'Open-Sarabun.cmd', 'Stop-Sarabun.cmd', 'Export-Sarabun.cmd', 'Setup-Sarabun-Production.cmd', 'DESKTOP-README.md', 'QUICK-START-TH.md']) fs.copyFileSync(path.join(root, file), path.join(target, file));
+  for (const file of ['update-desktop.mjs', 'update-desktop.ps1', 'backup-worker.mjs', 'workspace-backup.mjs', 'desktop.mjs', 'export-desktop.mjs', 'restore-backup.mjs', 'configure-production.mjs', 'setup-production.ps1','create-desktop-shortcuts.ps1']) fs.copyFileSync(path.join(root, 'scripts', file), path.join(target, 'scripts', file));
+  for (const file of ['Update-Sarabun.cmd', 'Rollback-Sarabun.cmd', 'CHANGELOG.md', 'Open-Sarabun.cmd', 'Stop-Sarabun.cmd', 'Export-Sarabun.cmd', 'Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd', 'DESKTOP-README.md', 'QUICK-START-TH.md']) fs.copyFileSync(path.join(root, file), path.join(target, file));
   const empty = process.argv.includes('--empty');
   fs.mkdirSync(path.join(target, 'data'));
   if (fs.existsSync(path.join(root, 'data'))) fs.cpSync(path.join(root, 'data'), path.join(target, 'data'), { recursive: true, filter: file => !/\.sqlite(?:-wal|-shm)?$/.test(file) });

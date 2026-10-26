@@ -14,8 +14,8 @@ function within(root,name){
  let part=root;for(const segment of name.split('/')){part=path.join(part,segment);if(fs.existsSync(part)&&fs.lstatSync(part).isSymbolicLink())throw Error('Links are not allowed in update paths');}
  return target;
 }
-const controls=['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','update-desktop.mjs','update-desktop.ps1'];
-const launchers=['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'];
+const controls=['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'];
+const launchers=['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'];
 export function verifyUpdate(folder){
  const m=read(path.join(folder,'update-manifest.json'));
  if(m.format!==1||!/^\d+\.\d+\.\d+$/.test(m.release?.appVersion||'')||!/^[\w-]+$/.test(m.release?.version||'')||m.release.node!==process.version)throw Error('Unsupported update package or Node runtime');
