@@ -1,6 +1,7 @@
 "use client";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import type { Draft } from '@/lib/document';
+import {TorDetailsEditor} from './minutes-details';
 
 const suggestions=['เรื่องที่ประธานแจ้งให้ที่ประชุมทราบ','รับรองรายงานการประชุมครั้งที่ผ่านมา','เรื่องสืบเนื่อง','เรื่องเสนอเพื่อพิจารณา','เรื่องอื่น ๆ'];
 export function MinutesEditor({draft,onChange}:{draft:Draft;onChange:(patch:Partial<Draft>)=>void}) {
@@ -21,6 +22,12 @@ export function MinutesEditor({draft,onChange}:{draft:Draft;onChange:(patch:Part
         </div></div>
         <label>หัวข้อวาระ<input list="meeting-agenda-suggestions" maxLength={300} value={agenda.title} onChange={e=>edit(index,{title:e.target.value})}/></label>
         <label>ข้ออภิปราย / รายละเอียด<textarea rows={5} maxLength={10000} value={agenda.discussion} onChange={e=>edit(index,{discussion:e.target.value})} placeholder="ระบุผู้เสนอ ประเด็น และความคิดเห็นที่ต้องบันทึก"/></label>
+        <label className="check-label"><input type="checkbox" checked={!!agenda.torDetails} onChange={e=>onChange({meetingAgenda:draft.meetingAgenda.map((a,i)=>i===index?{...a,torDetails:e.target.checked}:e.target.checked?{...a,torDetails:false}:a)})}/>แสดงชุดรายละเอียด TOR ในวาระนี้</label>
+        {agenda.torDetails&&<TorDetailsEditor draft={draft} onChange={onChange}/>}
+        <details className="minutes-speeches" open={!!agenda.speeches?.length}><summary>บันทึกผู้พูดและข้อซักถามรายคน</summary>
+          {(agenda.speeches||[]).map((speech,n)=><div className="agenda-card" key={n}><div className="minutes-fields"><label>ชื่อผู้พูด<input maxLength={300} value={speech.speaker} onChange={e=>edit(index,{speeches:agenda.speeches!.map((s,j)=>j===n?{...s,speaker:e.target.value}:s)})}/></label><label>บทบาทผู้พูด<input maxLength={200} value={speech.role} onChange={e=>edit(index,{speeches:agenda.speeches!.map((s,j)=>j===n?{...s,role:e.target.value}:s)})}/></label></div><label>คำอภิปราย / ข้อซักถาม<textarea rows={3} maxLength={10000} value={speech.text} onChange={e=>edit(index,{speeches:agenda.speeches!.map((s,j)=>j===n?{...s,text:e.target.value}:s)})}/></label><div className="minutes-controls"><button type="button" className="secondary" disabled={n===0} onClick={()=>{const speeches=[...agenda.speeches!];[speeches[n-1],speeches[n]]=[speeches[n],speeches[n-1]];edit(index,{speeches});}}>เลื่อนผู้พูดขึ้น</button><button type="button" className="secondary" onClick={()=>{if(confirm('ลบผู้พูดและข้อความนี้?'))edit(index,{speeches:agenda.speeches!.filter((_,j)=>j!==n)});}}>ลบผู้พูด</button></div></div>)}
+          <button type="button" className="secondary" disabled={(agenda.speeches?.length||0)>=50} onClick={()=>edit(index,{speeches:[...(agenda.speeches||[]),{speaker:'',role:'',text:''}]})}><Plus size={16}/>เพิ่มผู้พูด / ข้อซักถาม</button>
+        </details>
         <label>ชื่อหัวข้อผลการพิจารณา<select value={agenda.resolutionLabel} onChange={e=>edit(index,{resolutionLabel:e.target.value as typeof agenda.resolutionLabel})}>{['มติที่ประชุม','ข้อยุติ','ข้อสรุป'].map(s=><option key={s}>{s}</option>)}</select></label>
         <label>ผลการพิจารณา (ถ้ามี)<textarea rows={3} maxLength={5000} value={agenda.resolution} onChange={e=>edit(index,{resolution:e.target.value})} placeholder="ไม่กรอก ระบบจะไม่แสดงหัวข้อนี้ในเอกสาร"/></label>
       </section>)}

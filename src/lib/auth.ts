@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { createHash, timingSafeEqual } from "node:crypto";
 export const localDemo = () => process.env.NODE_ENV === "development" && process.env.LOCAL_DEMO === "true";
+// Opt-in for the single-user launcher, which binds only to 127.0.0.1.
+export const localDesktop = () => process.env.SARABUN_LOCAL_DESKTOP === "true";
 export function secret() { const value = process.env.SESSION_SECRET; if (!value || value.length < 32) throw new Error("กรุณาตั้ง SESSION_SECRET อย่างน้อย 32 ตัวอักษร"); return value; }
 export function validPassword(value: string) {
   if (!process.env.APP_PASSWORD || process.env.APP_PASSWORD.length < 12) return false;
@@ -10,7 +12,7 @@ export function validPassword(value: string) {
   return timingSafeEqual(hash(value), hash(process.env.APP_PASSWORD));
 }
 export async function authenticated() {
-  if (localDemo()) return true;
+  if (localDesktop() || localDemo()) return true;
   const token = (await cookies()).get("sarabun-session")?.value;
   if (!token) return false;
   try { const {payload} = await jwtVerify(token, new TextEncoder().encode(secret()), { issuer:"sarabun", audience:"workspace" }); return payload.sub === "operator"; } catch { return false; }

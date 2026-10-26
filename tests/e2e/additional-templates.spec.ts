@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';import fs from 'node:fs';
 import {newDraft} from '../../src/lib/document';import {documentHtml} from '../../src/lib/render-document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png')};
+const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 test('new variants render without overflow and keep the requested top margin',async({page})=>{
  for(const type of ['external','internal','memorandum','stamped','order','regulation','announcement','certificate','minutes'] as const){
   await page.setContent(documentHtml({...newDraft(type),firstPageTop:'25',memoEmblem:true,subject:'ทดสอบรูปแบบเพิ่มเติม',organization:'เทศบาลตัวอย่าง',number:'2',body:'ข้อความตัวอย่างสำหรับตรวจรูปแบบ',signer:'ผู้ลงนามตัวอย่าง',position:'นายกเทศมนตรี',orderReceivedBy:'นายกเทศมนตรี'},assets));

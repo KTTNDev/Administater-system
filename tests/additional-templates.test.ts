@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {documentSchema,newDraft} from '../src/lib/document';
 import {documentHtml} from '../src/lib/render-document';
-const assets={regular:'data:font/ttf;base64,',bold:'data:font/ttf;base64,',garuda:'data:image/png;base64,'};
+const assets={regular:'data:font/ttf;base64,',bold:'data:font/ttf;base64,',garuda:'data:image/png;base64,',routingStamp:'data:image/png;base64,',copyMark:'data:image/png;base64,'};
 it('preserves legacy defaults and validates optional first-page margins',()=>{
  expect(documentSchema.parse({type:'internal',date:'2026-09-21',subject:'เดิม'}).firstPageTop).toBe('15');
  expect(documentSchema.safeParse({...newDraft(),firstPageTop:'99'}).success).toBe(false);

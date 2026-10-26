@@ -81,13 +81,14 @@ function searchableText(document: SavedDraft) {
     ...document.meetingAgenda.flatMap(a=>[a.title,a.discussion,a.resolution]),
     document.certificateRecipient,
     document.background,
+    document.facts,
     document.legalBasis,
     document.consideration,
     document.proposal,
     template(document.type).name,
     template(document.type).group,
     document.date,
-    String(documentYear(document.date, document.yearMode)),
+    document.date ? String(documentYear(document.date, document.yearMode)) : "ไม่ระบุปี",
   ]
     .join(" "));
 }
@@ -117,7 +118,7 @@ export function DocumentDashboard({
   const synced = documents.filter((document) => document.syncedVersion === document.version).length;
   const years = useMemo(
     () =>
-      [...new Set(documents.map((document) => documentYear(document.date, document.yearMode)))]
+      [...new Set(documents.map((document) => documentYear(document.date, document.yearMode)).filter(year => year > 0))]
         .sort((a, b) => b - a),
     [documents],
   );
@@ -281,7 +282,7 @@ export function DocumentDashboard({
                 const isSynced = document.syncedVersion === document.version;
                 return <tr key={document.id}>
                   <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small>{document.number || "ยังไม่ระบุเลขที่"} · ฉบับที่ {document.version}</small></span></button></td>
-                  <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} {documentYear(document.date, document.yearMode)}</small></td>
+                  <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.date ? `${document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} ${documentYear(document.date, document.yearMode)}` : "ยังไม่ระบุปี"}</small></td>
                   <td><strong className={styles.cellMain}>{document.recipient || "—"}</strong><small className={styles.cellSub}>{document.department || document.organization || "ยังไม่ระบุหน่วยงาน"}</small></td>
                   <td><strong className={styles.cellMain}>{formatter.format(new Date(document.updatedAt))}</strong><small className={styles.cellSub}>{timeFormatter.format(new Date(document.updatedAt))} น.</small></td>
                   <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span><span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : <CloudOff size={12} />}{isSynced ? "จัดเก็บแล้ว" : "รอจัดเก็บ"}</span></td>

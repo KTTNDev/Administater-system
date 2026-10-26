@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {newDraft} from '../../src/lib/document';
 import {documentHtml} from '../../src/lib/render-document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png')};
+const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 test('agenda form reorders items and preserves both modes',async({page})=>{
  page.on('dialog',dialog=>dialog.accept());
  await page.goto('/');await page.getByRole('button',{name:'แบบหนังสือราชการ',exact:true}).click();

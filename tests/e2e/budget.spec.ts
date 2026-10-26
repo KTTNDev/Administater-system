@@ -4,7 +4,7 @@ import {documentHtml} from '../../src/lib/render-document';
 import {budgetSample} from '../../src/lib/budget';
 import {budgetDraft} from '../../src/lib/budget-document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png')};
+const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 test('budget pattern paginates all entries, totals and five opinions',async({page})=>{
  const b=budgetSample('2026-09-15');b.signer='ผู้เสนอ (ตัวอย่าง)';b.position='เจ้าพนักงานธุรการ';b.increases.forEach((r,i)=>Object.assign(r,i===0?{pricingBasis:'standard',sourceId:'ict',sourcePage:20,sourceItem:'37 อุปกรณ์ค้นหาเส้นทางเครือข่าย (Router)',citedCirculars:['1095']}:{pricingBasis:'local',pricingReason:'[ตัวอย่าง: ระบุผลการเทียบคุณลักษณะที่จำเป็นกับบัญชีมาตรฐาน]',pricingEvidence:'[ตัวอย่าง: กรอกใบเสนอราคาและวันที่ของหลักฐานจริง]',citedCirculars:['1095','1989','7509']}));
  await page.setContent(documentHtml(budgetDraft(b),assets));await page.waitForFunction(()=>!!(window as unknown as {__paginationDone:boolean}).__paginationDone);

@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {bodySections,documentSchema,newDraft,reviewIssues} from '../src/lib/document';
 import {documentHtml} from '../src/lib/render-document';
-const assets={regular:'data:font/ttf;base64,',bold:'data:font/ttf;base64,',garuda:'data:image/png;base64,'};
+const assets={regular:'data:font/ttf;base64,',bold:'data:font/ttf;base64,',garuda:'data:image/png;base64,',routingStamp:'data:image/png;base64,',copyMark:'data:image/png;base64,'};
 it('keeps legacy reports and switches agenda content without destroying free text',()=>{
  const old=documentSchema.parse({type:'minutes',subject:'ประชุม',date:'2026-09-25',body:'ข้อความเดิม'});
  expect(old.minutesMode).toBe('free');expect(old.certificatePhotoArea).toBe(false);

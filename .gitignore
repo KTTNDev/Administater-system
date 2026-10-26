@@ -3,6 +3,8 @@ node_modules-stalled/
 .tools/
 .runtime-local.json
 .next/
+.next-workspace/
+.local-startup-backup/
 .env*
 !.env.example
 data/

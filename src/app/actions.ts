@@ -8,12 +8,13 @@ import { requireUser, validPassword, createSession } from "@/lib/auth";
 import { listDrafts, writeDraft, removeDraft, readDraft, auditHistory, getSetting, setSetting } from "@/lib/db";
 import { syncToDrive } from "@/lib/drive";
 import { validateAttachments } from "@/lib/attachments";
+import { validateAppendixImages } from "@/lib/appendix";
 const uuid = z.string().uuid();
 const versionSchema = z.number().int().positive();
 export async function saveDocument(input: unknown, id?: string, version?: number) {
   try {
     await requireUser(); const draft = documentSchema.parse(input);
-    validateAttachments(draft);
+    validateAttachments(draft); validateAppendixImages(draft);
     if (id) { uuid.parse(id); versionSchema.parse(version); }
     if (draft.status === "reviewed" && reviewIssues(draft).length) throw new Error("ข้อมูลที่จำเป็นยังไม่ครบ: " + reviewIssues(draft).join(" · "));
     const saved = writeDraft(draft,id,version); revalidatePath("/"); return {ok:true as const, data:saved};

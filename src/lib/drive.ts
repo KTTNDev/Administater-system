@@ -104,8 +104,27 @@ export async function uploadLibraryPdf(input:{id:string;hash:string;title:string
  const pending=(shared.sarabunSyncQueue||Promise.resolve()).then(run,run);shared.sarabunSyncQueue=pending.catch(()=>{});return pending;
 }
 export async function verifyDriveFolder(id:string,privateOnly:boolean){
- if(!id||!/^[\w-]{10,200}$/.test(id))throw new Error("กรุณาระบุโฟลเดอร์ Drive ในตั้งค่า");const drive=await driveClient();const {data}=await drive.files.get({fileId:id,fields:"id,name,mimeType,trashed,capabilities(canAddChildren),permissions(type,role)",supportsAllDrives:true});
- if(data.trashed||data.mimeType!=="application/vnd.google-apps.folder"||!data.capabilities?.canAddChildren)throw new Error("โฟลเดอร์ไม่พร้อมใช้งาน หรือบัญชีนี้ไม่มีสิทธิ์เพิ่มไฟล์");
- const publicAccess=!!data.permissions?.some(p=>p.type==="anyone"||p.type==="domain");if(privateOnly&&(!data.permissions||publicAccess))throw new Error("การสำรองข้อมูลงานต้องใช้โฟลเดอร์ที่ตรวจสอบสิทธิ์ได้และไม่เปิดแก่ทุกคน/ทั้งโดเมน กรุณาตั้งโฟลเดอร์สำรองส่วนตัว");return {id:data.id,name:data.name,publicAccess};
+ if(!id||!/^[\w-]{10,200}$/.test(id))throw new Error("กรุณาระบุโฟลเดอร์ Drive ในตั้งค่า");
+ const drive=await driveClient();
+ try {
+  const {data}=await drive.files.get({fileId:id,fields:"id,name,mimeType,trashed,capabilities(canAddChildren),permissions(type,role)",supportsAllDrives:true});
+  if(data.trashed||data.mimeType!=="application/vnd.google-apps.folder"||!data.capabilities?.canAddChildren)throw new Error("โฟลเดอร์ไม่พร้อมใช้งาน หรือบัญชีนี้ไม่มีสิทธิ์เพิ่มไฟล์");
+  const publicAccess=data.permissions?data.permissions.some(p=>p.type==="anyone"||p.type==="domain"):null;
+  if(privateOnly&&publicAccess===true)throw new Error("การสำรองข้อมูลงานต้องใช้โฟลเดอร์ที่ไม่เปิดแก่ทุกคน/ทั้งโดเมน กรุณาตั้งโฟลเดอร์สำรองส่วนตัว");
+  return {id:data.id!,name:data.name||"Google Drive",publicAccess};
+ } catch(error) {
+  const e=error as {code?:number;response?:{status?:number}};
+  if(e.code!==404&&e.response?.status!==404)throw error;
+ }
+ // With the drive.file OAuth scope, Google can hide a user-created folder from
+ // metadata reads even when the user granted the app access to write into it.
+ // Prove write access using an empty, clearly named probe and remove it at once.
+ const name=`SARABUN_WRITE_ACCESS_TEST_${randomBytes(8).toString("hex")}.txt`;
+ const probe=await drive.files.create({requestBody:{name,mimeType:"text/plain",parents:[id],appProperties:{application:"sarabun",purpose:"temporary-drive-write-check"}},media:{mimeType:"text/plain",body:Readable.from(["Temporary Drive write-access check."])},fields:"id",supportsAllDrives:true});
+ const probeId=probe.data.id;
+ if(!probeId)throw new Error("Drive รับไฟล์ทดสอบแล้วแต่ไม่ส่งรหัสไฟล์กลับมา กรุณาตรวจโฟลเดอร์ Drive");
+ try { await drive.files.delete({fileId:probeId,supportsAllDrives:true}); }
+ catch { throw new Error(`อัปโหลดทดสอบได้ แต่ลบไฟล์ทดสอบไม่สำเร็จ กรุณาลบ ${name} ในโฟลเดอร์ Drive ด้วยตนเอง`); }
+ return {id,name:"โฟลเดอร์ Drive ที่กำหนด",publicAccess:null};
 }
-export async function uploadBackupFile(file:string,root:string,batch:string){await verifyDriveFolder(root,true);const drive=await driveClient(),backupRoot=await ensureFolder(drive,"สำรองข้อมูลระบบ",root),folder=await ensureFolder(drive,batch,backupRoot);const bytes=fs.readFileSync(file),hash=createHash("sha256").update(bytes).digest("hex"),key=`drive:backup:${getSetting("google:account")}:${root}:${batch}:${path.basename(file)}:${hash}`;let id=getSetting(key);if(id){try{const f=await drive.files.get({fileId:id,fields:"id,trashed"});if(!f.data.trashed)return id;id=undefined;}catch(e){if((e as {code?:number}).code!==404)throw e;}}if(!id){id=(await drive.files.generateIds({count:1})).data.ids?.[0];if(!id)throw new Error("สร้างรหัสไฟล์ไม่สำเร็จ");setSetting(key,id);}await drive.files.create({requestBody:{id,name:path.basename(file),parents:[folder],appProperties:{application:"sarabun",hash}},media:{mimeType:file.endsWith(".pdf")?"application/pdf":"application/json",body:Readable.from(bytes)},fields:"id"});return id;}
+export async function uploadBackupFile(file:string,root:string,batch:string,rootVerified=false){if(!rootVerified)await verifyDriveFolder(root,true);const drive=await driveClient(),backupRoot=await ensureFolder(drive,"สำรองข้อมูลระบบ",root),folder=await ensureFolder(drive,batch,backupRoot);const bytes=fs.readFileSync(file),hash=createHash("sha256").update(bytes).digest("hex"),key=`drive:backup:${getSetting("google:account")}:${root}:${batch}:${path.basename(file)}:${hash}`;let id=getSetting(key);if(id){try{const f=await drive.files.get({fileId:id,fields:"id,trashed"});if(!f.data.trashed)return id;id=undefined;}catch(e){if((e as {code?:number}).code!==404)throw e;}}if(!id){id=(await drive.files.generateIds({count:1})).data.ids?.[0];if(!id)throw new Error("สร้างรหัสไฟล์ไม่สำเร็จ");setSetting(key,id);}await drive.files.create({requestBody:{id,name:path.basename(file),parents:[folder],appProperties:{application:"sarabun",hash}},media:{mimeType:file.endsWith(".pdf")?"application/pdf":"application/json",body:Readable.from(bytes)},fields:"id"});return id;}
