@@ -1,29 +1,305 @@
+/**
+ * แผนที่อ่านโค้ด — src/lib/storage.ts
+ * หน้าที่: ตำแหน่งเก็บข้อมูลในเครื่อง ส่งออกชุดสำรอง และรวบรวมข้อมูลสำหรับรายงาน
+ *
+ * ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+ * 1. ../components/system-center.tsx
+ * 2. ../app/storage-actions.ts
+ * 3. ./storage.ts ← คุณอยู่ที่นี่
+ * 4. ./drive.ts
+ *
+ * ผู้ใช้ไฟล์นี้โดยตรง: ../app/legal-actions.ts, ../app/storage-actions.ts, ./appendix.ts, ./attachments.ts, ./backup-catalog.ts, ./drive.ts, ../../tests/appendix.test.ts, ../../tests/attachments.test.ts (และจุดอื่นที่ค้นชื่อ export ได้ใน IDE)
+ * อ่านต่อจาก import: ./db.ts
+ *
+ * แนวทางแก้: เมื่อเปลี่ยนผลลัพธ์หรือ signature ให้ตรวจผู้เรียกที่ระบุด้านบนและชุดทดสอบที่นำเข้าไฟล์นี้
+ * TypeScript ตรวจชนิดตอนพัฒนา; การรับข้อมูลจริงยังต้องใช้ schema/เงื่อนไข runtime ตามโค้ด ไม่ใช่ใช้ as เพื่อข้ามข้อมูลผิด
+ */
+/* นำเข้า server-only — กันการนำไฟล์ที่ใช้ฐานข้อมูล/ความลับไป bundle ใน browser */
 import "server-only";
+/* นำเข้า node:fs — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import fs from "node:fs";
+/* นำเข้า node:path — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import path from "node:path";
-import { randomUUID,createHash } from "node:crypto";
+/* นำเข้า node:crypto — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import { randomUUID, createHash } from "node:crypto";
+/* นำเข้า node:sqlite — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import { DatabaseSync } from "node:sqlite";
-import { db,getSetting,setSetting,listDrafts } from "./db";
-export function storageConfig(){return {localFolder:getSetting("storage:local")||path.resolve(process.env.SARABUN_SOURCE_DIR||process.cwd(),"output/storage"),database:path.resolve(process.env.SARABUN_SOURCE_DIR||process.cwd(),process.env.DATABASE_PATH||"data/sarabun.sqlite"),driveRoot:getSetting("storage:driveRoot")||process.env.DRIVE_ROOT_FOLDER_ID||"",backupRoot:getSetting("storage:backupRoot")||"",lastExport:getSetting("storage:lastExport")||""};}
-export function setStorage(localFolder:string,driveRoot:string,backupRoot:string){if(!path.isAbsolute(localFolder)||localFolder.length>500)throw new Error("ระบุพาธโฟลเดอร์เต็ม เช่น D:\\sarabun\\output\\storage");for(const v of [driveRoot,backupRoot])if(v&&!/^[a-zA-Z0-9_-]{10,200}$/.test(v))throw new Error("ระบุรหัสโฟลเดอร์ Drive หรือ URL ที่ถูกต้อง");const root=path.resolve(localFolder);if(root===path.parse(root).root)throw new Error("เลือกโฟลเดอร์ย่อย ไม่ใช้รากไดรฟ์");fs.mkdirSync(root,{recursive:true});const probe=path.join(root,`.sarabun-check-${randomUUID()}`);fs.writeFileSync(probe,"ok",{flag:"wx"});fs.unlinkSync(probe);setSetting("storage:local",root);setSetting("storage:driveRoot",driveRoot);setSetting("storage:backupRoot",backupRoot);return storageConfig();}
-export const safeSegment=(s:string)=>s.replace(/[\\/:*?"<>|\x00-\x1f]/g,"-").replace(/[. ]+$/g,"").slice(0,90)||"ไม่ระบุ";
-export function mirrorLegal(id:string){const row=db().prepare("SELECT data,file FROM legal_library WHERE id=?").get(id);if(!row?.file)return null;const data=JSON.parse(String(row.data)),bytes=Buffer.from(row.file as Uint8Array);const folder=path.join(storageConfig().localFolder,"คลังกฎหมายและระเบียบ",safeSegment(data.category||"อื่น ๆ"),safeSegment(data.year||"ไม่ระบุปี"));fs.mkdirSync(folder,{recursive:true});const target=path.join(folder,`${id}-${createHash("sha256").update(bytes).digest("hex").slice(0,12)}.pdf`);fs.writeFileSync(target,bytes);return target;}
-export function exportWorkspace(){const folder=path.join(storageConfig().localFolder,"สำรองข้อมูล",new Date().toISOString().replace(/[:.]/g,"-")+"-"+randomUUID().slice(0,8));fs.mkdirSync(folder,{recursive:true});const tables=["documents","recovery_drafts","budget_transfers","office_items","meeting_rooms","room_bookings","calendar_events","legal_library","document_attachments","document_appendix_images","audit"];
- const snapshot=db().transaction(()=>Object.fromEntries(tables.map(table=>{const exists=db().prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);return [table,exists?db().prepare(`SELECT * FROM ${table}`).all():[]];})))();
- const files:string[]=[];
- // Rebuild an independent SQLite snapshot from the same transaction as JSON.
- // Only business tables are copied; settings/OAuth credentials never enter it.
- const databaseFile=path.join(folder,'sarabun.sqlite'),backup=new DatabaseSync(databaseFile);
- try{backup.exec('BEGIN');for(const [table,rows] of Object.entries(snapshot)){
-  const schema=db().prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?").get(table);
-  if(!schema?.sql)continue;backup.exec(String(schema.sql));
-  for(const row of rows){const keys=Object.keys(row);const quote=(name:string)=>'"'+name.replaceAll('"','""')+'"';backup.prepare(`INSERT INTO ${quote(table)} (${keys.map(quote).join(',')}) VALUES (${keys.map(()=>'?').join(',')})`).run(...keys.map(key=>row[key]));}
-  const indexes=db().prepare("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL").all(table);for(const index of indexes)backup.exec(String(index.sql));
- }backup.exec('COMMIT');}finally{backup.close();}files.push(databaseFile);
- for(const [name,rows] of Object.entries(snapshot)){const file=path.join(folder,name+".json");fs.writeFileSync(file,JSON.stringify(["legal_library","document_attachments","document_appendix_images"].includes(name)?rows.map(({file,original,...rest})=>rest):rows,null,2));files.push(file);}const documentsWithFiles=[...snapshot.legal_library,...snapshot.document_attachments];for(const r of documentsWithFiles){if(r.file){const dest=path.join(folder,String(r.id)+".pdf");fs.writeFileSync(dest,Buffer.from(r.file as Uint8Array));files.push(dest);}if(r.original){const dest=path.join(folder,String(r.id)+"-original"+path.extname(String(r.original_name||".bin")));fs.writeFileSync(dest,Buffer.from(r.original as Uint8Array));files.push(dest);}}for(const r of snapshot.document_appendix_images){if(r.file){const extension=r.mime==="image/png"?".png":".jpg",dest=path.join(folder,String(r.id)+extension);fs.writeFileSync(dest,Buffer.from(r.file as Uint8Array));files.push(dest);}}
- const referenceFolder=path.join(process.env.SARABUN_SOURCE_DIR||process.cwd(),'data','budget-references');for(const name of ['ict.pdf','ict-2569.pdf','equipment.pdf','classification.pdf']){const source=path.join(referenceFolder,name);if(fs.existsSync(source)){const dest=path.join(folder,'budget-reference-'+name);fs.copyFileSync(source,dest);files.push(dest);}}
- const templateReference=path.join(process.env.SARABUN_SOURCE_DIR||process.cwd(),'data/template-references/20170502100402.pdf');if(fs.existsSync(templateReference)){const dest=path.join(folder,'template-reference-20170502100402.pdf');fs.copyFileSync(templateReference,dest);files.push(dest);}
- const manifest={schemaVersion:2,at:new Date().toISOString(),counts:Object.fromEntries(Object.entries(snapshot).map(([k,v])=>[k,v.length])),files:files.map(file=>({name:path.basename(file),sha256:createHash("sha256").update(fs.readFileSync(file)).digest("hex")})),note:"ฐานข้อมูลธุรกิจพร้อมไฟล์แนบใน SQLite และ JSON/PDF ไม่รวมการตั้งค่า รหัสผ่าน หรือ Google OAuth; ใช้ scripts/restore-backup.mjs กู้ลงโฟลเดอร์ใหม่"};fs.writeFileSync(path.join(folder,"manifest.json"),JSON.stringify(manifest,null,2));setSetting("storage:lastExport",folder);return {folder,files:files.length+1,counts:manifest.counts};}
-export function reportData(){const c=db();const rows=(table:string)=>c.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)?c.prepare(`SELECT * FROM ${table}`).all():[];return {documents:listDrafts(),office:rows("office_items").map(r=>JSON.parse(String(r.data))),bookings:rows("room_bookings").map(r=>JSON.parse(String(r.data))),rooms:rows("meeting_rooms").length,calendar:rows("calendar_events").map(r=>JSON.parse(String(r.data))),laws:rows("legal_library").map(r=>({...JSON.parse(String(r.data)),hasFile:!!r.file,bytes:r.file?(r.file as Uint8Array).byteLength:0})),audit:c.prepare("SELECT action,at FROM audit ORDER BY id DESC LIMIT 1000").all().map(r=>({action:String(r.action),at:String(r.at)}))};}
+/* นำเข้า ./db.ts — ตัวเชื่อม SQLite และการบันทึกร่างแบบตรวจ version ป้องกันหน้าต่างหนึ่งเขียนทับอีกหน้าต่าง */
+import { db, getSetting, setSetting, listDrafts } from "./db";
+/* รวมค่าตั้งจากฐานข้อมูลกับค่าเริ่มต้นจาก environment; ใช้จุดเดียวเพื่อให้ทุกส่วนเก็บไฟล์ตรงกัน */
+export function storageConfig() {
+  return {
+    localFolder:
+      getSetting("storage:local") ||
+      path.resolve(
+        process.env.SARABUN_SOURCE_DIR || process.cwd(),
+        "output/storage",
+      ),
+    database: path.resolve(
+      process.env.SARABUN_SOURCE_DIR || process.cwd(),
+      process.env.DATABASE_PATH || "data/sarabun.sqlite",
+    ),
+    driveRoot:
+      getSetting("storage:driveRoot") || process.env.DRIVE_ROOT_FOLDER_ID || "",
+    backupRoot: getSetting("storage:backupRoot") || "",
+    lastExport: getSetting("storage:lastExport") || "",
+  };
+}
+/* ตรวจ path เต็มและรหัสโฟลเดอร์ Drive ก่อนบันทึกค่าตั้ง ไม่ย้ายไฟล์เก่าโดยอัตโนมัติ */
+export function setStorage(
+  localFolder: string,
+  driveRoot: string,
+  backupRoot: string,
+) {
+  if (!path.isAbsolute(localFolder) || localFolder.length > 500)
+    throw new Error("ระบุพาธโฟลเดอร์เต็ม เช่น D:\\sarabun\\output\\storage");
+  for (const v of [driveRoot, backupRoot])
+    if (v && !/^[a-zA-Z0-9_-]{10,200}$/.test(v))
+      throw new Error("ระบุรหัสโฟลเดอร์ Drive หรือ URL ที่ถูกต้อง");
+  const root = path.resolve(localFolder);
+  if (root === path.parse(root).root)
+    throw new Error("เลือกโฟลเดอร์ย่อย ไม่ใช้รากไดรฟ์");
+  fs.mkdirSync(root, { recursive: true });
+  const probe = path.join(root, `.sarabun-check-${randomUUID()}`);
+  fs.writeFileSync(probe, "ok", { flag: "wx" });
+  fs.unlinkSync(probe);
+  setSetting("storage:local", root);
+  setSetting("storage:driveRoot", driveRoot);
+  setSetting("storage:backupRoot", backupRoot);
+  return storageConfig();
+}
+export const safeSegment = (s: string) =>
+  s
+    .replace(/[\\/:*?"<>|\x00-\x1f]/g, "-")
+    .replace(/[. ]+$/g, "")
+    .slice(0, 90) || "ไม่ระบุ";
+/* คัดสำเนา PDF ของกฎหมายลงพื้นที่เก็บในเครื่องตามหมวดและปี */
+export function mirrorLegal(id: string) {
+  const row = db()
+    .prepare("SELECT data,file FROM legal_library WHERE id=?")
+    .get(id);
+  if (!row?.file) return null;
+  const data = JSON.parse(String(row.data)),
+    bytes = Buffer.from(row.file as Uint8Array);
+  const folder = path.join(
+    storageConfig().localFolder,
+    "คลังกฎหมายและระเบียบ",
+    safeSegment(data.category || "อื่น ๆ"),
+    safeSegment(data.year || "ไม่ระบุปี"),
+  );
+  fs.mkdirSync(folder, { recursive: true });
+  const target = path.join(
+    folder,
+    `${id}-${createHash("sha256").update(bytes).digest("hex").slice(0, 12)}.pdf`,
+  );
+  fs.writeFileSync(target, bytes);
+  return target;
+}
+/* สร้าง snapshot ข้อมูลธุรกิจและไฟล์ พร้อม manifest/hash สำหรับตรวจตอนกู้คืน */
+export function exportWorkspace() {
+  const folder = path.join(
+    storageConfig().localFolder,
+    "สำรองข้อมูล",
+    new Date().toISOString().replace(/[:.]/g, "-") +
+      "-" +
+      randomUUID().slice(0, 8),
+  );
+  fs.mkdirSync(folder, { recursive: true });
+  const tables = [
+    "documents",
+    "recovery_drafts",
+    "budget_transfers",
+    "office_items",
+    "meeting_rooms",
+    "room_bookings",
+    "calendar_events",
+    "legal_library",
+    "document_attachments",
+    "document_appendix_images",
+    "audit",
+  ];
+  const snapshot = db().transaction(() =>
+    Object.fromEntries(
+      tables.map((table) => {
+        const exists = db()
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+          )
+          .get(table);
+        return [
+          table,
+          exists ? db().prepare(`SELECT * FROM ${table}`).all() : [],
+        ];
+      }),
+    ),
+  )();
+  const files: string[] = [];
+  // Rebuild an independent SQLite snapshot from the same transaction as JSON.
+  // Only business tables are copied; settings/OAuth credentials never enter it.
+  const databaseFile = path.join(folder, "sarabun.sqlite"),
+    backup = new DatabaseSync(databaseFile);
+  try {
+    backup.exec("BEGIN");
+    for (const [table, rows] of Object.entries(snapshot)) {
+      const schema = db()
+        .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
+        .get(table);
+      if (!schema?.sql) continue;
+      backup.exec(String(schema.sql));
+      for (const row of rows) {
+        const keys = Object.keys(row);
+        const quote = (name: string) => '"' + name.replaceAll('"', '""') + '"';
+        backup
+          .prepare(
+            `INSERT INTO ${quote(table)} (${keys.map(quote).join(",")}) VALUES (${keys.map(() => "?").join(",")})`,
+          )
+          .run(...keys.map((key) => row[key]));
+      }
+      const indexes = db()
+        .prepare(
+          "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
+        )
+        .all(table);
+      for (const index of indexes) backup.exec(String(index.sql));
+    }
+    backup.exec("COMMIT");
+  } finally {
+    backup.close();
+  }
+  files.push(databaseFile);
+  for (const [name, rows] of Object.entries(snapshot)) {
+    const file = path.join(folder, name + ".json");
+    fs.writeFileSync(
+      file,
+      JSON.stringify(
+        [
+          "legal_library",
+          "document_attachments",
+          "document_appendix_images",
+        ].includes(name)
+          ? rows.map(({ file, original, ...rest }) => rest)
+          : rows,
+        null,
+        2,
+      ),
+    );
+    files.push(file);
+  }
+  const documentsWithFiles = [
+    ...snapshot.legal_library,
+    ...snapshot.document_attachments,
+  ];
+  for (const r of documentsWithFiles) {
+    if (r.file) {
+      const dest = path.join(folder, String(r.id) + ".pdf");
+      fs.writeFileSync(dest, Buffer.from(r.file as Uint8Array));
+      files.push(dest);
+    }
+    if (r.original) {
+      const dest = path.join(
+        folder,
+        String(r.id) +
+          "-original" +
+          path.extname(String(r.original_name || ".bin")),
+      );
+      fs.writeFileSync(dest, Buffer.from(r.original as Uint8Array));
+      files.push(dest);
+    }
+  }
+  for (const r of snapshot.document_appendix_images) {
+    if (r.file) {
+      const extension = r.mime === "image/png" ? ".png" : ".jpg",
+        dest = path.join(folder, String(r.id) + extension);
+      fs.writeFileSync(dest, Buffer.from(r.file as Uint8Array));
+      files.push(dest);
+    }
+  }
+  const referenceFolder = path.join(
+    process.env.SARABUN_SOURCE_DIR || process.cwd(),
+    "data",
+    "budget-references",
+  );
+  for (const name of [
+    "ict.pdf",
+    "ict-2569.pdf",
+    "equipment.pdf",
+    "classification.pdf",
+  ]) {
+    const source = path.join(referenceFolder, name);
+    if (fs.existsSync(source)) {
+      const dest = path.join(folder, "budget-reference-" + name);
+      fs.copyFileSync(source, dest);
+      files.push(dest);
+    }
+  }
+  const templateReference = path.join(
+    process.env.SARABUN_SOURCE_DIR || process.cwd(),
+    "data/template-references/20170502100402.pdf",
+  );
+  if (fs.existsSync(templateReference)) {
+    const dest = path.join(folder, "template-reference-20170502100402.pdf");
+    fs.copyFileSync(templateReference, dest);
+    files.push(dest);
+  }
+  const manifest = {
+    schemaVersion: 2,
+    at: new Date().toISOString(),
+    counts: Object.fromEntries(
+      Object.entries(snapshot).map(([k, v]) => [k, v.length]),
+    ),
+    files: files.map((file) => ({
+      name: path.basename(file),
+      sha256: createHash("sha256").update(fs.readFileSync(file)).digest("hex"),
+    })),
+    note: "ฐานข้อมูลธุรกิจพร้อมไฟล์แนบใน SQLite และ JSON/PDF ไม่รวมการตั้งค่า รหัสผ่าน หรือ Google OAuth; ใช้ scripts/restore-backup.mjs กู้ลงโฟลเดอร์ใหม่",
+  };
+  fs.writeFileSync(
+    path.join(folder, "manifest.json"),
+    JSON.stringify(manifest, null, 2),
+  );
+  setSetting("storage:lastExport", folder);
+  return { folder, files: files.length + 1, counts: manifest.counts };
+}
+/* รวมข้อมูลจากหลายตารางเพื่อทำสถิติ; หากเพิ่มตัวชี้วัดให้ตรวจทั้งการรวมที่นี่และหน้ารายงาน */
+export function reportData() {
+  const c = db();
+  const rows = (table: string) =>
+    c
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+      .get(table)
+      ? c.prepare(`SELECT * FROM ${table}`).all()
+      : [];
+  return {
+    documents: listDrafts(),
+    office: rows("office_items").map((r) => JSON.parse(String(r.data))),
+    bookings: rows("room_bookings").map((r) => JSON.parse(String(r.data))),
+    rooms: rows("meeting_rooms").length,
+    calendar: rows("calendar_events").map((r) => JSON.parse(String(r.data))),
+    laws: rows("legal_library").map((r) => ({
+      ...JSON.parse(String(r.data)),
+      hasFile: !!r.file,
+      bytes: r.file ? (r.file as Uint8Array).byteLength : 0,
+    })),
+    audit: c
+      .prepare("SELECT action,at FROM audit ORDER BY id DESC LIMIT 1000")
+      .all()
+      .map((r) => ({ action: String(r.action), at: String(r.at) })),
+  };
+}
 
-export function storeDocumentPdf(d:{id:string;version:number;type:string;date:string},bytes:Buffer){const folder=path.join(storageConfig().localFolder,"หนังสือราชการ",safeSegment(d.type),String(Number(d.date.slice(0,4))+543));fs.mkdirSync(folder,{recursive:true});const file=path.join(folder,`${d.id}-v${d.version}.pdf`);fs.writeFileSync(file,bytes);return file;}
+/* จัด PDF ตามประเภทและปี พร้อม id/version ในชื่อไฟล์เพื่อแยกฉบับ */
+export function storeDocumentPdf(
+  d: { id: string; version: number; type: string; date: string },
+  bytes: Buffer,
+) {
+  const folder = path.join(
+    storageConfig().localFolder,
+    "หนังสือราชการ",
+    safeSegment(d.type),
+    String(Number(d.date.slice(0, 4)) + 543),
+  );
+  fs.mkdirSync(folder, { recursive: true });
+  const file = path.join(folder, `${d.id}-v${d.version}.pdf`);
+  fs.writeFileSync(file, bytes);
+  return file;
+}

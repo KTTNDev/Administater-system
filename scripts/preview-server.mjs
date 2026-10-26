@@ -1,8 +1,26 @@
-import http from 'node:http';
-import fs from 'node:fs';
-import path from 'node:path';
-const root=process.cwd();
-const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สารบรรณ — พรีวิวหน้าระบบ</title><link rel="stylesheet" href="/styles.css"></head><body>
+/**
+ * แผนที่อ่านโค้ด — scripts/preview-server.mjs
+ * หน้าที่: เซิร์ฟเวอร์ประกอบการเปิดตัวอย่างตามเส้นทางที่กำหนดในสคริปต์นี้
+ *
+ * ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+ * 1. ./open-local.mjs
+ * 2. ./run-next.mjs
+ * 3. ../next.config.mjs
+ * 4. ../src/app/api/health/route.ts
+ * 5. ../src/app/page.tsx
+ * ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+ *
+ * แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+ * การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
+ */
+/* นำเข้า node:http — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import http from "node:http";
+/* นำเข้า node:fs — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import fs from "node:fs";
+/* นำเข้า node:path — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import path from "node:path";
+const root = process.cwd();
+const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สารบรรณ — พรีวิวหน้าระบบ</title><link rel="stylesheet" href="/styles.css"></head><body>
 <div class="app-shell"><aside class="sidebar"><a class="brand"><span class="brand-icon">▤</span><span><strong>สารบรรณ<span class="brand-dot">.</span></strong><small>DOCUMENT WORKSPACE</small></span></a><button class="primary new-document" onclick="location.href='#editor'">＋ สร้างหนังสือใหม่</button><div class="nav-caption">พื้นที่ทำงาน</div><nav><button class="active" onclick="location.href='#editor'">▤ จัดทำร่างหนังสือ</button><button disabled>▦ แบบหนังสือราชการ</button><button disabled>▧ คู่มือและแหล่งอ้างอิง</button></nav><div class="nav-caption">จัดการระบบ</div><nav><button disabled>⚙ ตั้งค่าหน่วยงานและ Drive</button></nav><div class="sidebar-bottom"><div class="drive-summary"><strong>Google Drive</strong><small>ยังไม่ได้เชื่อมต่อ</small></div><div class="account"><div class="avatar">ส</div><div><strong>ผู้ปฏิบัติงานสารบรรณ</strong><small>พื้นที่ทำงานบนเครื่องนี้</small></div></div></div></aside>
 <div class="main-shell"><header class="topbar"><div class="breadcrumbs"><span>พื้นที่ทำงาน</span> › <strong>จัดทำร่างหนังสือ</strong></div><span class="workspace-mode"><i class="dot green"></i>พรีวิวระหว่างเตรียมระบบ</span></header>
 <main class="editor-main" id="editor"><div class="editor-header"><div class="editor-title"><div><div class="eyebrow">หนังสือภายนอก</div><h1>จัดทำร่างหนังสือใหม่</h1></div><span class="badge draft">ข้อมูลตัวอย่าง</span></div><div class="editor-actions"><button class="secondary" disabled>ดาวน์โหลด PDF</button><button class="primary" disabled>บันทึกร่าง</button></div></div>
@@ -11,4 +29,32 @@ const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta nam
 จึงเรียนมาเพื่อโปรดพิจารณาเข้าร่วมประชุม</textarea></label><p class="field-note wide">ขึ้นบรรทัดใหม่เพื่อเริ่มย่อหน้า ระบบจัดย่อหน้าให้โดยอัตโนมัติ</p></div></details></div>
 <div class="preview-pane"><div class="preview-toolbar"><div><span class="live-dot"></span><strong>ตัวอย่างหนังสือ</strong><span class="preview-live">LIVE</span></div><span>65%</span></div><div class="preview-info"><span>A4 · 210 × 297 มม.</span><span>TH Sarabun New · 16 pt</span></div><div class="paper-scroll"><div class="paper-scale" style="width:516px;height:730px"><article style="width:794px;height:1123px;background:white;transform:scale(.65);transform-origin:top left;padding:57px 76px 76px 113px;font:21.33px Sarabun;line-height:1.15;color:#111"><div style="position:relative;height:160px"><img src="/assets/garuda.png" style="height:113px;position:absolute;left:44%;transform:translateX(-50%)"><div style="padding-top:90px;display:flex;justify-content:space-between"><span>ที่ <span data-bind="number"></span></span><span style="width:225px"><span data-bind="agency"></span><br>อำเภอเมือง จังหวัดตัวอย่าง 10000</span></div></div><p style="margin-left:300px">9 กันยายน 2569</p><p>เรื่อง <span data-bind="subject"></span></p><p>เรียน <span data-bind="recipient"></span></p><div id="body-preview" style="margin-top:15px"></div><p style="margin:25px 0 0 285px;text-align:center">ขอแสดงความนับถือ</p><p style="margin:90px 0 0 285px;text-align:center">(ชื่อ นามสกุล ตัวอย่าง)<br>นายกเทศมนตรี (ตัวอย่าง)</p><p style="margin-top:75px">สำนักปลัดเทศบาล<br>โทร. 0 2000 0000</p></article></div></div><div class="preview-footer">ตัวอย่างการจัดหน้า · กำลังเตรียมระบบบันทึกและส่งออก</div></div></div></main></div></div>
 <script>function update(){for(const key of ['subject','agency','number','recipient']){document.querySelector('[data-bind="'+key+'"]').textContent=document.getElementById(key).value}const box=document.getElementById('body-preview');box.replaceChildren();for(const line of document.getElementById('body').value.split('\\n')){const p=document.createElement('p');p.style.cssText='text-indent:94px;text-align:justify;margin:0 0 12px';p.textContent=line;box.append(p)}}document.querySelectorAll('input,textarea').forEach(el=>el.addEventListener('input',update));update();setInterval(async()=>{try{const r=await fetch('http://127.0.0.1:3000/api/health');if(r.ok)location.href='http://127.0.0.1:3000'}catch{}},10000)</script></body></html>`;
-http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(u.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);return}const routes={'/styles.css':['src/app/globals.css','text/css'],'/fonts/THSarabunNew.ttf':['public/fonts/THSarabunNew.ttf','font/ttf'],'/fonts/THSarabunNew-Bold.ttf':['public/fonts/THSarabunNew-Bold.ttf','font/ttf'],'/assets/garuda.png':['public/assets/garuda.png','image/png']};const entry=routes[u.pathname];if(!entry){res.writeHead(404);res.end();return}res.setHeader('Content-Type',entry[1]);res.end(fs.readFileSync(path.join(root,entry[0])))}).listen(3001,'127.0.0.1',()=>console.log('UI preview: http://127.0.0.1:3001'));
+http
+  .createServer((req, res) => {
+    const u = new URL(req.url, "http://localhost");
+    if (u.pathname === "/") {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.end(html);
+      return;
+    }
+    const routes = {
+      "/styles.css": ["src/app/globals.css", "text/css"],
+      "/fonts/THSarabunNew.ttf": ["public/fonts/THSarabunNew.ttf", "font/ttf"],
+      "/fonts/THSarabunNew-Bold.ttf": [
+        "public/fonts/THSarabunNew-Bold.ttf",
+        "font/ttf",
+      ],
+      "/assets/garuda.png": ["public/assets/garuda.png", "image/png"],
+    };
+    const entry = routes[u.pathname];
+    if (!entry) {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    res.setHeader("Content-Type", entry[1]);
+    res.end(fs.readFileSync(path.join(root, entry[0])));
+  })
+  .listen(3001, "127.0.0.1", () =>
+    console.log("UI preview: http://127.0.0.1:3001"),
+  );

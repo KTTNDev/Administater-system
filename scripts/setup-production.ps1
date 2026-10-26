@@ -1,3 +1,16 @@
+# แผนที่อ่านโค้ด — scripts/setup-production.ps1
+# หน้าที่: รับรหัสผ่านแบบไม่แสดงบนจอแล้วส่งให้ configure-production.mjs โดยไม่ใส่รหัสลง command line
+#
+# ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+# 1. ./open-local.mjs
+# 2. ./run-next.mjs
+# 3. ../next.config.mjs
+# 4. ../src/app/api/health/route.ts
+# 5. ../src/app/page.tsx
+# ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+#
+# แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+# การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 function Read-PlainPassword([string]$prompt) {

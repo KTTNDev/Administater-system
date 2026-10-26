@@ -1,7 +1,26 @@
+/**
+ * แผนที่อ่านโค้ด — scripts/seed-drive-demo.mjs
+ * หน้าที่: สร้างข้อมูลตัวอย่างสำหรับทดลอง Drive ใช้กับสภาพแวดล้อมทดสอบก่อนรันกับข้อมูลจริง
+ *
+ * ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+ * 1. ../src/components/system-center.tsx
+ * 2. ../src/app/storage-actions.ts
+ * 3. ../src/lib/storage.ts
+ * 4. ../src/lib/drive.ts
+ * ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+ *
+ * แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+ * การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
+ */
+/* นำเข้า node:sqlite — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import { DatabaseSync } from "node:sqlite";
+/* นำเข้า node:path — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import path from "node:path";
 
-const databasePath = path.resolve(process.cwd(), process.env.DATABASE_PATH || "data/sarabun.sqlite");
+const databasePath = path.resolve(
+  process.cwd(),
+  process.env.DATABASE_PATH || "data/sarabun.sqlite",
+);
 const connection = new DatabaseSync(databasePath);
 connection.exec("PRAGMA journal_mode = WAL");
 connection.exec("PRAGMA busy_timeout = 5000");
@@ -40,19 +59,46 @@ const demos = [
     number: "ทส 0001/002",
     recipient: "ปลัดเทศบาลตำบลตัวอย่าง",
     bodyMode: "structured",
-    background: "ตามที่ได้รับมอบหมายให้ตรวจสอบความครบถ้วนของเอกสารประจำเดือนนั้น",
-    legalBasis: "ระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ พ.ศ. 2526 และที่แก้ไขเพิ่มเติม",
-    consideration: "ตรวจสอบแล้วเอกสารส่วนใหญ่ครบถ้วน และมีรายการที่ต้องแก้ไขตามรายละเอียดแนบ",
+    background:
+      "ตามที่ได้รับมอบหมายให้ตรวจสอบความครบถ้วนของเอกสารประจำเดือนนั้น",
+    legalBasis:
+      "ระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ พ.ศ. 2526 และที่แก้ไขเพิ่มเติม",
+    consideration:
+      "ตรวจสอบแล้วเอกสารส่วนใหญ่ครบถ้วน และมีรายการที่ต้องแก้ไขตามรายละเอียดแนบ",
     proposal: "จึงเรียนมาเพื่อโปรดทราบและพิจารณาสั่งการ",
     proposers: [
       { name: "นางสาวผู้เสนอ หนึ่ง", position: "นักจัดการงานทั่วไปชำนาญการ" },
       { name: "นายผู้เสนอ สอง", position: "หัวหน้าฝ่ายอำนวยการ" },
     ],
     opinions: [
-      { title: "ความเห็นหัวหน้าสำนักปลัด", comment: "เห็นควรดำเนินการตามข้อเสนอ", name: "นางหัวหน้า สำนักปลัด", position: "หัวหน้าสำนักปลัดเทศบาล", lines: 3 },
-      { title: "ความเห็นปลัดเทศบาล", comment: "เห็นชอบ", name: "นายปลัด เทศบาล", position: "ปลัดเทศบาล", lines: 3 },
-      { title: "ความเห็นรองนายกเทศมนตรี", comment: "เห็นควรเสนอผู้บริหาร", name: "นายรอง นายก", position: "รองนายกเทศมนตรี", lines: 2 },
-      { title: "คำสั่งนายกเทศมนตรี", comment: "อนุมัติ ให้ดำเนินการ", name: "นายทดสอบ ระบบสารบรรณ", position: "นายกเทศมนตรี", lines: 2 },
+      {
+        title: "ความเห็นหัวหน้าสำนักปลัด",
+        comment: "เห็นควรดำเนินการตามข้อเสนอ",
+        name: "นางหัวหน้า สำนักปลัด",
+        position: "หัวหน้าสำนักปลัดเทศบาล",
+        lines: 3,
+      },
+      {
+        title: "ความเห็นปลัดเทศบาล",
+        comment: "เห็นชอบ",
+        name: "นายปลัด เทศบาล",
+        position: "ปลัดเทศบาล",
+        lines: 3,
+      },
+      {
+        title: "ความเห็นรองนายกเทศมนตรี",
+        comment: "เห็นควรเสนอผู้บริหาร",
+        name: "นายรอง นายก",
+        position: "รองนายกเทศมนตรี",
+        lines: 2,
+      },
+      {
+        title: "คำสั่งนายกเทศมนตรี",
+        comment: "อนุมัติ ให้ดำเนินการ",
+        name: "นายทดสอบ ระบบสารบรรณ",
+        position: "นายกเทศมนตรี",
+        lines: 2,
+      },
     ],
   },
   {
@@ -172,10 +218,18 @@ CREATE TABLE IF NOT EXISTS audit (
   action TEXT NOT NULL, version INTEGER, at TEXT NOT NULL
 );`);
 
-const getExisting = connection.prepare("SELECT version, created_at FROM documents WHERE id = ?");
-const insertDocument = connection.prepare("INSERT INTO documents(id,data,version,created_at,updated_at,drive_file_id,synced_version) VALUES(?,?,?,?,?,?,?)");
-const updateDocument = connection.prepare("UPDATE documents SET data=?,updated_at=?,drive_file_id=?,synced_version=version WHERE id=?");
-const insertAudit = connection.prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)");
+const getExisting = connection.prepare(
+  "SELECT version, created_at FROM documents WHERE id = ?",
+);
+const insertDocument = connection.prepare(
+  "INSERT INTO documents(id,data,version,created_at,updated_at,drive_file_id,synced_version) VALUES(?,?,?,?,?,?,?)",
+);
+const updateDocument = connection.prepare(
+  "UPDATE documents SET data=?,updated_at=?,drive_file_id=?,synced_version=version WHERE id=?",
+);
+const insertAudit = connection.prepare(
+  "INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)",
+);
 const now = new Date().toISOString();
 
 connection.exec("BEGIN IMMEDIATE");
@@ -200,4 +254,6 @@ try {
   connection.close();
 }
 
-console.log(JSON.stringify({ success: true, databasePath, count: demos.length }, null, 2));
+console.log(
+  JSON.stringify({ success: true, databasePath, count: demos.length }, null, 2),
+);

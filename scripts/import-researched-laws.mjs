@@ -1,11 +1,99 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import {randomUUID,createHash} from 'node:crypto';
-import {DatabaseSync} from 'node:sqlite';
-const folder=path.resolve('output/legal-research-2026-09-14');
-const parse=file=>JSON.parse(fs.readFileSync(path.join(folder,file),'utf8').replace(/^\uFEFF/,''));
-const sources=parse('sources.json'),cloud=parse('drive-results.json'),db=new DatabaseSync('data/sarabun.sqlite');
-db.exec('PRAGMA busy_timeout=5000');
-const local=db.prepare("SELECT value FROM settings WHERE key='storage:local'").get()?.value||path.resolve('output/storage');
-for(const x of sources){const bytes=fs.readFileSync(path.join(folder,x.file));if(bytes.subarray(0,5).toString()!=='%PDF-'||bytes.length>10*1024*1024)throw new Error('Invalid PDF '+x.file);const existing=db.prepare("SELECT id FROM legal_library WHERE json_extract(data,'$.url')=?").get(x.url);if(existing){console.log('Already imported '+x.file);continue;}const id=randomUUID(),remote=cloud.find(r=>r.file===x.file);if(!remote)throw new Error('Missing verified upload');const data={title:x.title,category:x.category,year:x.year,url:x.url,section:'',notes:x.notes,tags:'แหล่งราชการ, ค้นคว้า 2569, '+x.category,status:'unchecked',highlight:'ตรวจแหล่งเผยแพร่ 14 ก.ย. 2569 — อ่านประกอบฉบับแก้ไขและหนังสือซักซ้อมที่เกี่ยวข้อง',page:1,driveFileId:remote.id,driveHash:createHash('sha256').update(bytes).update(JSON.stringify([x.title,x.category,x.year])).digest('hex')};const at=new Date().toISOString();db.prepare('INSERT INTO legal_library(id,data,file,file_name,updated_at) VALUES(?,?,?,?,?)').run(id,JSON.stringify(data),bytes,x.file,at);db.prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(id,'legal_research_import',1,at);const target=path.join(local,'คลังกฎหมายและระเบียบ',x.category,x.year);fs.mkdirSync(target,{recursive:true});fs.writeFileSync(path.join(target,id+'-'+createHash('sha256').update(bytes).digest('hex').slice(0,12)+'.pdf'),bytes);console.log(JSON.stringify({id,file:x.file,bytes:bytes.length,driveFileId:remote.id}));}
+/**
+ * แผนที่อ่านโค้ด — scripts/import-researched-laws.mjs
+ * หน้าที่: นำรายการกฎหมายที่เตรียมไว้เข้าสู่คลังข้อมูลของระบบ
+ *
+ * ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+ * 1. ./open-local.mjs
+ * 2. ./run-next.mjs
+ * 3. ../next.config.mjs
+ * 4. ../src/app/api/health/route.ts
+ * 5. ../src/app/page.tsx
+ * ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+ *
+ * แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+ * การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
+ */
+/* นำเข้า node:fs — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import fs from "node:fs";
+/* นำเข้า node:path — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import path from "node:path";
+/* นำเข้า node:crypto — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import { randomUUID, createHash } from "node:crypto";
+/* นำเข้า node:sqlite — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
+import { DatabaseSync } from "node:sqlite";
+const folder = path.resolve("output/legal-research-2026-09-14");
+const parse = (file) =>
+  JSON.parse(
+    fs.readFileSync(path.join(folder, file), "utf8").replace(/^\uFEFF/, ""),
+  );
+const sources = parse("sources.json"),
+  cloud = parse("drive-results.json"),
+  db = new DatabaseSync("data/sarabun.sqlite");
+db.exec("PRAGMA busy_timeout=5000");
+const local =
+  db.prepare("SELECT value FROM settings WHERE key='storage:local'").get()
+    ?.value || path.resolve("output/storage");
+for (const x of sources) {
+  const bytes = fs.readFileSync(path.join(folder, x.file));
+  if (
+    bytes.subarray(0, 5).toString() !== "%PDF-" ||
+    bytes.length > 10 * 1024 * 1024
+  )
+    throw new Error("Invalid PDF " + x.file);
+  const existing = db
+    .prepare("SELECT id FROM legal_library WHERE json_extract(data,'$.url')=?")
+    .get(x.url);
+  if (existing) {
+    console.log("Already imported " + x.file);
+    continue;
+  }
+  const id = randomUUID(),
+    remote = cloud.find((r) => r.file === x.file);
+  if (!remote) throw new Error("Missing verified upload");
+  const data = {
+    title: x.title,
+    category: x.category,
+    year: x.year,
+    url: x.url,
+    section: "",
+    notes: x.notes,
+    tags: "แหล่งราชการ, ค้นคว้า 2569, " + x.category,
+    status: "unchecked",
+    highlight:
+      "ตรวจแหล่งเผยแพร่ 14 ก.ย. 2569 — อ่านประกอบฉบับแก้ไขและหนังสือซักซ้อมที่เกี่ยวข้อง",
+    page: 1,
+    driveFileId: remote.id,
+    driveHash: createHash("sha256")
+      .update(bytes)
+      .update(JSON.stringify([x.title, x.category, x.year]))
+      .digest("hex"),
+  };
+  const at = new Date().toISOString();
+  db.prepare(
+    "INSERT INTO legal_library(id,data,file,file_name,updated_at) VALUES(?,?,?,?,?)",
+  ).run(id, JSON.stringify(data), bytes, x.file, at);
+  db.prepare(
+    "INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)",
+  ).run(id, "legal_research_import", 1, at);
+  const target = path.join(local, "คลังกฎหมายและระเบียบ", x.category, x.year);
+  fs.mkdirSync(target, { recursive: true });
+  fs.writeFileSync(
+    path.join(
+      target,
+      id +
+        "-" +
+        createHash("sha256").update(bytes).digest("hex").slice(0, 12) +
+        ".pdf",
+    ),
+    bytes,
+  );
+  console.log(
+    JSON.stringify({
+      id,
+      file: x.file,
+      bytes: bytes.length,
+      driveFileId: remote.id,
+    }),
+  );
+}
 db.close();

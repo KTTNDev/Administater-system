@@ -1,3 +1,17 @@
+# แผนที่อ่านโค้ด — scripts/index-budget-references.py
+# หน้าที่: อ่านเอกสารอ้างอิงงบประมาณและสร้างดัชนีให้ตัวเลือกในฟอร์มค้นหาได้
+#
+# ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+# 1. ../src/lib/budget.ts
+# 2. ../src/components/budget-transfers.tsx
+# 3. ../src/app/budget-actions.ts
+# 4. ../src/lib/budget-db.ts
+# 5. ../src/lib/budget-document.ts
+# 6. ../src/lib/render-document.ts
+# ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+#
+# แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+# การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
 """Rebuild the searchable index from the supplied PDFs; never edits originals."""
 import json,re,hashlib
 from pathlib import Path

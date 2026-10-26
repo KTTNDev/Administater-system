@@ -1,8 +1,36 @@
+/**
+ * แผนที่อ่านโค้ด — src/lib/booking-db.ts
+ * หน้าที่: เก็บห้องและการจอง มี transaction และ trigger ป้องกันการจองซ้อนถึงระดับ SQLite
+ *
+ * ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+ * 1. ./booking.ts
+ * 2. ../components/meeting-bookings.tsx
+ * 3. ../app/booking-actions.ts
+ * 4. ./booking-db.ts ← คุณอยู่ที่นี่
+ * 5. ./db.ts
+ *
+ * ผู้ใช้ไฟล์นี้โดยตรง: ../app/booking-actions.ts, ../app/page.tsx, ../../tests/booking.test.ts
+ * อ่านต่อจาก import: ./db.ts, ./booking.ts
+ *
+ * แนวทางแก้: เมื่อเปลี่ยนผลลัพธ์หรือ signature ให้ตรวจผู้เรียกที่ระบุด้านบนและชุดทดสอบที่นำเข้าไฟล์นี้
+ * TypeScript ตรวจชนิดตอนพัฒนา; การรับข้อมูลจริงยังต้องใช้ schema/เงื่อนไข runtime ตามโค้ด ไม่ใช่ใช้ as เพื่อข้ามข้อมูลผิด
+ */
+/* นำเข้า server-only — กันการนำไฟล์ที่ใช้ฐานข้อมูล/ความลับไป bundle ใน browser */
 import "server-only";
+/* นำเข้า node:crypto — API ของ Node.js ใช้ใน server/เครื่องผู้รัน ไม่ใช้ตรง ๆ ใน browser */
 import { randomUUID } from "node:crypto";
+/* นำเข้า ./db.ts — ตัวเชื่อม SQLite และการบันทึกร่างแบบตรวจ version ป้องกันหน้าต่างหนึ่งเขียนทับอีกหน้าต่าง */
 import { db } from "./db";
-import { bookingSchema, roomSchema, minutes, type Booking, type Room } from "./booking";
+/* นำเข้า ./booking.ts — กฎการจองห้อง ช่วงเวลา ความจุ และตัวช่วยวันที่/ตรวจช่วงเวลาทับกัน */
+import {
+  bookingSchema,
+  roomSchema,
+  minutes,
+  type Booking,
+  type Room,
+} from "./booking";
 
+/* เตรียมตารางของโมดูลนี้บน connection กลางจาก db.ts แล้วคืนตัวเชื่อมพร้อมใช้ */
 function connection() {
   const c = db();
   c.exec(`CREATE TABLE IF NOT EXISTS meeting_rooms(id TEXT PRIMARY KEY, data TEXT NOT NULL, version INTEGER NOT NULL);
@@ -20,54 +48,157 @@ function connection() {
     BEGIN SELECT RAISE(ABORT,'ห้องนี้มีการจองซ้อน กรุณาเลือกเวลาใหม่'); END;`);
   return c;
 }
+/* อ่านห้องและการจองภายใน transaction เดียวเพื่อได้ภาพข้อมูลที่สอดคล้องกัน */
 export function bookingSnapshot(): { rooms: Room[]; bookings: Booking[] } {
   const c = connection();
   return c.transaction(() => ({
-    rooms: c.prepare("SELECT * FROM meeting_rooms ORDER BY json_extract(data,'$.name')").all().map(r => ({ ...roomSchema.parse(JSON.parse(String(r.data))), id: String(r.id), version: Number(r.version) })),
-    bookings: c.prepare("SELECT * FROM room_bookings ORDER BY day,start_min,id").all().map(r => ({ ...JSON.parse(String(r.data)), id: String(r.id), version: Number(r.version), status: String(r.status), updatedAt: String(r.updated_at) } as Booking)),
+    rooms: c
+      .prepare(
+        "SELECT * FROM meeting_rooms ORDER BY json_extract(data,'$.name')",
+      )
+      .all()
+      .map((r) => ({
+        ...roomSchema.parse(JSON.parse(String(r.data))),
+        id: String(r.id),
+        version: Number(r.version),
+      })),
+    bookings: c
+      .prepare("SELECT * FROM room_bookings ORDER BY day,start_min,id")
+      .all()
+      .map(
+        (r) =>
+          ({
+            ...JSON.parse(String(r.data)),
+            id: String(r.id),
+            version: Number(r.version),
+            status: String(r.status),
+            updatedAt: String(r.updated_at),
+          }) as Booking,
+      ),
   }))();
 }
+/* เขียนชื่อเหตุการณ์ version และเวลาใน audit สำหรับตามรอยการเปลี่ยนข้อมูล */
 function audit(id: string, action: string, version: number) {
-  db().prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(id, action, version, new Date().toISOString());
+  db()
+    .prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)")
+    .run(id, action, version, new Date().toISOString());
 }
+/* ตรวจชื่อห้องซ้ำและ version แล้วเพิ่มหรือแก้ห้อง พร้อมลง audit */
 export function saveRoom(input: unknown, id?: string, version?: number) {
-  const data = roomSchema.parse(input), c = connection(), key = id || randomUUID();
+  const data = roomSchema.parse(input),
+    c = connection(),
+    key = id || randomUUID();
   c.transaction(() => {
-    if (c.prepare("SELECT id FROM meeting_rooms WHERE json_extract(data,'$.name')=? AND id<>?").get(data.name,key)) throw new Error("ชื่อห้องนี้มีอยู่แล้ว");
+    if (
+      c
+        .prepare(
+          "SELECT id FROM meeting_rooms WHERE json_extract(data,'$.name')=? AND id<>?",
+        )
+        .get(data.name, key)
+    )
+      throw new Error("ชื่อห้องนี้มีอยู่แล้ว");
     if (id) {
-      if (!c.prepare("UPDATE meeting_rooms SET data=?,version=version+1 WHERE id=? AND version=?").run(JSON.stringify(data),id,version??-1).changes) throw new Error("ข้อมูลห้องเปลี่ยนแล้ว กรุณารีเฟรช");
-    } else c.prepare("INSERT INTO meeting_rooms VALUES(?,?,1)").run(key,JSON.stringify(data));
-    audit(key,id?"room_update":"room_create",id?(version??0)+1:1);
-  })(); return key;
+      if (
+        !c
+          .prepare(
+            "UPDATE meeting_rooms SET data=?,version=version+1 WHERE id=? AND version=?",
+          )
+          .run(JSON.stringify(data), id, version ?? -1).changes
+      )
+        throw new Error("ข้อมูลห้องเปลี่ยนแล้ว กรุณารีเฟรช");
+    } else
+      c.prepare("INSERT INTO meeting_rooms VALUES(?,?,1)").run(
+        key,
+        JSON.stringify(data),
+      );
+    audit(key, id ? "room_update" : "room_create", id ? (version ?? 0) + 1 : 1);
+  })();
+  return key;
 }
+/* ตรวจห้อง ความจุ เวลา เอกสารอ้างอิง และ version ก่อนเขียน; trigger ยังตรวจช่วงซ้อนอีกชั้น */
 export function saveBooking(input: unknown, id?: string, version?: number) {
-  const data = bookingSchema.parse(input), c = connection(), key = id || randomUUID();
+  const data = bookingSchema.parse(input),
+    c = connection(),
+    key = id || randomUUID();
   c.transaction(() => {
-    const row = c.prepare("SELECT data FROM meeting_rooms WHERE id=?").get(data.roomId);
+    const row = c
+      .prepare("SELECT data FROM meeting_rooms WHERE id=?")
+      .get(data.roomId);
     if (!row) throw new Error("ไม่พบห้องประชุม");
     const room = roomSchema.parse(JSON.parse(String(row.data)));
     if (!room.active) throw new Error("ห้องนี้ปิดรับจอง");
-    if (data.attendees > room.capacity) throw new Error(`ห้องนี้รองรับได้ ${room.capacity} คน`);
-    if (minutes(data.end)+room.bufferMinutes>1440) throw new Error("เวลาใช้ห้องรวมจัดเก็บต้องไม่ข้ามวัน");
-    if (data.documentId && !c.prepare("SELECT id FROM documents WHERE id=?").get(data.documentId)) throw new Error("ไม่พบหนังสือที่เชื่อมโยง กรุณาเลือกใหม่");
-    const stored = JSON.stringify({...data,bufferMinutes:room.bufferMinutes,cancellationReason:""});
+    if (data.attendees > room.capacity)
+      throw new Error(`ห้องนี้รองรับได้ ${room.capacity} คน`);
+    if (minutes(data.end) + room.bufferMinutes > 1440)
+      throw new Error("เวลาใช้ห้องรวมจัดเก็บต้องไม่ข้ามวัน");
+    if (
+      data.documentId &&
+      !c.prepare("SELECT id FROM documents WHERE id=?").get(data.documentId)
+    )
+      throw new Error("ไม่พบหนังสือที่เชื่อมโยง กรุณาเลือกใหม่");
+    const stored = JSON.stringify({
+      ...data,
+      bufferMinutes: room.bufferMinutes,
+      cancellationReason: "",
+    });
     const now = new Date().toISOString();
     if (id) {
-      const old = c.prepare("SELECT status,version FROM room_bookings WHERE id=?").get(id);
-      if (!old || old.version!==version) throw new Error("รายการเปลี่ยนแล้ว กรุณารีเฟรชก่อนแก้ไข");
-      if (old.status==="cancelled") throw new Error("รายการยกเลิกแล้ว กรุณาสร้างการจองใหม่");
-      c.prepare("UPDATE room_bookings SET room_id=?,day=?,start_min=?,end_min=?,data=?,version=version+1,updated_at=? WHERE id=?").run(data.roomId,data.date,minutes(data.start),minutes(data.end)+room.bufferMinutes,stored,now,id);
-    } else c.prepare("INSERT INTO room_bookings VALUES(?,?,?,?,?,'booked',?,1,?)").run(key,data.roomId,data.date,minutes(data.start),minutes(data.end)+room.bufferMinutes,stored,now);
-    audit(key,id?"booking_update":"booking_create",id?(version??0)+1:1);
-  })(); return key;
+      const old = c
+        .prepare("SELECT status,version FROM room_bookings WHERE id=?")
+        .get(id);
+      if (!old || old.version !== version)
+        throw new Error("รายการเปลี่ยนแล้ว กรุณารีเฟรชก่อนแก้ไข");
+      if (old.status === "cancelled")
+        throw new Error("รายการยกเลิกแล้ว กรุณาสร้างการจองใหม่");
+      c.prepare(
+        "UPDATE room_bookings SET room_id=?,day=?,start_min=?,end_min=?,data=?,version=version+1,updated_at=? WHERE id=?",
+      ).run(
+        data.roomId,
+        data.date,
+        minutes(data.start),
+        minutes(data.end) + room.bufferMinutes,
+        stored,
+        now,
+        id,
+      );
+    } else
+      c.prepare(
+        "INSERT INTO room_bookings VALUES(?,?,?,?,?,'booked',?,1,?)",
+      ).run(
+        key,
+        data.roomId,
+        data.date,
+        minutes(data.start),
+        minutes(data.end) + room.bufferMinutes,
+        stored,
+        now,
+      );
+    audit(
+      key,
+      id ? "booking_update" : "booking_create",
+      id ? (version ?? 0) + 1 : 1,
+    );
+  })();
+  return key;
 }
+/* เปลี่ยนสถานะเป็น cancelled พร้อมเหตุผล โดยรักษาประวัติรายการจองไว้ */
 export function cancelBooking(id: string, version: number, reason: string) {
-  const c=connection();
-  c.transaction(()=>{
-    const row=c.prepare("SELECT * FROM room_bookings WHERE id=?").get(id);
-    if(!row||row.version!==version)throw new Error("รายการเปลี่ยนแล้ว กรุณารีเฟรช");
-    if(row.status==="cancelled")throw new Error("รายการนี้ยกเลิกแล้ว");
-    c.prepare("UPDATE room_bookings SET status='cancelled',data=?,version=version+1,updated_at=? WHERE id=?").run(JSON.stringify({...JSON.parse(String(row.data)),cancellationReason:reason}),new Date().toISOString(),id);
-    audit(id,"booking_cancel",version+1);
+  const c = connection();
+  c.transaction(() => {
+    const row = c.prepare("SELECT * FROM room_bookings WHERE id=?").get(id);
+    if (!row || row.version !== version)
+      throw new Error("รายการเปลี่ยนแล้ว กรุณารีเฟรช");
+    if (row.status === "cancelled") throw new Error("รายการนี้ยกเลิกแล้ว");
+    c.prepare(
+      "UPDATE room_bookings SET status='cancelled',data=?,version=version+1,updated_at=? WHERE id=?",
+    ).run(
+      JSON.stringify({
+        ...JSON.parse(String(row.data)),
+        cancellationReason: reason,
+      }),
+      new Date().toISOString(),
+      id,
+    );
+    audit(id, "booking_cancel", version + 1);
   })();
 }

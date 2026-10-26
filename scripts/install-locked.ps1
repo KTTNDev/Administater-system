@@ -1,3 +1,16 @@
+# แผนที่อ่านโค้ด — scripts/install-locked.ps1
+# หน้าที่: ติดตั้ง dependencies จาก lockfile สำหรับสภาพแวดล้อม Windows
+#
+# ลำดับแนะนำสำหรับเรียนรู้ (ลำดับอ่าน ไม่ใช่ทุกไฟล์ถูกเรียกตามเลขนี้):
+# 1. ./open-local.mjs
+# 2. ./run-next.mjs
+# 3. ../next.config.mjs
+# 4. ../src/app/api/health/route.ts
+# 5. ../src/app/page.tsx
+# ไฟล์นี้เป็นส่วนประกอบของเส้นทางข้างต้น ให้เริ่มอ่านชนิดข้อมูล/ผู้เรียกก่อนอ่านรายละเอียดภายใน
+#
+# แนวทางแก้: ตรวจโหมด/path/environment ก่อนรัน สคริปต์บางตัวเขียนไฟล์หรือฐานข้อมูลจริง อ่านเงื่อนไขก่อนเรียก
+# การแก้ไฟล์นี้ต้องคงรูปแบบภาษาของไฟล์ และตรวจผู้เรียกก่อนเปลี่ยนชื่อหรือผลลัพธ์
 # Alternative installation for Windows machines with very slow per-file metadata writes.
 # Uses package-lock.json integrity hashes and only installs the current OS/architecture.
 $ErrorActionPreference = 'Stop'
