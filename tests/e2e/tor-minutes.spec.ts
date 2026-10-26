@@ -29,15 +29,32 @@ test('TOR form can apply presets, edit members, reorder sections, save and reope
  await expect(page.locator('.tor-details details').first().getByLabel('ชื่อหัวข้อ TOR')).toHaveValue('วัตถุประสงค์');
  for(let i=0;i<5;i++)await page.getByRole('region',{name:'วาระที่ '+(i+1),exact:true}).getByRole('textbox',{name:'ข้ออภิปราย / รายละเอียด',exact:true}).fill('บันทึกข้ออภิปรายจริงของวาระ '+(i+1));
  for(let i=0;i<8;i++){const section=page.locator('.tor-details details').nth(i);await section.evaluate(el=>el.setAttribute('open',''));await page.getByLabel('รายละเอียด TOR '+(i+1),{exact:true}).fill('เนื้อหาหัวข้อ TOR '+(i+1)+' สำหรับทดสอบการบันทึกและส่งออก');}
- const speechDetails=page.locator('.minutes-speeches').nth(3);await speechDetails.locator('summary').click();await speechDetails.getByRole('button',{name:'เพิ่มผู้พูด / ข้อซักถาม',exact:true}).click();
- await page.getByLabel('ชื่อผู้พูด',{exact:true}).fill('กรรมการผู้ซักถาม');await page.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true}).fill('ข้อซักถามที่ต้องคงอยู่หลังเปิดกลับ');
+ const speechDetails=page.getByRole('region',{name:'ผู้พูดในวาระที่ 4',exact:true});
+ for(let i=1;i<=3;i++){
+  await speechDetails.getByRole('button',{name:'เพิ่มผู้พูด / ข้อซักถาม',exact:true}).click();
+  const row=speechDetails.getByRole('region',{name:'ผู้พูดลำดับที่ '+i,exact:true});
+  await row.getByLabel('ชื่อผู้พูด',{exact:true}).fill(i===3?'กรรมการคนที่ 1':'กรรมการคนที่ '+i);
+  await row.getByLabel('บทบาทผู้พูด',{exact:true}).fill('กรรมการ');
+  await row.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true}).fill('ข้อซักถามลำดับที่ '+i);
+ }
+ await speechDetails.getByRole('button',{name:'เลื่อนผู้พูด 1 ลง',exact:true}).click();
+ await expect(speechDetails.getByLabel('ชื่อผู้พูด',{exact:true}).first()).toHaveValue('กรรมการคนที่ 2');
+ await speechDetails.getByRole('button',{name:'เลื่อนผู้พูด 2 ขึ้น',exact:true}).click();
+ await speechDetails.getByRole('button',{name:'เพิ่มผู้พูด / ข้อซักถาม',exact:true}).click();
+ await speechDetails.getByRole('button',{name:'ลบผู้พูด 4',exact:true}).click();
+ await expect(speechDetails.locator('.agenda-card')).toHaveCount(3);
+ const other=page.getByRole('region',{name:'ผู้พูดในวาระที่ 5',exact:true});await other.getByRole('button',{name:'เพิ่มผู้พูด / ข้อซักถาม',exact:true}).click();
+ await other.getByLabel('ชื่อผู้พูด',{exact:true}).fill('ผู้พูดอีกวาระ');await other.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true}).fill('ข้อความของวาระที่ห้า');
  await page.getByLabel('ผู้จดรายงานการประชุม *',{exact:true}).fill('เลขานุการทดสอบ');await page.getByRole('button',{name:'เพิ่มจากกรรมการที่มาประชุม',exact:true}).click();await expect(page.locator('.minutes-signing .agenda-card')).toHaveCount(3);
  await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(page.locator('.toast[role="status"]')).toContainText('บันทึก');
  await page.reload();await page.getByText(subject,{exact:true}).first().click();
  await expect(page.getByRole('combobox',{name:'แม่แบบรายงานการประชุม',exact:true})).toHaveValue('tor-purchase');await expect(page.locator('.tor-details details').first().getByLabel('ชื่อหัวข้อ TOR')).toHaveValue('วัตถุประสงค์');
  await page.screenshot({path:'output/tor-check/tor-form.png'});
- await expect(page.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true})).toHaveValue('ข้อซักถามที่ต้องคงอยู่หลังเปิดกลับ');
+ await expect(speechDetails.getByLabel('ชื่อผู้พูด',{exact:true})).toHaveCount(3);
+ for(let i=1;i<=3;i++)await expect(speechDetails.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true}).nth(i-1)).toHaveValue('ข้อซักถามลำดับที่ '+i);
+ await expect(other.getByRole('textbox',{name:'คำอภิปราย / ข้อซักถาม',exact:true})).toHaveValue('ข้อความของวาระที่ห้า');
  const preview=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');await expect(preview.locator('#pages')).toContainText('เนื้อหาหัวข้อ TOR 8');
+ for(let i=1;i<=3;i++)await expect(preview.locator('#pages')).toContainText('ข้อซักถามลำดับที่ '+i);
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();const file=await download;
  fs.mkdirSync('output/tor-check',{recursive:true});await file.saveAs('output/tor-check/tor-ui-export.pdf');
  const pdf=await PDFDocument.load(fs.readFileSync('output/tor-check/tor-ui-export.pdf'));expect(pdf.getPageCount()).toBeGreaterThan(1);
