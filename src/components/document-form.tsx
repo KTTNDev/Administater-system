@@ -35,7 +35,11 @@ function Section({id,title,icon,children,tone="green"}:{id:string;title:string;i
   </details>;
 }
 
-export function DocumentFormNav({external}:{external:boolean}){
+export function DocumentFormNav({external,progressKey,issueCount}:{external:boolean;progressKey:unknown;issueCount:number}){
+  const navRef=useRef<HTMLElement>(null);
+  const [counts,setCounts]=useState<Record<string,string>>({});
+  useEffect(()=>{const nav=navRef.current,pane=nav?.closest<HTMLElement>(".form-pane");if(!nav||!pane)return;const measure=()=>pane.style.setProperty("--section-nav-height",`${nav.offsetHeight}px`);const observer=new ResizeObserver(measure);observer.observe(nav);measure();return()=>observer.disconnect();},[]);
+  useEffect(()=>{const pane=navRef.current?.closest(".form-pane");if(!pane)return;const result:Record<string,string>={};for(const id of ["header","body","signing"]){const controls=Array.from(pane.querySelectorAll<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>(`#form-${id} input:not([type=checkbox]):not([type=radio]):not([type=file]), #form-${id} textarea, #form-${id} select`));if(controls.length)result[id]=`${controls.filter(c=>c.value.trim()).length}/${controls.length}`;}setCounts(result);},[progressKey]);
   const cancelMotion=useRef<()=>void>(()=>{});
   const [selected,setSelected]=useState("");
   useEffect(()=>()=>cancelMotion.current(),[]);
@@ -52,7 +56,7 @@ export function DocumentFormNav({external}:{external:boolean}){
     const nav=section.closest(".form-pane")?.querySelector(".form-jump-nav");
     const start=scroller.scrollTop;
     const top=parent?parent.getBoundingClientRect().top+parent.clientTop:0;
-    const destination=Math.max(0,Math.min(scroller.scrollHeight-scroller.clientHeight,start+section.getBoundingClientRect().top-top-(nav?.getBoundingClientRect().height??76)-16));
+    const destination=Math.max(0,Math.min(scroller.scrollHeight-scroller.clientHeight,start+section.getBoundingClientRect().top-top-(nav?.getBoundingClientRect().height??76)-(parent?parseFloat(getComputedStyle(parent).paddingTop)||0:0)-16));
     const duration=reduced?0:Math.min(850,480+Math.abs(destination-start)*.12);
     let frame=0;
     let glow:Animation|undefined;
@@ -80,7 +84,7 @@ export function DocumentFormNav({external}:{external:boolean}){
     frame=requestAnimationFrame(step);
   }
   const links=[{id:"header",label:"ส่วนหัว",icon:Building2},...(external?[{id:"attachments",label:"สิ่งที่ส่งมาด้วย",icon:Paperclip}]:[]),{id:"body",label:"เนื้อหา",icon:FileText},{id:"signing",label:"ส่วนท้าย",icon:PenLine},...(!external?[{id:"attachments",label:"แนบท้าย",icon:Paperclip}]:[]),{id:"options",label:"เครื่องมือ",icon:Settings2},{id:"review",label:"ตรวจทาน",icon:ListChecks}];
-  return <nav className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span></button>)}</nav>;
+  return <nav ref={navRef} className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" aria-label={label} className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span>{counts[id]&&<small title="จำนวนช่องที่กรอก รวมช่องไม่บังคับ">{counts[id]}</small>}{id==="review"&&<small>{issueCount||"✓"}</small>}</button>)}</nav>;
 }
 
 type Props={

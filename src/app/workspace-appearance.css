@@ -1,0 +1,77 @@
+/* Hallmark · pre-emit critique: P5 H4 E4 S5 R5 V4
+ * ธีมเป็นค่าหน้าจอเท่านั้น ไม่ส่ง stylesheet นี้ไป Preview/PDF/Word
+ * อ่านต่อ: theme-switch.tsx → layout.tsx; ตัวแบ่งแผง: editor-layout.tsx
+ */
+:root {
+  color-scheme: light;
+  --ui-bg:var(--ui-subtle); --ui-text:var(--ui-ink);
+  --ui-control-bg:var(--ui-surface); --ui-control-hover:var(--ui-hover);
+  --ui-control-selected:var(--ui-accent-soft); --ui-paper:#fff;
+  --ui-paper-ink:#111; --ui-workbench:#e9e8e5;
+}
+html[data-ui-theme="dim"] {
+  color-scheme:dark;
+  --ui-ink:#e3e9e6; --ui-muted:#b2bcb9; --ui-border:#455057;
+  --ui-canvas:#1c2328; --ui-surface:#242d33; --ui-subtle:#20282e;
+  --ui-sidebar:#20282e; --ui-hover:#323e45;
+  --ui-accent:#91c9ed; --ui-accent-hover:#bedff5; --ui-accent-soft:#2b4252;
+  --ui-focus:#9cd5f5; --ui-on-accent:#132735;
+  --ui-warning:#f1ce91; --ui-warning-soft:#443b2d;
+  --ui-danger:#ffb4aa; --ui-danger-soft:#482e30;
+  --ui-border-strong:#6c797e; --ui-paper-rule:#637077;
+  --ui-glass-surface:#242d33f5; --ui-backdrop:#111922a6;
+  --ui-shadow:0 2px 8px #0002; --ui-overlay-shadow:0 20px 64px #0006;
+  --ui-workbench:#424a50;
+  --ink:var(--ui-ink); --muted:var(--ui-muted); --line:var(--ui-border);
+  --canvas:var(--ui-canvas); --white:var(--ui-surface);
+  --teal:var(--ui-accent); --teal-dark:var(--ui-accent-hover); --teal-tint:var(--ui-accent-soft);
+}
+@media screen {
+ .theme-switch{display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--ui-border);border-radius:var(--ui-radius);background:var(--ui-control-bg);flex-shrink:0}
+ .theme-switch button{min-height:32px;padding:5px 8px;color:var(--ui-ink);font:var(--ui-text-xs)/1.5 var(--ui-font);border-radius:var(--ui-radius-sm);white-space:nowrap}
+ .theme-switch button:hover{background:var(--ui-hover)}
+ .theme-switch button[aria-pressed=true]{background:var(--ui-accent-soft);color:var(--ui-accent-hover)}
+ .theme-switch button:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+ .app-shell .topbar-right{display:flex;align-items:center;gap:10px}
+ html[data-ui-theme=dim] .app-shell :is(input,select,textarea){color:var(--ui-ink);background-color:var(--ui-control-bg);border-color:var(--ui-border)}
+ html[data-ui-theme=dim] .app-shell :is(.form-section,.panel,.review-card,.storage-card,.agenda-card,.settings-card,.recovery-panel){background:var(--ui-surface);color:var(--ui-ink);border-color:var(--ui-border)}
+ html[data-ui-theme=dim] .app-shell .form-section>summary{background:var(--ui-surface);color:var(--ui-ink)}
+ html[data-ui-theme=dim] .app-shell :is(.editor-header,.preview-footer,.preview-info){background:var(--ui-surface);color:var(--ui-muted);border-color:var(--ui-border)}
+ html[data-ui-theme=dim] .app-shell .primary{background:var(--ui-accent);color:var(--ui-on-accent);border-color:var(--ui-accent)}
+ html[data-ui-theme=dim] .app-shell .secondary{background:var(--ui-subtle);color:var(--ui-ink);border-color:var(--ui-border)}
+ .app-shell .editor-main :is(.preview-pane,.paper-scroll){background:var(--ui-workbench)}
+ /* กระดาษ รูป และ canvas ใช้สีจริง ไม่ใช้ filter/invert */
+ .app-shell iframe,.app-shell .pdf-render-page canvas{color-scheme:only light;background:var(--ui-paper)}
+ .app-shell .pdf-render-page{color-scheme:only light;background:var(--ui-paper);color:var(--ui-paper-ink)}
+ .app-shell .editor-main .form-jump-nav{top:0}
+ .app-shell .form-jump-nav small{font-size:10px;white-space:nowrap}
+ .editor-divider{display:none}
+ .app-shell .minutes-editor :is(.agenda-sticky-heading strong,.agenda-overview-title>strong){font-size:20px;line-height:1.4}
+ .app-shell .minutes-editor .agenda-heading-subject{font-size:14px}
+ .app-shell .minutes-editor :is(.agenda-jump-text strong,.agenda-context-bar select){font-size:13px}
+ .app-shell .minutes-editor :is(.agenda-context-bar label,.agenda-progress,.speaker-context,.speech-status,.agenda-overview-title>span){font-size:12px}
+ .app-shell .minutes-editor :is(.agenda-jump-text small,.agenda-context-bar>span,.agenda-sticky-heading small,.agenda-progress small){font-size:11px}
+ .app-shell .minutes-editor .minutes-fields{grid-template-columns:minmax(0,1fr)}
+ .app-shell .minutes-editor .agenda-actions{flex-shrink:0}
+}
+@media screen and (min-width:1001px) {
+ .app-shell .editor-main .editor-layout.adjustable-layout{grid-template-columns:minmax(0,calc(var(--form-share,46%) - 6px)) 12px minmax(0,1fr)}
+ .editor-divider{display:flex;flex-direction:column;align-items:center;background:var(--ui-subtle)}
+ .editor-divider [role=separator]{flex:1;display:flex;align-items:center;justify-content:center;width:12px;cursor:col-resize;touch-action:none;color:var(--ui-muted)}
+ .editor-divider [role=separator]:hover,.editor-divider [role=separator]:focus-visible{background:var(--ui-accent-soft);outline:2px solid var(--ui-focus);outline-offset:-2px}
+ .editor-divider button{width:26px;padding:4px;min-height:30px;margin-bottom:10px;z-index:2;border:1px solid var(--ui-border);border-radius:6px;background:var(--ui-surface);color:var(--ui-ink)}
+ .is-resizing{cursor:col-resize;user-select:none}.is-resizing iframe{pointer-events:none}
+ .app-shell .editor-main.editor-focus .editor-layout.adjustable-layout{grid-template-columns:minmax(0,1fr)}
+ .editor-focus .editor-divider{display:none}
+}
+@media (max-width:1240px){.app-shell .topbar-right .top-date{display:none}}
+@media (max-width:700px){.theme-switch button span{display:none}.app-shell .topbar-right{margin-left:auto}.app-shell .topbar{flex-wrap:wrap}.app-shell .minutes-editor .agenda-overview-title{flex-wrap:wrap}.app-shell .minutes-editor .agenda-jump-text strong{white-space:normal}}
+@media (prefers-reduced-motion:reduce){.theme-switch button{transition:none}}
+@media print{.theme-switch,.editor-divider{display:none}}
+/* ช่องกรอกแคบและชื่อวาระยาวต้องย่อภายในแผง ไม่ขยาย grid ตามความยาวข้อความ */
+@media screen {
+ .app-shell .minutes-editor{min-width:0;grid-template-columns:minmax(0,1fr)}
+ .app-shell .minutes-editor>*{min-width:0}
+ .app-shell .agenda-jump-list{grid-template-columns:minmax(0,1fr)}
+ .app-shell .agenda-jump-list button{color:var(--ui-ink)}
+}

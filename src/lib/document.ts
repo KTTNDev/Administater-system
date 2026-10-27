@@ -128,14 +128,15 @@ export function numerals(value:string,style:Draft["numeralStyle"]) {
   const latin=value.replace(/[๐-๙]/g,c=>String("๐๑๒๓๔๕๖๗๘๙".indexOf(c)));
   return style==="arabic"?latin:latin.replace(/[0-9]/g,c=>"๐๑๒๓๔๕๖๗๘๙"[Number(c)]);
 }
-export function bodySections(d:Draft) {
+export type BodySection={title:string;text:string;speaker?:{name:string;role:string}};
+export function bodySections(d:Draft):BodySection[] {
   if(d.type==='minutes'&&d.minutesMode==='agenda') return [
     ...((d.minutesTor.appointmentNumber||d.minutesTor.appointmentDate||d.minutesTor.authority||d.minutesTor.budget||d.minutesTor.priceReference)&&d.meetingAgenda.some(a=>a.torDetails)?[{title:'ข้อมูลประกอบการพิจารณา',text:[d.minutesTor.appointmentNumber?'คำสั่งแต่งตั้งเลขที่ '+d.minutesTor.appointmentNumber:'',d.minutesTor.appointmentDate?'ลงวันที่ '+thaiDate(d.minutesTor.appointmentDate):'',d.minutesTor.authority?'ผู้แต่งตั้ง / หน่วยงาน '+d.minutesTor.authority:'',d.minutesTor.budget?'วงเงินงบประมาณ '+d.minutesTor.budget:'',d.minutesTor.priceReference?'แหล่งอ้างอิงราคา / มาตรฐาน '+d.minutesTor.priceReference:''].filter(Boolean).join('\n')}]:[]),
     {title:'',text:d.minutesIntroduction},
     ...d.meetingAgenda.flatMap((a,i)=>[
       {title:`ระเบียบวาระที่ ${i+1}  ${a.title}`,text:a.discussion},
       ...(a.torDetails?torDetailSections(d):[]),
-      ...(a.speeches||[]).map(s=>({title:[s.role,s.speaker?'('+s.speaker+')':''].filter(Boolean).join(' '),text:s.text})),
+      ...(a.speeches||[]).map(s=>({speaker:{name:s.speaker,role:s.role},title:[s.role,s.speaker?'('+s.speaker+')':''].filter(Boolean).join(' '),text:s.text})),
       ...(a.resolution.trim()?[{title:a.resolutionLabel,text:a.resolution}]:[]),
     ]),
   ];

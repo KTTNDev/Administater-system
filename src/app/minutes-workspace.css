@@ -1,0 +1,257 @@
+/* วาระเป็นชั้นหลัก ผู้พูดเป็นชั้นลูก: สีทั้งหมดอ้าง UI tokens ไม่ใช้ในเอกสาร */
+/* overflow:hidden ของกล่อง details เดิมทำให้ sticky อ้างกล่องผิดและเลื่อนหาย */
+.form-section:has(.minutes-editor) {
+  overflow: visible;
+}
+.agenda-overview {
+  padding: 16px;
+  margin: 16px 0;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+}
+.agenda-overview-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+.agenda-overview-title > strong {
+  font-size: 25px;
+}
+.agenda-overview-title > span {
+  font-size: 16px;
+  color: var(--ui-accent);
+}
+.agenda-jump-list {
+  display: grid;
+  gap: 7px;
+}
+.agenda-jump-list button {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px;
+  gap: 10px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+}
+.agenda-jump-list button:hover,
+.agenda-jump-list button[aria-current="location"] {
+  background: var(--ui-control-selected);
+  border-color: var(--ui-accent);
+}
+.agenda-jump-number {
+  flex: 0 0 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--ui-control-hover);
+  font-weight: 700;
+}
+.agenda-jump-text {
+  min-width: 0;
+  flex: 1;
+}
+.agenda-jump-text strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 18px;
+}
+.agenda-jump-text small {
+  font-size: 15px;
+  color: var(--muted);
+}
+.agenda-state {
+  min-width: 25px;
+  text-align: center;
+  border-radius: 5px;
+  color: var(--muted);
+}
+.agenda-state.complete {
+  color: var(--ui-accent);
+}
+.agenda-context-bar {
+  position: sticky;
+  top: var(--section-nav-height, 58px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin: 14px 0;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: var(--ui-shadow);
+}
+.agenda-context-bar label {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+.agenda-context-bar select {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  width: 0;
+  font-size: 17px;
+}
+.agenda-context-bar > span {
+  font-size: 15px;
+  white-space: nowrap;
+}
+.minutes-editor > .agenda-workspace {
+  padding: 0 16px 16px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  margin: 24px 0;
+  background: var(--ui-surface);
+}
+.minutes-editor > .agenda-active {
+  border-color: var(--ui-accent);
+}
+.agenda-workspace > .agenda-sticky-heading {
+  position: sticky;
+  top: calc(var(--section-nav-height, 58px) + var(--agenda-context-height, 64px));
+  z-index: 2;
+  margin: 0 -16px 12px;
+  padding: 12px 16px;
+  background: var(--ui-control-selected);
+  border-bottom: 1px solid var(--ui-border);
+  border-radius: 9px 9px 0 0;
+  align-items: flex-start;
+}
+.agenda-sticky-heading > div:first-child {
+  min-width: 0;
+}
+.agenda-sticky-heading strong {
+  display: block;
+  font-size: 25px;
+  line-height: 1.1;
+  color: var(--ui-accent);
+}
+.agenda-heading-subject {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.agenda-sticky-heading small {
+  display: block;
+  font-size: 15px;
+  color: var(--muted);
+}
+.agenda-sticky-heading .agenda-actions {
+  flex-wrap: nowrap;
+}
+.agenda-sticky-heading .agenda-actions button {
+  padding: 6px;
+  min-width: 30px;
+}
+.agenda-progress {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0 14px;
+  color: var(--muted);
+  font-size: 16px;
+}
+.agenda-progress small {
+  font-size: 15px;
+}
+.agenda-workspace > label {
+  margin: 14px 0;
+}
+.agenda-workspace .minutes-speeches {
+  margin: 24px 0 18px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+}
+.minutes-speeches > .section-title {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.speaker-context {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 6px 0 12px;
+}
+.minutes-speeches .speech-card {
+  background: var(--ui-surface);
+  margin: 12px 0 0;
+}
+.speech-card > .section-title {
+  align-items: flex-start;
+}
+.speech-card > .section-title > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.speech-card .agenda-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.speech-card .agenda-actions button {
+  padding: 6px;
+  min-width: 28px;
+}
+.speech-status {
+  display: block;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.editor-section-links small {
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 1240px) {
+  .speech-card .minutes-fields {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .agenda-overview {
+    padding: 12px;
+  }
+  .minutes-editor > .agenda-workspace {
+    padding: 0 12px 12px;
+  }
+  .agenda-workspace > .agenda-sticky-heading {
+    margin: 0 -12px 10px;
+    padding: 10px 12px;
+  }
+  .agenda-context-bar label {
+    display: block;
+  }
+  .agenda-context-bar select {
+    width: 100%;
+  }
+  .agenda-workspace > .agenda-sticky-heading {
+    position: relative;
+    top: auto;
+  }
+  .agenda-workspace .minutes-speeches {
+    padding: 10px;
+  }
+}
+@media print {
+  .agenda-overview,
+  .agenda-context-bar,
+  .agenda-progress {
+    display: none;
+  }
+}

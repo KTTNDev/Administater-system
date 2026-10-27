@@ -17,7 +17,7 @@ export function extractWordPages(): WordPage[] {
     const runs = (el: Element): WordRun[] => {
       const result: WordRun[] = [];
       const walk = (node: Node) => {
-        if (node instanceof Element && (!visible(node)||node.classList.contains('document-dot-guide'))) return;
+        if (node instanceof Element && (!visible(node)||node.classList.contains('document-dot-guide')||(node!==el&&node.classList.contains('minutes-speaker-person')))) return;
         if (node.nodeType === Node.TEXT_NODE || node instanceof HTMLBRElement) {
           const parent = node.parentElement!, css = getComputedStyle(parent);
           const rgb = css.color.match(/\d+/g)?.slice(0,3).map(n => Number(n).toString(16).padStart(2,'0')).join('') || '111111';
@@ -59,6 +59,7 @@ export function extractWordPages(): WordPage[] {
       if(el instanceof HTMLTableElement) {
         result.blocks.push({...box(el),kind:'table',rows:Array.from(el.rows).map(row=>({header:!!row.closest('thead'),cells:Array.from(row.cells).map(para)}))}); return;
       }
+      if(el.classList.contains('minutes-speech')) { const label=el.querySelector('.minutes-speaker-person');if(label)result.overlays.push(para(label));const p=para(el);const padding=parseFloat(getComputedStyle(el).paddingLeft)||0;p.x+=padding;p.width-=padding;result.blocks.push(p);return;}
       if(el.classList.contains('memo-row')) { result.blocks.push(para(el)); return; }
       const special = floating || el.matches('.letter-head,.appendix-sheet,.certificate-photo-area');
       if(el.matches('p,h1,h2,figcaption,.letter-number,.letter-agency,.opinion-line,.certificate-photo') || el.matches('.floating-item,.copy-mark-text,.urgency,.security,.page-number,.continuation-cue,.security-control') && !el.querySelector('img') || el.parentElement?.classList.contains('memo-head') && el.tagName==='STRONG') {
