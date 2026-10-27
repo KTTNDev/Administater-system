@@ -21,6 +21,8 @@ import type { Metadata } from "next";
 /* นำเข้า ./globals.css — กฎหน้าตาและขนาดของ แอปโดยรวม; ไม่ใช่กฎหน้ากระดาษ PDF ซึ่งอยู่ใน render-document.ts */
 import "./globals.css";
 import "./workspace-theme.css";
+import "./editor-layout.css";
+import "./minutes-workspace.css";
 export const metadata: Metadata = {
   title: "สารบรรณ — พื้นที่ทำงานเอกสารราชการ",
   description: "จัดทำ ตรวจทาน และจัดเก็บร่างหนังสือราชการ",
@@ -31,7 +33,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html lang="th" suppressHydrationWarning>
       <body>
         {/* คืนธีมก่อนวาด UI เพื่อไม่ให้แสงขาววาบ; ไม่เข้าถึง iframe เอกสาร */}
-        <script dangerouslySetInnerHTML={{ __html: 'try{document.documentElement.dataset.uiTheme=localStorage.getItem("sarabun-ui-theme")==="dim"?"dim":"light"}catch{}' }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{document.documentElement.dataset.uiTheme=localStorage.getItem("sarabun-ui-theme")==="dim"?"dim":"light"}catch{}',
+          }}
+        />
         {children}
       </body>
     </html>

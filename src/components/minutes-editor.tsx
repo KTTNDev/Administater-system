@@ -22,6 +22,8 @@
 
 /* นำเข้า lucide-react — ไอคอน UI ไม่มีผลกับข้อมูลหรือผลพิมพ์ */
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { agendaProgress } from "@/lib/minutes-progress";
 /* นำเข้า ../lib/document.ts — สัญญาข้อมูลร่างหนังสือ: กฎตรวจค่าจริง ชนิด TypeScript ค่าเริ่มต้น และลำดับเนื้อหาที่ใช้สร้างเอกสาร; import type ใช้ตอนตรวจชนิดเท่านั้น */
 import type { Draft } from "@/lib/document";
 /* นำเข้า ./minutes-details.tsx — ตัวเลือกแม่แบบประชุม ตารางกรรมการ รายละเอียด TOR และผู้ลงนามท้ายรายงาน */
@@ -44,6 +46,48 @@ export function MinutesEditor({
   draft: Draft;
   onChange: (patch: Partial<Draft>) => void;
 }) {
+  const root = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  // หมายเลขเป็นลำดับปัจจุบัน; สรุปคำนวณจาก draft สด จึงตามการเพิ่ม/ลบ/สลับทันที
+  const progress = draft.meetingAgenda.map(agendaProgress);
+  const selected = Math.min(active, Math.max(0, draft.meetingAgenda.length - 1));
+  useEffect(() => {
+    const element = root.current;
+    const context = element?.querySelector<HTMLElement>(".agenda-context-bar");
+    if (!element || !context) return;
+    const measure = () => element.style.setProperty("--agenda-context-height", `${context.offsetHeight}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(context);
+    measure();
+    return () => observer.disconnect();
+  }, [draft.minutesMode]);
+  function jump(index: number) {
+    setActive(index);
+    const card = root.current?.querySelector<HTMLElement>(
+      `[data-agenda-index="${index}"]`,
+    );
+    const pane = card?.closest<HTMLElement>(".form-pane");
+    if (!card || !pane) return;
+    const offset = (pane.querySelector<HTMLElement>(".editor-section-links")?.offsetHeight || 0)
+      + (root.current?.querySelector<HTMLElement>(".agenda-context-bar")?.offsetHeight || 0) + 8;
+    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "instant"
+      : "smooth";
+    if (getComputedStyle(pane).overflowY === "auto")
+      pane.scrollTo({
+        top:
+          pane.scrollTop +
+          card.getBoundingClientRect().top -
+          pane.getBoundingClientRect().top -
+          offset,
+        behavior,
+      });
+    else
+      window.scrollTo({
+        top: window.scrollY + card.getBoundingClientRect().top - offset,
+        behavior,
+      });
+  }
   /* ส่วน edit ใช้ map สร้าง array ใหม่จากแต่ละรายการ ไม่แก้ array เดิมโดยตรง */
   /* การแก้ผู้พูดส่งกลับเป็น {speeches: [...]} แล้ว map เลือกเฉพาะวาระ index นี้; จึงไม่ไปเปลี่ยนผู้พูดของวาระอื่น */
   const edit = (
@@ -58,15 +102,17 @@ export function MinutesEditor({
   /* คัดลอก array แล้วสลับตำแหน่ง หลีกเลี่ยงการแก้ props เดิมโดยตรง */
   const move = (index: number, offset: number) => {
     const items = [...draft.meetingAgenda];
+    if (index + offset < 0 || index + offset >= items.length) return;
     [items[index], items[index + offset]] = [
       items[index + offset],
       items[index],
     ];
     /* ส่งค่าใหม่ให้ parent ผ่าน callback; ตาม onChange ในไฟล์ผู้เรียกเพื่อดูว่าไปปรับ draft ช่องใด */
     onChange({ meetingAgenda: items });
+    setActive(index + offset);
   };
   return (
-    <div className="wide minutes-editor">
+    <div className="wide minutes-editor" ref={root}>
       <label>
         รูปแบบเนื้อหารายงาน
         {/* value อ่านจาก draft.minutesMode; onChange ส่งค่าที่กรอกกลับไปอัปเดต state ของ parent */}
@@ -85,6 +131,67 @@ export function MinutesEditor({
       </p>
       {draft.minutesMode === "agenda" && (
         <>
+          <div className="agenda-overview">
+            <div className="agenda-overview-title">
+              <strong>{draft.meetingAgenda.length} วาระ</strong>
+              <span>
+                ครบช่องหลัก {progress.filter((p) => p.complete).length} วาระ
+              </span>
+            </div>
+            <p className="field-note">
+              เลือกวาระเพื่อไปกรอก · สถานะนี้ช่วยติดตามช่องกรอก
+              ไม่ใช่ผลตรวจรับรอง
+            </p>
+            <nav aria-label="เลือกวาระการประชุม" className="agenda-jump-list">
+              {draft.meetingAgenda.map((agenda, index) => (
+                <button
+                  type="button"
+                  key={index}
+                  aria-label={`ไปวาระที่ ${index + 1}`}
+                  aria-current={selected === index ? "location" : undefined}
+                  onClick={() => jump(index)}
+                >
+                  <span className="agenda-jump-number">{index + 1}</span>
+                  <span className="agenda-jump-text">
+                    <strong>{agenda.title || "ยังไม่ระบุหัวข้อ"}</strong>
+                    <small>
+                      ผู้พูด {progress[index].speakers} รายการ ·{" "}
+                      {progress[index].complete
+                        ? "ครบช่องหลัก"
+                        : progress[index].started
+                          ? "กำลังกรอก"
+                          : "ยังไม่เริ่ม"}
+                    </small>
+                  </span>
+                  <span
+                    className={`agenda-state ${progress[index].complete ? "complete" : ""}`}
+                  >
+                    {progress[index].complete
+                      ? "✓"
+                      : progress[index].missing.length}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="agenda-context-bar">
+            <label>
+              กำลังทำวาระ
+              <select
+                aria-label="ไปยังวาระ"
+                value={selected}
+                onChange={(event) => jump(Number(event.target.value))}
+                disabled={!draft.meetingAgenda.length}
+              >
+                {draft.meetingAgenda.map((agenda, index) => (
+                  <option key={index} value={index}>
+                    {index + 1}. {agenda.title || "ยังไม่ระบุหัวข้อ"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span>{draft.meetingAgenda.length} วาระ</span>
+          </div>
           <label>
             ข้อความเปิดประชุม
             {/* value อ่านจาก draft.minutesIntroduction; onChange ส่งค่าที่กรอกกลับไปอัปเดต state ของ parent; maxLength เป็นข้อจำกัด UI ต้องสอดคล้องกับ schema ฝั่ง server */}
@@ -109,12 +216,20 @@ export function MinutesEditor({
           </p>
           {draft.meetingAgenda.map((agenda, index) => (
             <section
-              className="agenda-card"
+              className={`agenda-card agenda-workspace${selected === index ? " agenda-active" : ""}`}
               key={index}
               aria-label={`วาระที่ ${index + 1}`}
+              data-agenda-index={index}
+              onFocusCapture={() => setActive(index)}
             >
-              <div className="section-title">
-                <strong>วาระที่ {index + 1}</strong>
+              <div className="section-title agenda-sticky-heading">
+                <div>
+                  <strong>วาระที่ {index + 1}</strong>
+                  <span className="agenda-heading-subject">
+                    {agenda.title || "ยังไม่ระบุหัวข้อ"}
+                  </span>
+                  <small>ผู้พูด {progress[index].speakers} รายการ</small>
+                </div>
                 <div className="agenda-actions">
                   {/* ปุ่มเรียก () => move(index, -1) เมื่อคลิก; disabled ปิดปุ่มตามเงื่อนไข index === 0; type="button" ใช้กับปุ่มทั่วไปเพื่อไม่ส่ง form โดยไม่ตั้งใจ */}
                   <button
@@ -145,18 +260,32 @@ export function MinutesEditor({
                         confirm(
                           `ลบวาระที่ ${index + 1} และข้อความในวาระนี้หรือไม่?`,
                         )
-                      )
+                      ) {
                         /* ส่งค่าใหม่ให้ parent ผ่าน callback; ตาม onChange ในไฟล์ผู้เรียกเพื่อดูว่าไปปรับ draft ช่องใด */
                         onChange({
                           meetingAgenda: draft.meetingAgenda.filter(
                             (_, i) => i !== index,
                           ),
                         });
+                        setActive(Math.max(0, index - 1));
+                      }
                     }}
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
+              </div>
+              <div className="agenda-progress" role="status">
+                <span>
+                  {progress[index].complete
+                    ? "✓ กรอกช่องหลักครบ"
+                    : `ยังขาด: ${progress[index].missing.slice(0, 3).join(" · ")}${progress[index].missing.length > 3 ? ` และอีก ${progress[index].missing.length - 3} จุด` : ""}`}
+                </span>
+                <small>
+                  {progress[index].resolution
+                    ? "มีผลการพิจารณาแล้ว"
+                    : "ยังไม่ระบุผลการพิจารณา (ถ้ามี)"}
+                </small>
               </div>
               <label>
                 หัวข้อวาระ
@@ -205,6 +334,7 @@ export function MinutesEditor({
               <MinutesSpeechesEditor
                 speeches={agenda.speeches}
                 agendaNumber={index + 1}
+                agendaTitle={agenda.title}
                 onChange={(speeches) => edit(index, { speeches })}
               />
               <label>
@@ -241,7 +371,7 @@ export function MinutesEditor({
             type="button"
             className="secondary"
             disabled={draft.meetingAgenda.length >= 50}
-            onClick={() =>
+            onClick={() => {
               onChange({
                 meetingAgenda: [
                   ...draft.meetingAgenda,
@@ -252,8 +382,9 @@ export function MinutesEditor({
                     resolutionLabel: "มติที่ประชุม",
                   },
                 ],
-              })
-            }
+              });
+              requestAnimationFrame(() => jump(draft.meetingAgenda.length));
+            }}
           >
             <Plus size={16} />
             เพิ่มวาระการประชุม

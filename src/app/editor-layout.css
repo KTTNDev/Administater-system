@@ -1,0 +1,226 @@
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
+ * Workbench: เปลี่ยนกล่องรอบกระดาษเท่านั้น ไม่เปลี่ยน iframe width/height/zoom
+ * ลำดับอ่าน: components/workspace.tsx → components/editor-layout.tsx → ไฟล์นี้
+ */
+@media screen {
+  .editor-header {
+    padding: 14px 22px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .editor-title h1 {
+    font-size: 25px;
+  }
+  .editor-divider {
+    display: none;
+  }
+  .editor-section-links {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: -20px -20px 20px;
+    padding: 10px 16px;
+    background: var(--ui-surface);
+    border-bottom: 1px solid var(--ui-border);
+  }
+  .editor-section-links button {
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 17px;
+    white-space: nowrap;
+  }
+  .editor-section-links button:hover {
+    background: var(--ui-control-hover);
+  }
+  .editor-section-links button[aria-pressed="true"] {
+    color: var(--ui-accent);
+    background: var(--ui-control-selected);
+  }
+  .editor-section-links button:focus-visible {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 1px;
+  }
+  .section-arrival {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 3px;
+  }
+  .form-intro p {
+    margin-bottom: 0;
+  }
+  .form-pane {
+    padding: 20px;
+    min-width: 0;
+  }
+  .sidebar {
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .topbar {
+    flex-shrink: 0;
+  }
+  .breadcrumbs {
+    min-width: 0;
+  }
+}
+@media screen and (min-width: 1001px) {
+  /* แบ่งความสูงจริงที่เหลือหลัง topbar/recovery แทน calc ที่เคยดันส่วนล่างพ้นจอ */
+  .main-shell:has(.editor-main) {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .main-shell:has(.editor-main) > .recovery-panel {
+    flex-shrink: 0;
+  }
+  .editor-main {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  .editor-layout.adjustable-layout {
+    display: grid;
+    grid-template-columns: minmax(
+        0,
+        calc(var(--form-share, 46%) - 6px)
+      ) 12px minmax(0, 1fr);
+  }
+  .editor-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--ui-bg);
+  }
+  .editor-divider [role="separator"] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 12px;
+    flex: 1;
+    cursor: col-resize;
+    touch-action: none;
+    color: var(--ui-accent);
+    border-radius: 3px;
+  }
+  .editor-divider [role="separator"]:hover,
+  .editor-divider [role="separator"]:focus-visible {
+    background: var(--ui-control-selected);
+    outline: 2px solid var(--ui-focus);
+    outline-offset: -2px;
+  }
+  .editor-divider button {
+    width: 26px;
+    min-height: 30px;
+    padding: 4px;
+    margin-bottom: 14px;
+    z-index: 2;
+    color: var(--ui-accent);
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+  }
+  .editor-divider button:hover {
+    background: var(--ui-control-hover);
+  }
+  .is-resizing {
+    cursor: col-resize;
+    user-select: none;
+  }
+  .is-resizing iframe {
+    pointer-events: none;
+  }
+  .form-pane {
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+@media screen and (max-width: 1000px) {
+  .editor-layout.adjustable-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .adjustable-layout > .form-pane {
+    order: 0;
+  }
+  .adjustable-layout > .preview-pane {
+    order: 1;
+  }
+  .editor-section-links {
+    top: 0;
+  }
+}
+@media screen and (max-width: 700px) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 59px;
+    padding: 10px 12px;
+  }
+  .breadcrumbs {
+    font-size: 15px;
+  }
+  .breadcrumbs > span {
+    display: none;
+  }
+  .editor-header {
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .editor-title {
+    min-width: 0;
+  }
+  .editor-title h1 {
+    font-size: 23px;
+  }
+  .editor-title .badge {
+    display: none;
+  }
+  .editor-actions {
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+  .editor-actions button {
+    white-space: nowrap;
+  }
+  .form-pane {
+    padding: 16px;
+  }
+  .editor-section-links {
+    margin: -16px -16px 16px;
+    padding: 8px 10px;
+  }
+  .editor-section-links button {
+    font-size: 16px;
+    padding: 7px 9px;
+  }
+  .form-intro {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-section-links button {
+    transition: none;
+  }
+  .form-pane {
+    scroll-behavior: auto;
+  }
+  .sidebar {
+    transition: none;
+  }
+}
+@media print {
+  .editor-divider,
+  .editor-section-links {
+    display: none;
+  }
+}

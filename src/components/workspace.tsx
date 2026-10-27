@@ -29,6 +29,7 @@ import {
 /* นำเข้า react — React hooks สำหรับ state, ref และการทำงานหลัง render */
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ThemeSwitch } from "./theme-switch";
+import { EditorLayout, EditorSectionLinks } from "./editor-layout";
 /* นำเข้า next/dynamic — API ของ Next.js สำหรับส่วนที่ชื่อ module ระบุ */
 import dynamic from "next/dynamic";
 /* นำเข้า lucide-react — ไอคอน UI ไม่มีผลกับข้อมูลหรือผลพิมพ์ */
@@ -1034,8 +1035,9 @@ export function Workspace({
                 </button>
               </div>
             </div>
-            <div className="editor-layout">
+            <EditorLayout>
               <div className="form-pane">
+                <EditorSectionLinks progressKey={draft} issueCount={issues.length} />
                 <div className="form-intro">
                   <div>
                     <h2>ข้อมูลหนังสือ</h2>
@@ -1060,7 +1062,7 @@ export function Workspace({
                   disabled={pending || attachmentBusy}
                   className="editor-fields"
                 >
-                  <details className="form-section" open>
+                  <details className="form-section" data-editor-section="header" open>
                     <summary>
                       <span className="step-number">01</span>
                       <strong>ส่วนหัวหนังสือ</strong>
@@ -1307,7 +1309,7 @@ export function Workspace({
                       setDraft((d) => ({ ...d, ...patch, status: "draft" }))
                     }
                   />
-                  <details className="form-section" open>
+                  <details className="form-section" data-editor-section="body" open>
                     <summary>
                       <span className="step-number">03</span>
                       <strong>เนื้อหาหนังสือ</strong>
@@ -1778,7 +1780,7 @@ export function Workspace({
                   </span>
                 </div>
               </div>
-            </div>
+            </EditorLayout>
           </main>
         )}
         {view === "settings" && (

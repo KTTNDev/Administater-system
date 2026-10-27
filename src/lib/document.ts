@@ -496,7 +496,12 @@ export function numerals(value: string, style: Draft["numeralStyle"]) {
 }
 /* จุดรวมลำดับเนื้อหา: ถ้าจะสลับหัวข้อ หรือเพิ่มข้อความผู้พูด/TOR ในผลพิมพ์ ให้เริ่มตรวจที่นี่ */
 /* จุดเชื่อมการพิมพ์: Workspace → documentHtml ใน render-document.ts → bodySections ตรงนี้ → วาด heading/body เป็นย่อหน้า; เพิ่มข้อมูลใหม่แล้วลืมตรงนี้จะบันทึกได้แต่ไม่ออกเอกสาร */
-export function bodySections(d: Draft) {
+export type BodySection = {
+  title: string;
+  text: string;
+  speaker?: { name: string; role: string };
+};
+export function bodySections(d: Draft): BodySection[] {
   if (d.type === "minutes" && d.minutesMode === "agenda")
     return [
       ...((d.minutesTor.appointmentNumber ||
@@ -535,6 +540,7 @@ export function bodySections(d: Draft) {
         { title: `ระเบียบวาระที่ ${i + 1}  ${a.title}`, text: a.discussion },
         ...(a.torDetails ? torDetailSections(d) : []),
         ...(a.speeches || []).map((s) => ({
+          speaker: { name: s.speaker, role: s.role },
           title: [s.role, s.speaker ? "(" + s.speaker + ")" : ""]
             .filter(Boolean)
             .join(" "),

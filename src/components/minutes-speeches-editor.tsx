@@ -32,10 +32,12 @@ type Speeches = NonNullable<Draft["meetingAgenda"][number]["speeches"]>;
 export function MinutesSpeechesEditor({
   speeches = [],
   agendaNumber,
+  agendaTitle,
   onChange,
 }: {
   speeches?: Speeches;
   agendaNumber: number;
+  agendaTitle?: string;
   onChange: (speeches: Speeches) => void;
 }) {
   /* ส่วน edit ใช้ map สร้าง array ใหม่จากแต่ละรายการ ไม่แก้ array เดิมโดยตรง */
@@ -72,7 +74,9 @@ export function MinutesSpeechesEditor({
       aria-label={`ผู้พูดในวาระที่ ${agendaNumber}`}
     >
       <div className="section-title">
-        <strong>ผู้พูดและข้อซักถาม · {speeches.length} รายการ</strong>
+        <strong>
+          ผู้พูดในวาระที่ {agendaNumber} · {speeches.length} รายการ
+        </strong>
         {/* ปุ่มเรียก add เมื่อคลิก; disabled ปิดปุ่มตามเงื่อนไข speeches.length >= 50; type="button" ใช้กับปุ่มทั่วไปเพื่อไม่ส่ง form โดยไม่ตั้งใจ */}
         <button
           type="button"
@@ -84,18 +88,25 @@ export function MinutesSpeechesEditor({
           เพิ่มผู้พูด / ข้อซักถาม
         </button>
       </div>
-      <p className="field-note">
-        เพิ่มได้หลายคนในวาระเดียว เรียงตามลำดับการพูด
-        หากคนเดิมพูดอีกครั้งให้เพิ่มรายการใหม่ได้
-      </p>
+      <p className="speaker-context">{agendaTitle || "ยังไม่ระบุหัวข้อวาระ"}</p>
       {speeches.map((speech, index) => (
         <section
-          className="agenda-card"
+          className="agenda-card speech-card"
           key={index}
           aria-label={`ผู้พูดลำดับที่ ${index + 1}`}
         >
           <div className="section-title">
-            <strong>ผู้พูดลำดับที่ {index + 1}</strong>
+            <div>
+              <strong>
+                ผู้พูด {agendaNumber}.{index + 1} ·{" "}
+                {speech.speaker || "ยังไม่ระบุชื่อ"}
+              </strong>
+              <small className="speech-status">
+                {speech.speaker.trim() ? "✓ ชื่อ" : "○ ชื่อ"} ·{" "}
+                {speech.role.trim() ? "✓ บทบาท" : "○ บทบาท (ถ้ามี)"} ·{" "}
+                {speech.text.trim() ? "✓ บทพูด" : "○ บทพูด"}
+              </small>
+            </div>
             <div className="agenda-actions">
               {/* ปุ่มเรียก () => move(index, -1) เมื่อคลิก; disabled ปิดปุ่มตามเงื่อนไข index === 0; type="button" ใช้กับปุ่มทั่วไปเพื่อไม่ส่ง form โดยไม่ตั้งใจ */}
               <button

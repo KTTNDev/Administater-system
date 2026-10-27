@@ -1,0 +1,240 @@
+"use client";
+
+import {
+  Children,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { GripVertical, RotateCcw } from "lucide-react";
+
+const DEFAULT_SHARE = 46;
+const MIN_SHARE = 35;
+const MAX_SHARE = 65;
+const clamp = (value: number) =>
+  Math.min(MAX_SHARE, Math.max(MIN_SHARE, value));
+
+/** อ่าน Workspace → EditorLayout → workspace-theme.css
+ * เปลี่ยนเฉพาะขนาดพื้นที่รอบ iframe ไม่แก้ zoom/srcDoc/ขนาด A4 ของเอกสาร
+ * เก็บความชอบแยกจาก Draft; ค่าที่เสียหรือ storage ที่ถูกปิดไม่ทำให้เปิดฟอร์มไม่ได้
+ */
+export function EditorLayout({ children }: { children: ReactNode }) {
+  const root = useRef<HTMLDivElement>(null);
+  const current = useRef(DEFAULT_SHARE);
+  const [share, setShare] = useState(DEFAULT_SHARE);
+  const [dragging, setDragging] = useState(false);
+  const panes = Children.toArray(children);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("sarabun-editor-share");
+      if (stored !== null && Number.isFinite(Number(stored))) {
+        current.current = clamp(Number(stored));
+        setShare(current.current);
+      }
+    } catch {}
+  }, []);
+  function change(value: number, persist = false) {
+    current.current = clamp(value);
+    setShare(current.current);
+    if (persist) {
+      try {
+        localStorage.setItem("sarabun-editor-share", String(current.current));
+      } catch {}
+    }
+  }
+  return (
+    <div
+      ref={root}
+      className={`editor-layout adjustable-layout${dragging ? " is-resizing" : ""}`}
+      style={{ "--form-share": `${share}%` } as CSSProperties}
+    >
+      {panes[0]}
+      <div className="editor-divider">
+        <div
+          role="separator"
+          aria-label="ปรับความกว้างพื้นที่กรอก"
+          aria-orientation="vertical"
+          aria-valuemin={MIN_SHARE}
+          aria-valuemax={MAX_SHARE}
+          aria-valuenow={Math.round(share)}
+          aria-valuetext={`พื้นที่กรอก ${Math.round(share)} เปอร์เซ็นต์`}
+          tabIndex={0}
+          title="ลากเพื่อปรับพื้นที่ หรือใช้ปุ่มลูกศรซ้าย–ขวา"
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setDragging(true);
+          }}
+          onPointerMove={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            const box = root.current!.getBoundingClientRect();
+            change(((event.clientX - box.left) / box.width) * 100);
+          }}
+          onPointerUp={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            event.currentTarget.releasePointerCapture(event.pointerId);
+            setDragging(false);
+            change(current.current, true);
+          }}
+          onLostPointerCapture={() => setDragging(false)}
+          onPointerCancel={() => setDragging(false)}
+          onDoubleClick={() => change(DEFAULT_SHARE, true)}
+          onKeyDown={(event) => {
+            const next =
+              event.key === "ArrowLeft"
+                ? current.current - 2
+                : event.key === "ArrowRight"
+                  ? current.current + 2
+                  : event.key === "Home"
+                    ? MIN_SHARE
+                    : event.key === "End"
+                      ? MAX_SHARE
+                      : null;
+            if (next === null) return;
+            event.preventDefault();
+            change(next, true);
+          }}
+        >
+          <GripVertical size={12} aria-hidden="true" />
+        </div>
+        <button
+          type="button"
+          title="คืนสัดส่วนพื้นที่เดิม"
+          aria-label="คืนสัดส่วนพื้นที่เดิม"
+          onClick={() => change(DEFAULT_SHARE, true)}
+        >
+          <RotateCcw size={12} />
+        </button>
+      </div>
+      {panes[1]}
+    </div>
+  );
+}
+
+/** ทางลัดเป็นการเลื่อนภายในฟอร์มเดิม ทุกช่องยังแก้พร้อมกันได้ ไม่แบ่งเป็น wizard */
+export function EditorSectionLinks({
+  progressKey,
+  issueCount,
+}: {
+  progressKey: unknown;
+  issueCount: number;
+}) {
+  const nav = useRef<HTMLElement>(null);
+  const [selected, setSelected] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [counts, setCounts] = useState<Record<string, string>>({});
+  // ความสูงทางลัดเปลี่ยนเมื่อย่อแผง/หน้าจอ จึงวัดจริงให้หัววาระไม่ถูกบัง
+  useEffect(() => {
+    const element = nav.current;
+    const pane = element?.closest<HTMLElement>(".form-pane");
+    if (!element || !pane) return;
+    const measure = () => pane.style.setProperty("--section-nav-height", `${element.offsetHeight}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const pane = nav.current?.closest(".form-pane");
+    if (!pane) return;
+    const result: Record<string, string> = {};
+    for (const [label, selector] of [
+      ["ส่วนหัว", '[data-editor-section="header"]'],
+      [
+        "เนื้อหา",
+        '[data-editor-section="body"]',
+      ],
+    ]) {
+      const target = pane.querySelector(selector);
+      const controls = Array.from(
+        target?.querySelectorAll<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >(
+          'input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select',
+        ) || [],
+      );
+      if (controls.length)
+        result[label] =
+          `${controls.filter((c) => c.value.trim()).length}/${controls.length}`;
+    }
+    setCounts(result);
+  }, [progressKey]);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  function go(key: string, selector: string) {
+    const pane = nav.current?.closest(".form-pane");
+    const element = pane?.querySelector<HTMLElement>(selector);
+    if (!element || !pane) return;
+    const target =
+      element.closest<HTMLDetailsElement>("details.form-section") || element;
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    setSelected(key);
+    pane
+      .querySelectorAll(".section-arrival")
+      .forEach((node) => node.classList.remove("section-arrival"));
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Desktop เลื่อนเฉพาะฟอร์ม ไม่ดึง Preview ตาม; จอเล็กเลื่อนหน้าไปยังหัวข้อ
+    const scrollingPane = getComputedStyle(pane).overflowY === "auto";
+    const top = target.getBoundingClientRect().top;
+    if (scrollingPane)
+      pane.scrollTo({
+        top:
+          pane.scrollTop +
+          top -
+          pane.getBoundingClientRect().top -
+          (nav.current?.offsetHeight || 0) -
+          14,
+        behavior: reduced ? "instant" : "smooth",
+      });
+    else
+      window.scrollTo({
+        top: window.scrollY + top - (nav.current?.offsetHeight || 0) - 16,
+        behavior: reduced ? "instant" : "smooth",
+      });
+    if (!reduced) target.classList.add("section-arrival");
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(
+      () => target.classList.remove("section-arrival"),
+      1000,
+    );
+  }
+  return (
+    <nav className="editor-section-links" ref={nav} aria-label="ทางลัดในฟอร์ม">
+      {[
+        ["ส่วนหัว", '[data-editor-section="header"]'],
+        [
+          "เนื้อหา",
+          '[data-editor-section="body"]',
+        ],
+        ["ตรวจทาน", ".review-card"],
+        ["จัดเก็บ", ".storage-card"],
+      ].map(([label, selector]) => (
+        <button
+          key={label}
+          type="button"
+          aria-label={`ไปที่${label}`}
+          title={
+            counts[label]
+              ? `กรอกแล้ว ${counts[label]} ช่อง รวมช่องไม่บังคับ`
+              : undefined
+          }
+          aria-pressed={selected === label}
+          onClick={() => go(label, selector)}
+        >
+          {label}
+          {counts[label] && <small>{counts[label]}</small>}
+          {label === "ตรวจทาน" && (
+            <small>{issueCount ? `${issueCount} จุด` : "✓"}</small>
+          )}
+        </button>
+      ))}
+    </nav>
+  );
+}

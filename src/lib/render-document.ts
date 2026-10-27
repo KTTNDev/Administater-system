@@ -127,6 +127,18 @@ export function documentHtml(
               (d.type === "minutes" && d.minutesMode === "agenda" && s.title),
           )
           .forEach((s) => {
+            // รายงานประชุม: ชื่อ/บทบาทคอลัมน์ซ้าย บทพูดคอลัมน์ขวา ตามตัวอย่างผู้ใช้
+            // ใช้ P เพื่อให้ตัวแบ่งหน้าเดิมแบ่งบทพูดยาวได้ ไม่ใช้ table แถวเดียวที่ล้น A4
+            if (s.speaker) {
+              const paragraphs = s.text.split(/\n+/);
+              paragraphs.forEach((text, index) =>
+                p(
+                  `${index === 0 ? `<span class="minutes-speaker-person">${e(s.speaker!.name)}${s.speaker!.role ? `<br>${e(s.speaker!.role)}` : ""}</span>` : ""}${inline(text)}`,
+                  "body-text minutes-speech",
+                ),
+              );
+              return;
+            }
             if (
               s.title &&
               (d.sectionHeadings ||
@@ -141,7 +153,8 @@ export function documentHtml(
                     ? "title minutes-section-title"
                     : "title",
               );
-            formattedLines(s.text);
+            // หัวข้อวาระที่ไม่มีข้อความรวม ไม่เพิ่มย่อหน้าว่างก่อนเริ่มผู้พูด
+            if (s.text.trim()) formattedLines(s.text);
           });
   const signatureMarkup = () =>
     `<div class="signature"><div class="sign-space"></div><p>(${e(d.signer)})</p><p>${e(d.position)}</p></div>`;
@@ -440,6 +453,7 @@ export function documentHtml(
   #source{display:none}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
     .minutes-attendance td{min-height:12mm;padding:7pt 4pt}.minutes-attendance td:first-child{text-align:center}.minutes-attendance th:first-child{white-space:nowrap}.minutes-roster-heading{text-decoration:underline}.minutes-signature{width:100mm;margin-left:auto;margin-top:6pt}.minutes-signature .sign-space{height:12mm}
+    .minutes-speech{display:flow-root;padding-left:40mm;text-indent:0;text-align:justify;white-space:normal}.minutes-speaker-person{float:left;width:36mm;margin-left:-40mm;font-weight:700;text-align:left;overflow-wrap:anywhere}
 </style></head><body class="${d.type === "external" ? "external-document correspondence " : ["internal", "memorandum"].includes(d.type) ? "correspondence " : ""}${d.layout === "budget-reference" ? "budget-document" : ""}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
   <script>
   window.addEventListener('message',event=>{if(event.source===parent&&event.data==='sarabun-print')window.print()});
