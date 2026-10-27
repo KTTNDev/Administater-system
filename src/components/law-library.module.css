@@ -28,13 +28,13 @@
 .header span {
   font-size: 11px;
   letter-spacing: 2px;
-  color: #387569;
+  color: var(--theme-accent, #387569);
 }
 .header h1 {
   margin: 8px 0;
 }
 .header p,.footnote {
-  color: #6c7f76;
+  color: var(--theme-muted, #6c7f76);
 }
 .stats {
   display: flex;
@@ -43,8 +43,8 @@
   margin-bottom: 24px;
 }
 .stats>div {
-  background: white;
-  border: 1px solid #e0e8e3;
+  background: var(--theme-surface, white);
+  border: 1px solid var(--theme-line, #e0e8e3);
   border-radius: 15px;
   display: flex;
   align-items: center;
@@ -53,11 +53,11 @@
 }
 .stats strong {
   font-size: 24px;
-  color: #14776a;
+  color: var(--theme-accent, #14776a);
 }
 .panel {
-  background: white;
-  border: 1px solid #e0e8e3;
+  background: var(--theme-surface, white);
+  border: 1px solid var(--theme-line, #e0e8e3);
   border-radius: 18px;
   padding: 22px;
   margin-bottom: 24px;
@@ -85,8 +85,8 @@
   opacity: .45;
 }
 .actions button,.filters button,.readerHeader button {
-  border: 1px solid #dce7e0;
-  background: white;
+  border: 1px solid var(--theme-line, #dce7e0);
+  background: var(--theme-surface, white);
   border-radius: 8px;
   padding: 8px 11px;
   display: inline-flex;
@@ -99,7 +99,7 @@
   gap: 18px;
 }
 .card {
-  border: 1px solid #e1e9e5;
+  border: 1px solid var(--theme-line, #e1e9e5);
   border-radius: 15px;
   padding: 20px;
   min-width: 0;
@@ -111,24 +111,24 @@
 }
 .meta,.status,.tags {
   font-size: 12px;
-  color: #4b7866;
+  color: var(--theme-accent, #4b7866);
 }
 .status {
   display: inline-block;
-  background: #eff5f1;
+  background: var(--theme-tint, #eff5f1);
   padding: 5px 8px;
   border-radius: 6px;
 }
 .notes {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: #5c7065;
+  color: var(--theme-muted, #5c7065);
   font-size: 14px;
 }
 .highlight {
   display: block;
-  background: #fff3c9;
-  color: #705518;
+  background: var(--theme-warning-bg, #fff3c9);
+  color: var(--theme-warning, #705518);
   border-radius: 8px;
   padding: 12px;
   white-space: pre-wrap;
@@ -145,7 +145,7 @@
 .empty {
   text-align: center;
   padding: 65px 20px;
-  color: #6c7e75;
+  color: var(--theme-muted, #6c7e75);
 }
 .readers {
   display: grid;
@@ -186,14 +186,14 @@
 }
 .message {
   padding: 14px;
-  background: #f1f6f3;
+  background: var(--theme-surface, #f1f6f3);
   border-radius: 8px;
 }
 .footnote {
   font-size: 12px;
 }
 .form input,.form select,.form textarea,.filters input,.filters select {
-  border: 1px solid #dce6df;
+  border: 1px solid var(--theme-line, #dce6df);
   border-radius: 8px;
   padding: 10px;
   font: inherit;
@@ -201,7 +201,7 @@
 }
 .form small,.form p {
   font-size: 12px;
-  color: #697e71;
+  color: var(--theme-muted, #697e71);
 }
 @media (max-width:1150px) {
   .cards {

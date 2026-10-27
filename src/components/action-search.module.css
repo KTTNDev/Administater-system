@@ -23,16 +23,16 @@
   align-items: center;
   gap: 9px;
   padding: 9px 14px !important;
-  background: #f0f6f4 !important;
-  border: 1px solid #d4e4de !important;
+  background: var(--theme-tint, #f0f6f4) !important;
+  border: 1px solid var(--theme-line, #d4e4de) !important;
   border-radius: 12px !important;
-  color: #245347 !important;
+  color: var(--theme-accent, #245347) !important;
   white-space: nowrap;
 }
 .trigger kbd {
   font-size: 10px;
-  color: #667e75;
-  border: 1px solid #d4e4de;
+  color: var(--theme-muted, #667e75);
+  border: 1px solid var(--theme-line, #d4e4de);
   border-radius: 4px;
   padding: 2px 4px;
 }
@@ -41,9 +41,9 @@
   width: min(620px,calc(100vw - 28px));
   max-height: 85dvh;
   padding: 22px;
-  border: 1px solid #dbe6e1;
+  border: 1px solid var(--theme-line, #dbe6e1);
   border-radius: 20px;
-  color: #213a32;
+  color: var(--theme-accent, #213a32);
   box-shadow: 0 24px 100px #12372b40;
   overflow: auto;
 }
@@ -62,7 +62,7 @@
   margin: 0;
 }
 .header p {
-  color: #6c7e77;
+  color: var(--theme-muted, #6c7e77);
   font-size: 13px;
   margin: 7px 0 18px;
 }
@@ -75,10 +75,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 2px solid #579580;
+  border: 2px solid var(--theme-line, #579580);
   border-radius: 12px;
   padding: 6px 12px;
-  background: #f8fcfa;
+  background: var(--theme-tint, #f8fcfa);
 }
 .input input {
   width: 100%;
@@ -97,15 +97,15 @@
   margin-top: 12px;
 }
 .examples button {
-  border: 1px solid #dde8e2;
-  background: #f5f8f6;
+  border: 1px solid var(--theme-line, #dde8e2);
+  background: var(--theme-surface, #f5f8f6);
   border-radius: 20px;
   padding: 5px 11px;
   font-size: 12px;
 }
 .count {
   font-size: 12px;
-  color: #6c7e77;
+  color: var(--theme-muted, #6c7e77);
   margin: 18px 0 8px;
 }
 .results {
@@ -121,13 +121,13 @@
   padding: 13px;
   border: 1px solid transparent;
   border-radius: 10px;
-  background: white;
+  background: var(--theme-surface, white);
   width: 100%;
   color: inherit;
 }
 .result:hover,.result:focus-visible {
-  background: #edf7f2;
-  border-color: #6caa93;
+  background: var(--theme-tint, #edf7f2);
+  border-color: var(--theme-line, #6caa93);
   outline: none;
 }
 .result strong {
@@ -136,38 +136,38 @@
 }
 .result small {
   display: block;
-  color: #6c7e77;
+  color: var(--theme-muted, #6c7e77);
   font-size: 12px;
   margin-top: 4px;
 }
 .result em {
   display: block;
-  color: #397b63;
+  color: var(--theme-accent, #397b63);
   font-size: 11px;
   font-style: normal;
   margin-top: 5px;
 }
 .footer {
-  border-top: 1px solid #e6ede9;
+  border-top: 1px solid var(--theme-line, #e6ede9);
   padding-top: 13px;
   margin-top: 16px;
   font-size: 11px;
   line-height: 1.8;
-  color: #7b8c83;
+  color: var(--theme-muted, #7b8c83);
 }
 .empty {
   padding: 22px;
   text-align: center;
-  color: #697c72;
+  color: var(--theme-muted, #697c72);
   font-size: 14px;
 }
 .empty button {
   display: block;
   margin: 14px auto 0;
   padding: 8px 12px;
-  border: 1px solid #d6e4dc;
+  border: 1px solid var(--theme-line, #d6e4dc);
   border-radius: 8px;
-  background: #eff6f2;
+  background: var(--theme-tint, #eff6f2);
 }
 @media (max-width:600px) {
   .trigger kbd {

@@ -94,7 +94,7 @@ export function RecoveryPanel({
       style={{
         padding: 12,
         margin: "12px 0",
-        background: "#edf7f3",
+        background: "var(--theme-tint, #edf7f3)",
         borderRadius: 10,
       }}
     >

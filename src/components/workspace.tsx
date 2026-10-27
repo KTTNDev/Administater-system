@@ -28,6 +28,7 @@ import {
 } from "./minutes-details";
 /* นำเข้า react — React hooks สำหรับ state, ref และการทำงานหลัง render */
 import { useEffect, useRef, useState, useTransition } from "react";
+import { ThemeSwitch } from "./theme-switch";
 /* นำเข้า next/dynamic — API ของ Next.js สำหรับส่วนที่ชื่อ module ระบุ */
 import dynamic from "next/dynamic";
 /* นำเข้า lucide-react — ไอคอน UI ไม่มีผลกับข้อมูลหรือผลพิมพ์ */
@@ -824,6 +825,7 @@ export function Workspace({
             }}
           />
           <div className="topbar-right">
+            <ThemeSwitch />
             <span className="workspace-mode">
               <span className="dot green" />
               {local ? "โหมดใช้งานในเครื่อง" : "ระบบจัดทำร่าง"}

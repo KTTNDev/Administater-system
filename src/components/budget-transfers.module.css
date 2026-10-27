@@ -33,7 +33,7 @@
   margin: 8px 0;
 }
 .header p,.note,.preview p {
-  color: #657972;
+  color: var(--theme-muted, #657972);
   font-size: 16px;
 }
 .search {
@@ -54,8 +54,8 @@
 }
 .cards>div {
   padding: 18px;
-  background: white;
-  border: 1px solid #dbe6e1;
+  background: var(--theme-surface, white);
+  border: 1px solid var(--theme-line, #dbe6e1);
   border-radius: 14px;
   display: flex;
   flex-direction: column;
@@ -64,21 +64,21 @@
   font-size: 29px;
 }
 .balanced {
-  color: #087764;
+  color: var(--theme-accent, #087764);
 }
 .invalid {
-  color: #b53333;
+  color: var(--theme-danger, #b53333);
 }
 .message {
   padding: 14px;
-  background: #eef7f2;
+  background: var(--theme-tint, #eef7f2);
   margin: 12px 0;
   border-radius: 10px;
 }
 .table {
   overflow: auto;
-  background: white;
-  border: 1px solid #dde5e1;
+  background: var(--theme-surface, white);
+  border: 1px solid var(--theme-line, #dde5e1);
   border-radius: 14px;
   padding: 15px;
   margin-bottom: 20px;
@@ -90,11 +90,11 @@
 .table td,.table th {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #edf1ee;
+  border-bottom: 1px solid var(--theme-line, #edf1ee);
 }
 .table small {
   display: block;
-  color: #6f8078;
+  color: var(--theme-muted, #6f8078);
 }
 .toolbar {
   justify-content: flex-start;
@@ -117,8 +117,8 @@
   min-width: 0;
 }
 .form section {
-  background: white;
-  border: 1px solid #dce5df;
+  background: var(--theme-surface, white);
+  border: 1px solid var(--theme-line, #dce5df);
   padding: 18px;
   border-radius: 14px;
   margin-bottom: 18px;
@@ -142,7 +142,7 @@
   gap: 0 12px;
 }
 .line {
-  border: 1px solid #dce7e0;
+  border: 1px solid var(--theme-line, #dce7e0);
   padding: 12px;
   border-radius: 10px;
   margin: 12px 0;
@@ -161,14 +161,14 @@
 }
 .balance {
   padding: 10px;
-  background: #f0f7f3;
+  background: var(--theme-tint, #f0f7f3);
   border-radius: 8px;
 }
 .preview {
   position: sticky;
   top: 10px;
   min-width: 0;
-  background: #edf2ef;
+  background: var(--theme-wash, #edf2ef);
   padding: 14px;
   border-radius: 14px;
 }
@@ -206,7 +206,7 @@
 }
 
 .referencePicker {
-  border-top: 1px solid #dce5df;
+  border-top: 1px solid var(--theme-line, #dce5df);
   margin-top: 12px;
   padding-top: 12px;
 }
@@ -227,13 +227,13 @@
 }
 .results article {
   padding: 12px;
-  border: 1px solid #dce5df;
+  border: 1px solid var(--theme-line, #dce5df);
   border-radius: 8px;
   margin: 8px 0;
 }
 .results small {
   display: block;
-  color: #536f66;
+  color: var(--theme-muted, #536f66);
 }
 .results button,.sourceButtons button {
   margin: 4px 4px 4px 0;

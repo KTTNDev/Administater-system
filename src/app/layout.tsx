@@ -20,6 +20,7 @@
 import type { Metadata } from "next";
 /* นำเข้า ./globals.css — กฎหน้าตาและขนาดของ แอปโดยรวม; ไม่ใช่กฎหน้ากระดาษ PDF ซึ่งอยู่ใน render-document.ts */
 import "./globals.css";
+import "./workspace-theme.css";
 export const metadata: Metadata = {
   title: "สารบรรณ — พื้นที่ทำงานเอกสารราชการ",
   description: "จัดทำ ตรวจทาน และจัดเก็บร่างหนังสือราชการ",
@@ -27,8 +28,12 @@ export const metadata: Metadata = {
 /* รับ children จาก Next.js แล้วครอบด้วย html/body; เปลี่ยนโครงทุกหน้าที่นี่ แต่รูปแบบกระดาษอยู่ใน render-document.ts */
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th">
-      <body>{children}</body>
+    <html lang="th" suppressHydrationWarning>
+      <body>
+        {/* คืนธีมก่อนวาด UI เพื่อไม่ให้แสงขาววาบ; ไม่เข้าถึง iframe เอกสาร */}
+        <script dangerouslySetInnerHTML={{ __html: 'try{document.documentElement.dataset.uiTheme=localStorage.getItem("sarabun-ui-theme")==="dim"?"dim":"light"}catch{}' }} />
+        {children}
+      </body>
     </html>
   );
 }
