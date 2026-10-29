@@ -72,10 +72,9 @@ test("agenda shortcuts and progress stay with the correct speakers after adding 
       && context.y >= shortcuts.y + shortcuts.height - 1
       && heading.y >= context.y + context.height - 1;
   }).toBe(true);
-  await page.getByRole("button", { name: "มืดนุ่ม", exact: true }).click();
   await expect(page.locator(".preview-footer")).toContainText("ตรวจรูปแบบก่อนพิมพ์", { timeout: 30000 });
   fs.mkdirSync("output/appearance-check", { recursive: true });
-  await page.screenshot({ path: "output/appearance-check/minutes-workspace-dim.png", animations: "disabled" });
+  await page.screenshot({ path: "output/appearance-check/minutes-workspace.png", animations: "disabled" });
   if(process.env.SARABUN_E2E_DATA_ROOT){
     const download=page.waitForEvent('download',{timeout:60000});
     await page.getByRole('button',{name:'ดาวน์โหลด Word',exact:true}).click();

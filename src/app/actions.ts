@@ -24,7 +24,7 @@ export async function getDocuments() { await requireUser(); return listDrafts();
 export async function deleteDocument(id: string, version: number) { try { await requireUser(); removeDraft(uuid.parse(id),versionSchema.parse(version)); revalidatePath("/"); return {ok:true as const}; } catch(e) { return {ok:false as const,error:e instanceof Error?e.message:"ลบไม่สำเร็จ"}; } }
 export async function duplicateDocument(id: string) { await requireUser(); const d=readDraft(uuid.parse(id)); return writeDraft({...d,subject:d.subject+" (สำเนาร่าง)",number:"",status:"draft"}); }
 export async function getHistory(id: string) { await requireUser(); return auditHistory(uuid.parse(id)); }
-export async function uploadDocument(id: string, version: number) { try { await requireUser(); const result = await syncToDrive(uuid.parse(id),versionSchema.parse(version)); revalidatePath("/"); return {ok:true as const,...result}; } catch(e) { return {ok:false as const,error:e instanceof Error ? e.message : "อัปโหลดไม่สำเร็จ"}; } }
+export async function uploadDocument(id: string, version: number, allowUnnumberedDraft = false) { try { await requireUser(); const result = await syncToDrive(uuid.parse(id),versionSchema.parse(version),z.boolean().parse(allowUnnumberedDraft)); revalidatePath("/"); return {ok:true as const,...result}; } catch(e) { return {ok:false as const,error:e instanceof Error ? e.message : "อัปโหลดไม่สำเร็จ"}; } }
 export async function saveOrganization(value: unknown) {
   await requireUser(); const data=z.object({name:z.string().min(1).max(200),department:z.string().max(200),address:z.string().max(1000),phone:z.string().max(100),prefix:z.string().max(100)}).parse(value);
   setSetting("organization",JSON.stringify(data)); revalidatePath("/"); return data;

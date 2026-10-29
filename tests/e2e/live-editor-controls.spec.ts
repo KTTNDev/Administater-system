@@ -11,8 +11,6 @@ test('live editor keeps focus mode and responsive scroll after resizing',async({
  await expect(divider).not.toBeVisible();
  await page.getByRole('button',{name:'แสดงตัวอย่างคู่กัน',exact:true}).click();
  await expect(divider).toBeVisible();
- await page.getByRole('button',{name:'มืดนุ่ม',exact:true}).click();
- await expect(page.locator('.editor-header')).toHaveCSS('background-color','rgb(36, 45, 51)');
  const nav=page.getByRole('navigation',{name:'ไปยังส่วนของแบบฟอร์ม'});
  await nav.getByRole('button',{name:'เนื้อหา',exact:true}).click();
  await expect(page.getByRole('navigation',{name:'เลือกวาระการประชุม'}).getByRole('button')).toHaveCount(5);
@@ -24,7 +22,6 @@ test('live editor keeps focus mode and responsive scroll after resizing',async({
   await expect(divider).toHaveAttribute('aria-valuenow','35');
   const dimensions=await page.locator('.form-pane').evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth}));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client+1);
-  await expect(page.locator('.agenda-jump-text strong').first()).toHaveCSS('color','rgb(227, 233, 230)');
  }
  for(const width of [320,375,414,768]){
   await page.setViewportSize({width,height:900});

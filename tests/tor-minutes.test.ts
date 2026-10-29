@@ -45,7 +45,7 @@ describe('editable TOR meeting reports',()=>{
   const d=tor();d.meetingNo='1/2569';d.location='ห้องประชุม';d.organization='เทศบาลตัวอย่าง';d.startTime='09:00';d.endTime='12:00';d.recorder='เลขานุการ';
   d.meetingMembers=[{name:'กรรมการ',position:'ตำแหน่ง',role:'ประธาน',status:'present',note:''}];
   d.meetingAgenda=d.meetingAgenda.map(a=>({...a,discussion:'รายละเอียดการประชุม'}));
-  expect(reviewIssues(d)).not.toContain('ระบุผู้มาประชุม');expect(reviewIssues(d)).toContain('กรอกหัวข้อและรายละเอียด TOR ให้ครบ หรือลบหัวข้อที่ไม่ใช้');
+  expect(reviewIssues(d)).not.toContain('ระบุผู้มาประชุม');expect(reviewIssues(d).some(issue=>issue.startsWith('TOR หัวข้อที่ '))).toBe(true);
   d.minutesTor.sections=d.minutesTor.sections.map(s=>({...s,body:'ข้อมูลที่กรอกแล้ว'}));expect(reviewIssues(d)).toEqual([]);
   d.meetingMembers[0].status='absent';expect(reviewIssues(d)).toContain('เพิ่มผู้มาประชุมอย่างน้อยหนึ่งคนในตาราง');
  });

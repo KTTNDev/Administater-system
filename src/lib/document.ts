@@ -89,39 +89,50 @@ export function documentYear(date: string, mode: "calendar" | "fiscal") {
   const [year, month] = date.split("-").map(Number);
   return year + 543 + (mode === "fiscal" && month >= 10 ? 1 : 0);
 }
-export function reviewIssues(d: Draft): string[] {
-  const issues: string[] = [];
-  if (!d.date) issues.push("ระบุวันที่หนังสือก่อนตรวจทานและส่งออก");
-  if (!d.organization.trim()) issues.push("ระบุส่วนราชการเจ้าของหนังสือ");
-  if (!bodySections(d).some(s=>s.text.trim())) issues.push("ระบุเนื้อหาหนังสือ");
-  if (d.proposers.some(p=>!p.name.trim()||!p.position.trim())) issues.push("ระบุชื่อและตำแหน่งผู้เสนอเพิ่มเติมให้ครบ");
-  if (d.opinions.some(p=>!p.title.trim())) issues.push("ระบุหัวข้อความเห็นทุกส่วน");
-  if (d.confidentiality!=="ปกติ"&&d.secretSetNumber>d.secretSetTotal) issues.push("เลขที่ชุดต้องไม่เกินจำนวนชุดทั้งหมด");
-  if (["external", "internal", "stamped", "memorandum"].includes(d.type) && !d.recipient.trim()) issues.push("ระบุผู้รับหนังสือ");
-  if (["external", "internal", "stamped", "order", "certificate"].includes(d.type) && !d.number.trim()) issues.push("ตรวจและระบุเลขที่หนังสือจากทะเบียนของหน่วยงาน");
-  if (!["stamped", "news", "statement", "minutes", "other"].includes(d.type)) {
-    if (!d.signer.trim()) issues.push("ระบุชื่อผู้ลงนาม");
-    if (!d.position.trim()) issues.push("ระบุตำแหน่งผู้ลงนาม");
+export type DocumentCheck={id:string;section:string;label:string;complete:boolean};
+export const NUMBER_REQUIRED_ISSUE="ตรวจและระบุเลขที่หนังสือจากทะเบียนของหน่วยงาน";
+/** ใช้เกณฑ์เดียวกันสำหรับเปอร์เซ็นต์ หน้าตรวจทาน และการส่ง Drive; ช่องถ้ามีไม่นับจนเริ่มเพิ่มรายการ */
+export function documentChecks(d:Draft):DocumentCheck[]{
+ const checks:DocumentCheck[]=[];
+ const check=(section:string,label:string,complete:unknown)=>checks.push({id:label,section,label,complete:!!complete});
+ check('header','ระบุเรื่องหนังสือ',d.subject.trim());
+ check('header','ระบุวันที่หนังสือก่อนตรวจทานและส่งออก',d.date);
+ check(d.type==='stamped'?'signing':'header','ระบุส่วนราชการเจ้าของหนังสือ',d.organization.trim());
+ check('body','ระบุเนื้อหาหนังสือ',bodySections(d).some(s=>s.text.trim()));
+ if(d.proposers.length)check('signing','ระบุชื่อและตำแหน่งผู้เสนอเพิ่มเติมให้ครบ',d.proposers.every(p=>p.name.trim()&&p.position.trim()));
+ if(d.opinions.length)check('signing','ระบุหัวข้อความเห็นทุกส่วน',d.opinions.every(p=>p.title.trim()));
+ if(d.confidentiality!=='ปกติ')check('header','เลขที่ชุดต้องไม่เกินจำนวนชุดทั้งหมด',d.secretSetNumber<=d.secretSetTotal);
+ if(['external','internal','stamped','memorandum'].includes(d.type))check('header','ระบุผู้รับหนังสือ',d.recipient.trim());
+ if(['external','internal','stamped','order','certificate'].includes(d.type))check('header',NUMBER_REQUIRED_ISSUE,d.number.trim());
+ if(!['stamped','news','statement','minutes','other'].includes(d.type)){
+  check('signing','ระบุชื่อผู้ลงนาม',d.signer.trim());check('signing','ระบุตำแหน่งผู้ลงนาม',d.position.trim());
+ }
+ if(d.type==='external'){
+  check('header','ระบุที่อยู่ส่วนราชการ',d.address.trim());check('signing','ตรวจคำลงท้ายตามฐานะผู้รับ',d.closing.trim());
+ }
+ if(d.type==='minutes'){
+  if(d.minutesMode==='agenda'){
+   check('body','เพิ่มอย่างน้อยหนึ่งวาระการประชุม',d.meetingAgenda.length);
+   for(const [i,a] of d.meetingAgenda.entries()){
+    check('body',`วาระที่ ${i+1}: ระบุหัวข้อและข้ออภิปราย`,a.title.trim()&&(a.discussion.trim()||a.speeches?.some(s=>s.text.trim())||(a.torDetails&&d.minutesTor.sections.some(s=>s.body.trim()))));
+    for(const [j,s] of (a.speeches||[]).entries())check('body',`วาระที่ ${i+1} ผู้พูดที่ ${j+1}: ระบุชื่อและบทพูด`,s.speaker.trim()&&s.text.trim());
+   }
+   if(d.meetingAgenda.some(a=>a.torDetails))for(const [i,s] of d.minutesTor.sections.entries())check('body',`TOR หัวข้อที่ ${i+1}: ระบุหัวข้อและรายละเอียด`,s.title.trim()&&s.body.trim());
   }
-  if (d.type === "external" && !d.address.trim()) issues.push("ระบุที่อยู่ส่วนราชการ");
-  if (d.type === "external" && !d.closing.trim()) issues.push("ตรวจคำลงท้ายตามฐานะผู้รับ");
-  if (d.type === "minutes") {
-    if(d.minutesMode==='agenda') {
-      if(!d.meetingAgenda.length) issues.push('เพิ่มอย่างน้อยหนึ่งวาระการประชุม');
-      if(d.meetingAgenda.some(a=>!a.title.trim()||(!a.discussion.trim()&&!a.speeches?.some(s=>s.text.trim())&&!(a.torDetails&&d.minutesTor.sections.some(s=>s.body.trim()))))) issues.push('ระบุหัวข้อและข้ออภิปรายของทุกวาระ (มติกรอกเมื่อมี)');
-    }
-    if(d.minutesAttendanceMode==='table'){
-      if(!d.meetingMembers.some(m=>m.status==='present'&&m.name.trim()))issues.push('เพิ่มผู้มาประชุมอย่างน้อยหนึ่งคนในตาราง');
-      if(d.meetingMembers.some(m=>!m.name.trim()||!m.position.trim()))issues.push('ระบุชื่อและตำแหน่งผู้เข้าประชุมในตารางให้ครบ');
-    }else if(!d.attendees.trim())issues.push('ระบุผู้มาประชุม');
-    if(d.meetingSigners.some(m=>!m.name.trim()||!m.role.trim()))issues.push('ระบุชื่อและบทบาทผู้ลงนามท้ายรายงานให้ครบ');
-    if(d.minutesMode==='agenda'&&d.meetingAgenda.some(a=>a.torDetails)&&d.minutesTor.sections.some(s=>!s.title.trim()||!s.body.trim()))issues.push('กรอกหัวข้อและรายละเอียด TOR ให้ครบ หรือลบหัวข้อที่ไม่ใช้');
-    if(d.minutesMode==='agenda'&&d.meetingAgenda.some(a=>a.speeches?.some(s=>!s.speaker.trim()||!s.text.trim())))issues.push('ระบุผู้พูดและข้อความอภิปรายให้ครบ');
-    for (const [field, label] of [["meetingNo", "ครั้งที่ประชุม"], ["location", "สถานที่ประชุม"], ["startTime", "เวลาเริ่มประชุม"], ["endTime", "เวลาเลิกประชุม"], ["recorder", "ผู้จดรายงานการประชุม"]] as const) if (!d[field].trim()) issues.push("ระบุ" + label);
-  }
-  if(d.type==='certificate'&&d.certificatePhotoArea&&!d.certificateRecipient.trim()) issues.push('ระบุชื่อผู้ได้รับการรับรองใต้ช่องรูปถ่าย');
-  return issues;
+  if(d.minutesAttendanceMode==='table'){
+   check('attendees','เพิ่มผู้มาประชุมอย่างน้อยหนึ่งคนในตาราง',d.meetingMembers.some(m=>m.status==='present'&&m.name.trim()));
+   for(const [i,m] of d.meetingMembers.entries())check('attendees',`ผู้เข้าประชุมที่ ${i+1}: ระบุชื่อและตำแหน่ง`,m.name.trim()&&m.position.trim());
+  }else check('attendees','ระบุผู้มาประชุม',d.attendees.trim());
+  for(const [i,m] of d.meetingSigners.entries())check('signing',`ผู้ลงนามท้ายรายงานที่ ${i+1}: ระบุชื่อและบทบาท`,m.name.trim()&&m.role.trim());
+  for(const [field,label,section] of [['meetingNo','ครั้งที่ประชุม','header'],['location','สถานที่ประชุม','header'],['startTime','เวลาเริ่มประชุม','attendees'],['endTime','เวลาเลิกประชุม','signing'],['recorder','ผู้จดรายงานการประชุม','signing']] as const)check(section,'ระบุ'+label,d[field].trim());
+ }
+ if(d.type==='certificate'&&d.certificatePhotoArea)check('signing','ระบุชื่อผู้ได้รับการรับรองใต้ช่องรูปถ่าย',d.certificateRecipient.trim());
+ return checks;
 }
+export function reviewIssues(d:Draft):string[]{return documentChecks(d).filter(c=>!c.complete).map(c=>c.label);}
+/** อนุญาตเฉพาะขาดเลขทะเบียนอย่างเดียว ต้องเลือกยืนยันเอง และยังเป็นฉบับร่าง */
+export function canUploadUnnumberedDraft(d:Draft){const issues=reviewIssues(d);return d.confidentiality==='ปกติ'&&!d.number.trim()&&issues.length===1&&issues[0]===NUMBER_REQUIRED_ISSUE;}
+export function driveUploadAllowed(d:Draft,allowUnnumberedDraft=false){return d.confidentiality==='ปกติ'&&((d.status==='reviewed'&&reviewIssues(d).length===0)||(allowUnnumberedDraft&&canUploadUnnumberedDraft(d)));}
 export const statusLabels = { draft: "ฉบับร่าง", reviewed: "ตรวจทานแล้ว" };
 export function numerals(value:string,style:Draft["numeralStyle"]) {
   if(style==="original") return value;

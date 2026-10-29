@@ -4,7 +4,7 @@ import "./document-form.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Building2, ChevronDown, FileText, ListChecks, Paperclip, PenLine, Settings2, Users } from "lucide-react";
-import type { Draft } from "@/lib/document";
+import {documentChecks, type Draft } from "@/lib/document";
 import {isSignature} from "@/lib/floating-item";
 import type {DirectoryOrganization,OrganizationInput} from "@/lib/organization-directory";
 import { BodyEditor } from "./body-editor";
@@ -35,13 +35,19 @@ function Section({id,title,icon,children,tone="green"}:{id:string;title:string;i
   </details>;
 }
 
-export function DocumentFormNav({external,progressKey,issueCount}:{external:boolean;progressKey:unknown;issueCount:number}){
+export function DocumentFormNav({external,progressKey,issueCount}:{external:boolean;progressKey:Draft;issueCount:number}){
   const navRef=useRef<HTMLElement>(null);
-  const [counts,setCounts]=useState<Record<string,string>>({});
+  const checks=documentChecks(progressKey);
+  const total=checks.length+1,done=checks.filter(c=>c.complete).length+(progressKey.status==='reviewed'&&issueCount===0?1:0),percent=Math.floor(done/total*100);
+  const counts=Object.fromEntries(['header','attendees','body','signing'].map(id=>{const list=checks.filter(c=>c.section===id);return [id,list.length?list.filter(c=>c.complete).length+'/'+list.length:''];}));
   useEffect(()=>{const nav=navRef.current,pane=nav?.closest<HTMLElement>(".form-pane");if(!nav||!pane)return;const measure=()=>pane.style.setProperty("--section-nav-height",`${nav.offsetHeight}px`);const observer=new ResizeObserver(measure);observer.observe(nav);measure();return()=>observer.disconnect();},[]);
-  useEffect(()=>{const pane=navRef.current?.closest(".form-pane");if(!pane)return;const result:Record<string,string>={};for(const id of ["header","body","signing"]){const controls=Array.from(pane.querySelectorAll<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>(`#form-${id} input:not([type=checkbox]):not([type=radio]):not([type=file]), #form-${id} textarea, #form-${id} select`));if(controls.length)result[id]=`${controls.filter(c=>c.value.trim()).length}/${controls.length}`;}setCounts(result);},[progressKey]);
   const cancelMotion=useRef<()=>void>(()=>{});
-  const [selected,setSelected]=useState("");
+  const [selected,setSelected]=useState('header');
+  useEffect(()=>{const pane=navRef.current?.closest<HTMLElement>('.form-pane');if(!pane)return;let frame=0;
+   const sync=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const sections=Array.from(pane.querySelectorAll<HTMLElement>('[id^="form-"]')).filter(e=>e.getClientRects().length);const top=Math.max(0,pane.getBoundingClientRect().top)+(navRef.current?.offsetHeight||0)+40;const current=sections.filter(e=>e.getBoundingClientRect().top<=top).at(-1)||sections[0];if(current)setSelected(current.id.replace('form-',''));});};
+   const focus=(e:Event)=>{const section=(e.target as HTMLElement).closest<HTMLElement>('[id^="form-"]');if(section)setSelected(section.id.replace('form-',''));};
+   pane.addEventListener('scroll',sync,{passive:true});window.addEventListener('scroll',sync,{passive:true});pane.addEventListener('focusin',focus);sync();return()=>{cancelAnimationFrame(frame);pane.removeEventListener('scroll',sync);window.removeEventListener('scroll',sync);pane.removeEventListener('focusin',focus);};
+  },[progressKey.type]);
   useEffect(()=>()=>cancelMotion.current(),[]);
   function jump(id:string){
     cancelMotion.current();
@@ -83,8 +89,8 @@ export function DocumentFormNav({external,progressKey,issueCount}:{external:bool
     };
     frame=requestAnimationFrame(step);
   }
-  const links=[{id:"header",label:"ส่วนหัว",icon:Building2},...(external?[{id:"attachments",label:"สิ่งที่ส่งมาด้วย",icon:Paperclip}]:[]),{id:"body",label:"เนื้อหา",icon:FileText},{id:"signing",label:"ส่วนท้าย",icon:PenLine},...(!external?[{id:"attachments",label:"แนบท้าย",icon:Paperclip}]:[]),{id:"options",label:"เครื่องมือ",icon:Settings2},{id:"review",label:"ตรวจทาน",icon:ListChecks}];
-  return <nav ref={navRef} className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" aria-label={label} className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span>{counts[id]&&<small title="จำนวนช่องที่กรอก รวมช่องไม่บังคับ">{counts[id]}</small>}{id==="review"&&<small>{issueCount||"✓"}</small>}</button>)}</nav>;
+  const links=[{id:"header",label:"ส่วนหัว",icon:Building2},...(external?[{id:"attachments",label:"สิ่งที่ส่งมาด้วย",icon:Paperclip}]:[]),...(progressKey.type==='minutes'?[{id:'attendees',label:'ผู้ประชุม',icon:Users}]:[]),{id:"body",label:"เนื้อหา",icon:FileText},{id:"signing",label:"ส่วนท้าย",icon:PenLine},...(!external?[{id:"attachments",label:"แนบท้าย",icon:Paperclip}]:[]),{id:"options",label:"เครื่องมือ",icon:Settings2},{id:"review",label:"ตรวจทาน",icon:ListChecks}];
+  return <><section className="document-completion" aria-label="ความคืบหน้าเอกสาร"><div><strong>ความพร้อม {percent}%</strong><span>{done}/{total} รายการสำคัญ</span></div><progress aria-label="ข้อมูลสำคัญและการตรวจทาน" max={100} value={percent}/><small>อยู่ที่: {links.find(l=>l.id===selected)?.label||'ส่วนหัว'} · 100% หมายถึงกรอกและยืนยันตรวจทานแล้ว ไม่ใช่การอนุมัติ</small>{issueCount>0&&<details><summary>ยังขาด {issueCount} รายการ</summary>{checks.filter(c=>!c.complete).map(c=><button type="button" key={c.id} onClick={()=>jump(c.section)}>{c.label}</button>)}</details>}</section><nav ref={navRef} className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" aria-label={label} aria-current={selected===id?'step':undefined} className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span>{counts[id]&&<small title="รายการสำคัญที่ครบแล้ว / ทั้งหมด">{counts[id]}</small>}{id==="review"&&<small>{issueCount||"✓"}</small>}</button>)}</nav></>;
 }
 
 type Props={

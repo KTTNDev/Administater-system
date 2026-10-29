@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { Readable } from "node:stream";
 import { secret } from "./auth";
 import { db, getSetting, setSetting, readDraft } from "./db";
-import { documentYear, reviewIssues } from "./document";
+import { documentYear, driveUploadAllowed, canUploadUnnumberedDraft } from "./document";
 import { template } from "./templates";
 import { renderPdf } from "./pdf";
 export function oauthClient() {
@@ -47,22 +47,22 @@ async function ensureFolder(drive: DriveClient,name:string,parent?:string):Promi
   await drive.files.create({requestBody:{id,name,mimeType:"application/vnd.google-apps.folder",parents:parent?[parent]:undefined,appProperties:{application:"sarabun"}},fields:"id"});return id;
 }
 const shared=globalThis as unknown as {sarabunSyncQueue?:Promise<unknown>};
-export async function syncToDrive(id:string,expectedVersion:number) {
+export async function syncToDrive(id:string,expectedVersion:number,allowUnnumberedDraft=false) {
   const run=async()=>{
     const d=readDraft(id);
     if(d.version!==expectedVersion)throw new Error("ร่างเปลี่ยนแปลงแล้ว กรุณาบันทึกและลองใหม่");
     if(d.confidentiality!=="ปกติ")throw new Error("รุ่นนี้ยังไม่รองรับการเก็บหนังสือลับบน Google Drive");
-    if(d.status!=="reviewed"||reviewIssues(d).length)throw new Error("กรุณากรอกข้อมูลให้ครบและทำเครื่องหมายตรวจทานก่อนอัปโหลด");
+    if(!driveUploadAllowed(d,allowUnnumberedDraft))throw new Error("กรุณากรอกข้อมูลให้ครบและทำเครื่องหมายตรวจทานก่อนอัปโหลด");
     const pdf=await renderPdf(d),drive=await driveClient();
     const configuredParent=storageConfig().driveRoot.trim();
     const root=configuredParent||await ensureFolder(drive,"สารบรรณ");
     const typeFolder=await ensureFolder(drive,template(d.type).name,root);
     const yearName=`${d.yearMode==="fiscal"?"ปีงบประมาณ":"ปีปฏิทิน"} ${documentYear(d.date,d.yearMode)}`;
     const folder=await ensureFolder(drive,yearName,typeFolder);
-    const name=`${d.number||"ไม่มีเลขที่"}_${d.subject}`.replace(/[\\/:*?"<>|\x00-\x1f]/g,"-").slice(0,160)+".pdf";
+    const name=`${canUploadUnnumberedDraft(d)?"ฉบับร่าง-รอเลขทะเบียน":d.number||"ไม่มีเลขที่"}_${d.subject}`.replace(/[\\/:*?"<>|\x00-\x1f]/g,"-").slice(0,160)+".pdf";
     const result=await drive.files.list({q:`trashed=false and appProperties has { key='documentId' and value='${escapeDriveQuery(id)}' } and appProperties has { key='application' and value='sarabun' }`,fields:"files(id,parents)",pageSize:1});
     let fileId=result.data.files?.[0]?.id||d.driveFileId||undefined;
-    const metadata={name,appProperties:{application:"sarabun",documentId:id,version:String(d.version)}};
+    const metadata={name,appProperties:{application:"sarabun",documentId:id,version:String(d.version),documentStatus:d.status}};
     if(fileId) {
       try {
         const matched=result.data.files?.[0]?.id===fileId?result.data.files[0]:undefined;
