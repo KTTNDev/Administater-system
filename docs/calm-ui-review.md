@@ -18,7 +18,7 @@ Branch: codex/calm-home-ux
 - [x] แสดงโครงร่างรอโหลดในหน้าหลักที่แยกโหลด
 - [x] เก็บ Git tag ก่อนปรับใหญ่และคำแนะนำย้อนกลับเฉพาะ UI
 - [x] ผู้ใช้อนุมัติให้ดำเนินการขั้นสุดท้ายและเผยแพร่ (30 ตุลาคม 2569)
-- [ ] Push GitHub หลังได้รับคำยืนยันเท่านั้น
+- [x] Push GitHub หลังได้รับคำยืนยัน: main และ codex/calm-home-ux พร้อม tag ui-baseline-v1.4.4
 
 ## หลักฐานทดสอบ
 - TypeScript และ production desktop build ผ่าน
@@ -42,3 +42,7 @@ Branch: codex/calm-home-ux
 - src/components/workspace-loading.tsx: โครงร่างระหว่างโหลด
 - tests/e2e/calm-workspace.spec.ts: ตรวจพฤติกรรมใหม่
 - docs/calm-ui-rollback.md: วิธีขอย้อนกลับโดยเก็บข้อมูลปัจจุบัน
+
+## การเผยแพร่
+เผยแพร่ไปที่ https://github.com/KTTNDev/Administater-system/tree/main แล้ว โดยส่งเฉพาะชุด UI และเอกสารประกอบ ไม่รวมฐานข้อมูล ข้อมูลเอกสาร หรือไฟล์ส่วนตัวที่ยังไม่ได้อยู่ใน Git
+รุ่น UI ที่อนุมัติระบุด้วย tag ui-calm-20261030; package ยังคงเป็น 1.4.4 และ desktop build ที่ทดสอบคือ -hgAgwVszk0QTFaEruCHW-1793331639039
