@@ -320,4 +320,4 @@ Branch codex/calm-home-ux, baseline ui-baseline-v1.4.4. The Home route is a coas
 
 Home typewriter is grapheme-aware, pauses on hover/focus/hidden tabs, has an explicit pause control, and becomes static under reduced motion. Dashboard quick preview is a non-modal side panel using documentHtml and AttachmentPreview, with a separate edit action; row management actions remain visible on touch and keyboard focus. Labels remain visible rather than becoming floating placeholders. Preserve desktop editor split-view, mobile stacking, and the existing section progress navigation.
 
-Publishing this preview requires the owner's explicit acceptance. See docs/calm-ui-rollback.md.
+The owner approved completing and publishing this UI on 2026-10-30. See docs/calm-ui-rollback.md for the code-only rollback baseline.
