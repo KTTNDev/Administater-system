@@ -1,0 +1,130 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Coastal welcome + existing workbench */
+/* Hallmark · pre-emit critique: P5 H4 E4 S4 R5 V4 */
+/* UI only: the document renderer owns its isolated iframe styles. Never target paper contents here. */
+:root {
+ --ui-rest: #f4f3ef;
+ --ui-rest-soft: #faf9f6;
+ --ui-coast-wash: #f4f3efe8;
+ --ui-coast-clear: #f4f3ef00;
+ --ui-welcome-title: clamp(32px, 3.8vw, 56px);
+ --ui-welcome-type: clamp(17px, 2vw, 24px);
+ --ui-space-10: 40px;
+ --ui-space-12: 48px;
+ --ui-space-16: 64px;
+}
+.app-shell .main-shell {background:var(--ui-rest)}
+.app-shell .topbar {background:var(--ui-rest-soft);border-bottom:1px solid var(--ui-border)}
+.app-shell .sidebar {background:var(--ui-rest-soft);border-right:1px solid var(--ui-border)}
+.app-shell .sidebar nav button.active {background:var(--ui-accent-soft);color:var(--ui-accent-hover)}
+.app-shell .sidebar nav button.active>svg {color:var(--ui-accent-hover)}
+.app-shell .sidebar nav button {min-width:0}
+.app-shell .sidebar nav button>svg {flex-shrink:0}
+.app-shell .sidebar .nav-label {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.app-shell .page-main {padding-top:var(--ui-space-8)}
+.app-shell .workspace-heading {margin-bottom:var(--ui-space-8)}
+.app-shell .workspace-heading-icon {margin-bottom:var(--ui-space-3)}
+.app-shell .editor-main .form-pane {background:var(--ui-rest)}
+.app-shell .editor-main .form-section,
+.app-shell .editor-main .review-card,
+.app-shell .editor-main .storage-card {background:var(--ui-surface);margin-bottom:var(--ui-space-6);border:1px solid var(--ui-border)}
+.app-shell .editor-main .form-section>summary {min-height:56px;padding:var(--ui-space-4);font-weight:600}
+.app-shell .editor-main .form-section:focus-within {border-color:var(--ui-border-strong)}
+.app-shell .editor-main .form-section:focus-within>summary .step-number {background:var(--ui-accent-soft);color:var(--ui-accent-hover)}
+.app-shell .editor-main .field-grid {gap:var(--ui-space-5) var(--ui-space-4);padding:var(--ui-space-5)}
+.app-shell .editor-main .field-note {line-height:1.7}
+.app-shell .panel,.app-shell .settings-card {border-color:var(--ui-border);box-shadow:none}
+.app-shell .toast {border:1px solid var(--ui-border);box-shadow:var(--ui-shadow)}
+/* Collapse text explicitly: later typography rules used to override the old generic selectors. */
+@media(min-width:901px) {
+ .app-shell.sidebar-collapsed .sidebar :is(.brand-copy,.nav-label,.nav-count,.account-copy),
+ .app-shell.sidebar-collapsed .sidebar .new-document>span,
+ .app-shell.sidebar-collapsed .sidebar .drive-summary>span,
+ .app-shell.sidebar-collapsed .sidebar .drive-summary>svg:last-child {display:none}
+ .app-shell.sidebar-collapsed .sidebar .nav-caption {font-size:0;line-height:0;height:1px;margin:var(--ui-space-2);background:var(--ui-border);overflow:hidden}
+ .app-shell.sidebar-collapsed .sidebar nav button {justify-content:center;padding-inline:0;gap:0}
+ .app-shell.sidebar-collapsed .sidebar .new-document {padding-inline:0;justify-content:center}
+ .app-shell.sidebar-collapsed .sidebar .drive-summary {padding-inline:0;justify-content:center}
+}
+.welcome-standalone {min-height:100dvh;background:var(--ui-rest);color:var(--ui-ink);font-family:var(--ui-font)}
+.welcome-header {max-width:1280px;margin:auto;padding:var(--ui-space-6) var(--ui-space-8);display:flex;align-items:center;justify-content:space-between;gap:var(--ui-space-4);border-bottom:1px solid var(--ui-border)}
+.welcome-header a {display:inline-flex;align-items:center;gap:var(--ui-space-2);font:var(--ui-text-sm)/1.7 var(--ui-font);color:var(--ui-ink);text-decoration:none;min-height:44px}
+.welcome-header strong {font-size:22px;letter-spacing:-.5px}
+.welcome-page {max-width:1280px;margin:0 auto;padding:var(--ui-space-8);color:var(--ui-ink);font-family:var(--ui-font)}
+.welcome-hero {position:relative;isolation:isolate;overflow:hidden;min-height:560px;padding:var(--ui-space-16) var(--ui-space-12) var(--ui-space-6);display:flex;flex-direction:column;justify-content:space-between;background:var(--ui-rest);border-bottom:1px solid var(--ui-border)}
+.welcome-landscape {position:absolute;inset:0;z-index:-1;background:url('/illustrations/calm-coast.svg') center right/cover no-repeat;opacity:.18;filter:grayscale(.5);pointer-events:none}
+.welcome-hero::before {content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,var(--ui-rest) 0%,var(--ui-coast-wash) 35%,var(--ui-coast-clear) 100%);pointer-events:none}
+.welcome-copy {max-width:720px}
+.welcome-eyebrow {font:var(--ui-text-xs)/1.8 var(--ui-font);color:var(--ui-muted);margin:0 0 var(--ui-space-6)}
+.welcome-copy h1 {font:600 var(--ui-welcome-title)/1.5 var(--ui-font);letter-spacing:-1px;margin:0 0 var(--ui-space-4);color:var(--ui-ink)}
+.welcome-typing {display:flex;align-items:center;gap:var(--ui-space-2);min-height:68px;max-width:100%;color:var(--ui-accent-hover);font:400 var(--ui-welcome-type)/1.7 var(--ui-font)}
+.welcome-typing>span:first-child {min-width:0;overflow-wrap:anywhere}
+.welcome-typing i {display:inline-block;height:1em;border-right:1px solid currentColor;margin-left:var(--ui-space-1);vertical-align:middle;animation:welcome-caret 1.1s step-end infinite}
+.welcome-typing i.still {animation:none}
+.welcome-typing button {padding:var(--ui-space-2);width:36px;min-width:36px;min-height:36px;color:var(--ui-muted);border:1px solid var(--ui-border);background:var(--ui-rest-soft);border-radius:var(--ui-radius-sm)}
+.welcome-description {font:var(--ui-text)/1.9 var(--ui-font);color:var(--ui-muted);margin:var(--ui-space-4) 0 var(--ui-space-8);max-width:60ch}
+.welcome-actions {display:flex;align-items:center;gap:var(--ui-space-4);flex-wrap:wrap}
+.welcome-actions .primary {display:inline-flex;align-items:center;justify-content:center;gap:var(--ui-space-3);padding:var(--ui-space-3) var(--ui-space-5);font:var(--ui-text)/1.7 var(--ui-font);min-height:48px;text-decoration:none;border-radius:var(--ui-radius)}
+.welcome-secondary {display:inline-flex;align-items:center;gap:var(--ui-space-2);padding:var(--ui-space-3);font:var(--ui-text-sm)/1.7 var(--ui-font);color:var(--ui-ink);text-decoration:none;min-height:44px}
+.welcome-secondary:hover,.welcome-header a:hover {color:var(--ui-accent-hover)}
+.welcome-caption {display:flex;justify-content:space-between;gap:var(--ui-space-4);font:var(--ui-text-xs)/1.8 var(--ui-font);color:var(--ui-muted);margin-top:var(--ui-space-12)}
+.welcome-note {display:flex;align-items:center;gap:var(--ui-space-4);padding:var(--ui-space-8) var(--ui-space-12);color:var(--ui-muted)}
+.welcome-note>svg {flex-shrink:0;color:var(--ui-accent)}
+.welcome-note>svg:last-child {margin-left:auto;color:var(--ui-muted)}
+.welcome-note h2 {font:600 var(--ui-text)/1.8 var(--ui-font);margin:0;color:var(--ui-ink)}
+.welcome-note p {font:var(--ui-text-sm)/1.8 var(--ui-font);margin:var(--ui-space-1) 0 0;max-width:65ch}
+.welcome-sr {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.welcome-page :is(a,button):focus-visible,.welcome-header a:focus-visible {outline:2px solid var(--ui-focus);outline-offset:4px}
+.welcome-page :is(a,button):active {opacity:.8}
+.welcome-page button:disabled {opacity:.5;cursor:not-allowed}
+.workspace-loading>div,.loading-body>div {background:var(--ui-border);border-radius:var(--ui-radius-sm);animation:workspace-loading 1.8s ease-in-out infinite}
+.workspace-loading .loading-title {width:38%;height:32px;margin-bottom:var(--ui-space-4)}
+.workspace-loading .loading-subtitle {width:62%;height:16px;margin-bottom:var(--ui-space-8)}
+.workspace-loading .loading-body {background:var(--ui-surface);padding:var(--ui-space-6);display:grid;gap:var(--ui-space-5);animation:none}
+.loading-body>div {height:48px}
+@keyframes welcome-caret {50% {opacity:0}}
+@keyframes workspace-loading {50% {opacity:.45}}
+@media(max-width:900px) {
+ .app-shell.sidebar-collapsed .sidebar .brand-copy {display:flex;flex-direction:column}
+ .app-shell.sidebar-collapsed .sidebar :is(.nav-label,.account-copy) {display:block}
+ .welcome-page {padding:var(--ui-space-5)}
+ .welcome-hero {padding:var(--ui-space-10) var(--ui-space-6) var(--ui-space-5);min-height:520px}
+ .welcome-note {padding:var(--ui-space-6)}
+}
+@media(max-width:480px) {
+ .welcome-header {padding:var(--ui-space-4)}
+ .welcome-header>a:last-child {font-size:var(--ui-text-xs)}
+ .welcome-page {padding:var(--ui-space-3)}
+ .welcome-hero {padding:var(--ui-space-8) var(--ui-space-3) var(--ui-space-5);min-height:560px}
+ .welcome-copy h1 {letter-spacing:0}
+ .welcome-typing {min-height:76px;align-items:flex-start}
+ .welcome-typing button {margin-top:var(--ui-space-1)}
+ .welcome-caption {flex-direction:column;gap:var(--ui-space-1);margin-top:var(--ui-space-8)}
+ .welcome-note {padding:var(--ui-space-6) var(--ui-space-3);align-items:flex-start}
+ .welcome-note>svg:last-child {display:none}
+ .app-shell .editor-main .field-grid {padding:var(--ui-space-4);gap:var(--ui-space-4)}
+}
+@media(prefers-reduced-motion:reduce) {
+ .welcome-page *, .workspace-loading>div, .loading-body>div {animation:none!important;transition:none!important}
+}
+
+/* Non-modal side preview leaves the document list available. Document HTML is unchanged. */
+.document-peek {position:fixed;z-index:40;right:var(--ui-space-4);top:80px;bottom:var(--ui-space-4);width:min(620px,55vw);display:flex;flex-direction:column;background:var(--ui-surface);border:1px solid var(--ui-border-strong);border-radius:var(--ui-radius);box-shadow:var(--ui-overlay-shadow);animation:peek-enter var(--ui-motion-enter) var(--ui-ease-out)}
+.document-peek>header {display:flex;align-items:flex-start;gap:var(--ui-space-4);padding:var(--ui-space-5);border-bottom:1px solid var(--ui-border)}
+.document-peek>header>div {min-width:0;flex:1}
+.document-peek small {font:var(--ui-text-xs)/1.7 var(--ui-font);color:var(--ui-muted)}
+.document-peek h2 {font:600 var(--ui-text)/1.7 var(--ui-font);margin:var(--ui-space-1) 0 0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.document-peek button {min-width:40px;min-height:40px}
+.document-peek-actions {display:flex;align-items:center;justify-content:space-between;gap:var(--ui-space-3);padding:var(--ui-space-3) var(--ui-space-5)}
+.document-peek-actions .primary {font:var(--ui-text-sm)/1.7 var(--ui-font);padding:var(--ui-space-2) var(--ui-space-4)}
+.document-peek-paper {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:var(--ui-space-4);background:var(--ui-rest)}
+.document-peek-paper>p {font:var(--ui-text-sm)/1.8 var(--ui-font);color:var(--ui-muted)}
+@keyframes peek-enter {from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:900px){.document-peek{width:calc(100vw - 24px);right:var(--ui-space-3);top:72px;bottom:var(--ui-space-3)}}
+@media(prefers-reduced-motion:reduce){.document-peek{animation:none}}
+
+.app-shell .page-main {background:var(--ui-rest)}
+.document-peek {font-family:var(--ui-font);color:var(--ui-ink)}
+.document-peek :is(button,a):focus-visible {outline:2px solid var(--ui-focus);outline-offset:2px}
+.document-peek .primary {background:var(--ui-accent);color:var(--ui-on-accent)}
+.document-peek .primary:hover {background:var(--ui-accent-hover)}
+.document-peek :is(button,a):active {opacity:.8}

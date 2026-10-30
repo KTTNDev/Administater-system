@@ -1,0 +1,1 @@
+export function WorkspaceLoading(){return <main className="page-main workspace-loading" role="status" aria-label="กำลังเปิดพื้นที่ทำงาน"><span className="welcome-sr">กำลังเปิดพื้นที่ทำงาน</span><div className="loading-title"/><div className="loading-subtitle"/><div className="loading-body"><div/><div/><div/><div/></div></main>}

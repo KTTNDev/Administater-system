@@ -172,3 +172,32 @@
 @media(prefers-reduced-motion:reduce) {
  .quickChoices button,.headerActions button,.rowActions button,.rowActions a {transition:none}
 }
+
+/* Calm UI preview: visible groups, quiet tables, no changes to document data. */
+.hero {margin-bottom:var(--ui-space-8)}
+.launchpad {gap:var(--ui-space-6);align-items:stretch}
+.resume {padding:var(--ui-space-6);border:1px solid var(--ui-border);border-radius:var(--ui-radius);background:var(--ui-surface)}
+.quickCreate {padding:var(--ui-space-6);background:var(--ui-rest-soft);border:1px solid var(--ui-border);align-self:stretch}
+.quickHeading h2,.quickHeading button {color:var(--ui-ink)}
+.quickChoices button {border:1px solid var(--ui-border);color:var(--ui-ink);white-space:normal;text-align:left}
+.quickChoices button:hover {background:var(--ui-hover);color:var(--ui-ink)}
+.workspace {border:1px solid var(--ui-border);border-radius:var(--ui-radius)}
+.listHeader {padding:var(--ui-space-5)}
+.table tbody tr:nth-child(even) td {background:var(--ui-rest-soft)}
+.table tbody tr:hover td,.table tbody tr:focus-within td {background:var(--ui-hover)}
+@media(hover:hover) and (pointer:fine) {
+ .rowActions {opacity:0;transition:opacity var(--ui-motion-fast)}
+ .table tbody tr:hover .rowActions,.table tbody tr:focus-within .rowActions {opacity:1}
+}
+@media(max-width:600px) {
+ .hero,.launchpad {margin-bottom:var(--ui-space-5)}
+ .resume,.quickCreate,.listHeader {padding:var(--ui-space-4)}
+}
+@media(prefers-reduced-motion:reduce) {.rowActions {transition:none}}
+
+.actionGroup {display:flex;align-items:center;justify-content:flex-end;gap:var(--ui-space-1)}
+.peekButton {min-width:36px;min-height:40px;color:var(--ui-muted);border-radius:var(--ui-radius-sm)}
+.peekButton:hover,.peekButton[aria-expanded=true] {background:var(--ui-accent-soft);color:var(--ui-accent-hover)}
+@media(max-width:600px){.actionGroup{flex-wrap:wrap}.peekButton{margin-left:auto}}
+
+.documentTitle[aria-pressed=true] strong {color:var(--ui-accent-hover);text-decoration:underline;text-underline-offset:4px}

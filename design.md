@@ -313,3 +313,11 @@
 การตอบสนองสั้น 140–180ms ไม่มีการสั่น เด้ง หรือเปลี่ยนพฤติกรรมการเลื่อน และหยุดเมื่อผู้ใช้เลือก reduced motion
 สี/ฟอนต์อ้าง workspace-tokens.css ตัวอย่างกระดาษ PDF และ Word ไม่รับเอฟเฟกต์เหล่านี้
 แหล่งอ้างอิงและขอบเขตการนำมาใช้: docs/UI-REFERENCES.md
+
+## Calm UI preview (2026-10-30)
+
+Branch codex/calm-home-ux, baseline ui-baseline-v1.4.4. The Home route is a coastal welcome with a local decorative SVG at 18% opacity, not a real-location photograph. Working screens retain the existing workbench and typography. Additive styles in workspace-calm.css use existing UI tokens and a warm resting surface. The document renderer, fonts, output dimensions, and export pipeline remain unchanged.
+
+Home typewriter is grapheme-aware, pauses on hover/focus/hidden tabs, has an explicit pause control, and becomes static under reduced motion. Dashboard quick preview is a non-modal side panel using documentHtml and AttachmentPreview, with a separate edit action; row management actions remain visible on touch and keyboard focus. Labels remain visible rather than becoming floating placeholders. Preserve desktop editor split-view, mobile stacking, and the existing section progress navigation.
+
+Publishing this preview requires the owner's explicit acceptance. See docs/calm-ui-rollback.md.

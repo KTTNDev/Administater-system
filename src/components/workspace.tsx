@@ -1,4 +1,6 @@
 "use client";
+import {HomeHero} from "./home-hero";
+import {WorkspaceLoading} from "./workspace-loading";
 import {EditorLayout} from "./editor-layout";
 import {getThaiDictionary} from '@/app/thai-dictionary-actions';
 import {ThaiDictionaryManager} from './thai-dictionary-manager';
@@ -22,22 +24,22 @@ import type { CalendarEvent } from "@/lib/calendar";
 
 const AttachmentPreview=dynamic(()=>import("./attachment-editor").then(module=>module.AttachmentPreview));
 const LegalReader=dynamic(()=>import("./writing-assistants").then(module=>module.LegalReader));
-const DocumentDashboard=dynamic(()=>import("./document-dashboard").then(module=>module.DocumentDashboard));
+const DocumentDashboard=dynamic(()=>import("./document-dashboard").then(module=>module.DocumentDashboard),{loading:()=> <WorkspaceLoading/>});
 const ActionSearch=dynamic(()=>import("./action-search").then(module=>module.ActionSearch));
 const RecoveryPanel=dynamic(()=>import("./recovery-panel").then(module=>module.RecoveryPanel));
-const BudgetTransfers=dynamic(()=>import("./budget-transfers").then(module=>module.BudgetTransfers));
-const CorrespondenceRegister=dynamic(()=>import("./correspondence-register").then(module=>module.CorrespondenceRegister));
-const InventoryWorkspace=dynamic(()=>import("./inventory-workspace").then(module=>module.InventoryWorkspace));
-const OfficeWorkspace=dynamic(()=>import("./office-workspace").then(module=>module.OfficeWorkspace));
-const MeetingBookings=dynamic(()=>import("./meeting-bookings").then(module=>module.MeetingBookings));
-const WorkCalendar=dynamic(()=>import("./work-calendar").then(module=>module.WorkCalendar));
-const LawLibrary=dynamic(()=>import("./law-library").then(module=>module.LawLibrary));
+const BudgetTransfers=dynamic(()=>import("./budget-transfers").then(module=>module.BudgetTransfers),{loading:()=> <WorkspaceLoading/>});
+const CorrespondenceRegister=dynamic(()=>import("./correspondence-register").then(module=>module.CorrespondenceRegister),{loading:()=> <WorkspaceLoading/>});
+const InventoryWorkspace=dynamic(()=>import("./inventory-workspace").then(module=>module.InventoryWorkspace),{loading:()=> <WorkspaceLoading/>});
+const OfficeWorkspace=dynamic(()=>import("./office-workspace").then(module=>module.OfficeWorkspace),{loading:()=> <WorkspaceLoading/>});
+const MeetingBookings=dynamic(()=>import("./meeting-bookings").then(module=>module.MeetingBookings),{loading:()=> <WorkspaceLoading/>});
+const WorkCalendar=dynamic(()=>import("./work-calendar").then(module=>module.WorkCalendar),{loading:()=> <WorkspaceLoading/>});
+const LawLibrary=dynamic(()=>import("./law-library").then(module=>module.LawLibrary),{loading:()=> <WorkspaceLoading/>});
 const TemplateReference=dynamic(()=>import("./template-reference").then(module=>module.TemplateReference));
 const SetupReadiness=dynamic(()=>import("./setup-readiness").then(module=>module.SetupReadiness));
 const StorageSettings=dynamic(()=>import("./system-center").then(module=>module.StorageSettings));
-const ReportsDashboard=dynamic(()=>import("./system-center").then(module=>module.ReportsDashboard));
-const TemplateGallery=dynamic(()=>import("./template-gallery").then(module=>module.TemplateGallery));
-const WorkspaceGuide=dynamic(()=>import("./workspace-guide").then(module=>module.WorkspaceGuide));
+const ReportsDashboard=dynamic(()=>import("./system-center").then(module=>module.ReportsDashboard),{loading:()=> <WorkspaceLoading/>});
+const TemplateGallery=dynamic(()=>import("./template-gallery").then(module=>module.TemplateGallery),{loading:()=> <WorkspaceLoading/>});
+const WorkspaceGuide=dynamic(()=>import("./workspace-guide").then(module=>module.WorkspaceGuide),{loading:()=> <WorkspaceLoading/>});
 
 import {getOrganizationDirectory} from '@/app/organization-directory-actions';
 import type {DirectoryOrganization} from '@/lib/organization-directory';
@@ -48,7 +50,7 @@ type Props={initialDirectory:DirectoryOrganization[];initialCalendar:CalendarEve
 export function Workspace({initialDirectory,initialCalendar,initialBookings,initialOffice,initialDocuments,assets:initialAssets,drive,local,initialView,googleResult,savedOrganization}:Props){
   const [assets,setAssets]=useState(initialAssets),[dictionaryDirty,setDictionaryDirty]=useState(false),[dictionaryBusy,setDictionaryBusy]=useState(false);
   useEffect(()=>{let active=true;const refresh=()=>{getThaiDictionary().then(d=>{if(active)setAssets(a=>({...a,thaiTerms:d.keepTerms}));}).catch(()=>{});};window.addEventListener('sarabun-dictionary-change',refresh);window.addEventListener('focus',refresh);return()=>{active=false;window.removeEventListener('sarabun-dictionary-change',refresh);window.removeEventListener('focus',refresh);};},[]);
-  const [view,setView]=useState<View>(initialView==="inventory"?"inventory":initialView==="register"?"register":initialView==="budget"?"budget":initialView==="reports"?"reports":initialView==="laws"?"laws":initialView==="calendar"?"calendar":initialView==="bookings"?"bookings":initialView==="office"?"office":initialView==="settings"?"settings":"dashboard"),[documents,setDocuments]=useState(initialDocuments);
+  const [view,setView]=useState<View>(initialView==="home"?"home":initialView==="templates"?"templates":initialView==="inventory"?"inventory":initialView==="register"?"register":initialView==="budget"?"budget":initialView==="reports"?"reports":initialView==="laws"?"laws":initialView==="calendar"?"calendar":initialView==="bookings"?"bookings":initialView==="office"?"office":initialView==="settings"?"settings":"dashboard"),[documents,setDocuments]=useState(initialDocuments);
   const [draft,setDraft]=useState<Draft>(newDraft()),[saved,setSaved]=useState<SavedDraft|null>(null),[baseline,setBaseline]=useState(JSON.stringify(newDraft()));
   const [toast,setToast]=useState<{text:string;error?:boolean}|null>(null),[pending,startTransition]=useTransition(),[mobileNav,setMobileNav]=useState(false);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
@@ -164,8 +166,9 @@ export function Workspace({initialDirectory,initialCalendar,initialBookings,init
     <a className="skip-link" href="#workspace-content">ข้ามไปยังเนื้อหา</a>
     {directoryOpen&&<dialog ref={directoryDialog} className="organization-directory-dialog" aria-label="จัดการรายชื่อหน่วยงาน" onCancel={e=>{e.preventDefault();closeDirectory();}}><div className="directory-dialog-close"><button type="button" disabled={directoryBusy} onClick={closeDirectory}><X size={16}/>ปิดรายชื่อหน่วยงาน</button></div><OrganizationDirectoryManager entries={directory} onChange={setDirectory} onDirty={setDirectoryDirty} onBusy={setDirectoryBusy}/></dialog>}
     <WorkspaceNavigation view={view} count={documents.length} connected={drive.connected} local={local} organization={organization.name} collapsed={sidebarCollapsed} mobileOpen={mobileNav} onToggle={toggleSidebar} onClose={closeMobileNav} onNavigate={navigate} onLogout={()=>{if(!busyNavigation())asyncJob(async()=>{await logout()})}}/>
-    <div className="main-shell" id="workspace-content" tabIndex={-1}><header className="topbar"><div className="breadcrumbs"><button className="mobile-menu" aria-label="เปิดเมนู" aria-controls="workspace-navigation" aria-expanded={mobileNav} onClick={()=>setMobileNav(!mobileNav)}><Menu size={20}/></button><span>พื้นที่ทำงาน</span><ChevronRight size={14}/><strong>{{inventory:"พัสดุและครุภัณฑ์",register:"ทะเบียนรับ–ส่งหนังสือ",budget:"โอนงบประมาณ",reports:"ภาพรวมและรายงานระบบ",laws:"คลังกฎหมายและระเบียบ",calendar:"ปฏิทินงาน",bookings:"จองห้องประชุม",office:"งานธุรการเทศบาล",dashboard:"แดชบอร์ดเอกสาร",templates:"แบบหนังสือราชการ",editor:"จัดทำร่างหนังสือ",settings:"ตั้งค่าระบบ",guide:"คู่มือและแหล่งอ้างอิง"}[view]}</strong></div><ActionSearch onChoose={action=>{if(action.documentType){if(view==="budget"&&budgetDirty&&!confirm("มีคำขอโอนงบที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?"))return;create(action.documentType);}else navigate(action.view);}}/><button type="button" className="app-refresh" disabled={dictionaryBusy||pending||attachmentBusy||registerBusy||directoryBusy||inventoryBusy} aria-label="รีเฟรชระบบ" title="รีเฟรชระบบ" onClick={()=>window.location.reload()}><RefreshCw size={17}/><span>รีเฟรช</span></button><div className="topbar-right"><span className="top-date">{thaiDate(newDraft().date)}</span></div></header>
+    <div className="main-shell" id="workspace-content" tabIndex={-1}><header className="topbar"><div className="breadcrumbs"><button className="mobile-menu" aria-label="เปิดเมนู" aria-controls="workspace-navigation" aria-expanded={mobileNav} onClick={()=>setMobileNav(!mobileNav)}><Menu size={20}/></button><span>พื้นที่ทำงาน</span><ChevronRight size={14}/><strong>{{home:"หน้าต้อนรับ",inventory:"พัสดุและครุภัณฑ์",register:"ทะเบียนรับ–ส่งหนังสือ",budget:"โอนงบประมาณ",reports:"ภาพรวมและรายงานระบบ",laws:"คลังกฎหมายและระเบียบ",calendar:"ปฏิทินงาน",bookings:"จองห้องประชุม",office:"งานธุรการเทศบาล",dashboard:"แดชบอร์ดเอกสาร",templates:"แบบหนังสือราชการ",editor:"จัดทำร่างหนังสือ",settings:"ตั้งค่าระบบ",guide:"คู่มือและแหล่งอ้างอิง"}[view]}</strong></div><ActionSearch onChoose={action=>{if(action.documentType){if(view==="budget"&&budgetDirty&&!confirm("มีคำขอโอนงบที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?"))return;create(action.documentType);}else navigate(action.view);}}/><button type="button" className="app-refresh" disabled={dictionaryBusy||pending||attachmentBusy||registerBusy||directoryBusy||inventoryBusy} aria-label="รีเฟรชระบบ" title="รีเฟรชระบบ" onClick={()=>window.location.reload()}><RefreshCw size={17}/><span>รีเฟรช</span></button><div className="topbar-right"><span className="top-date">{thaiDate(newDraft().date)}</span></div></header>
     {(view==="editor"||view==="dashboard")&&<RecoveryPanel scope="document" value={draft} enabled={view==="editor"&&dirty&&!attachmentBusy&&!pending} contextKey={(saved?.id||('new-'+draft.type))+'-'+recoveryKey} onRestore={value=>{if(busyNavigation())return;setRecoveryKey(n=>n+1);const recovered={...documentSchema.parse(value),status:"draft" as const};setDraft(recovered);void loadAppendixSources(recovered);setSaved(null);setBaseline('');setPreviewDraft(recovered);setView("editor");setSample(false);}}/>}
+    {view==="home"&&<HomeHero onEnter={()=>navigate("dashboard")} onTemplates={()=>navigate("templates")}/>}
     {view==="budget"&&<BudgetTransfers assets={assets} onDirtyChange={setBudgetDirty} onOpenDocument={d=>{setDocuments(list=>[d,...list.filter(x=>x.id!==d.id)]);openDraft(d);}}/>}
     {view==="reports"&&<ReportsDashboard/>}
     {view==="laws"&&<LawLibrary connected={drive.connected}/>}
@@ -176,6 +179,7 @@ export function Workspace({initialDirectory,initialCalendar,initialBookings,init
     {view==="office"&&<OfficeWorkspace initialItems={initialOffice} documents={documents} onOpenDocument={openDraft}/>}
     {view==="dashboard"&&<DocumentDashboard
       documents={documents}
+      assets={assets}
       pending={pending}
       onOpen={openDraft}
       onCreate={create}

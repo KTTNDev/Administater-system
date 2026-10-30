@@ -1,0 +1,18 @@
+# จุดย้อนกลับก่อนปรับ UX ครั้งใหญ่ — v1.4.4
+
+โปรเจกต์ที่แก้: C:\Users\rawai\source\sarabun
+Git tag: ui-baseline-v1.4.4
+Commit: cbcbe0e9ae555dbd232507db88133b88b9f665fe
+Branch ทดลอง: codex/calm-home-ux
+
+การเปลี่ยนแปลงนี้ยังไม่เผยแพร่ขึ้น GitHub ต้องให้เจ้าของระบบตรวจรับก่อน
+
+## วิธีขอให้ย้อนกลับ
+บอกว่า “ย้อนเฉพาะ UI กลับไปก่อนปรับ UX ครั้งใหญ่ v1.4.4 โดยเก็บเอกสารและข้อมูลปัจจุบันไว้”
+
+สำหรับผู้พัฒนา: ตรวจ git status และบันทึกงานใหม่ก่อน เปรียบเทียบ git diff ui-baseline-v1.4.4 -- src/components src/app เพื่อเลือกย้อนเฉพาะไฟล์ UI ในชุดนี้ ห้าม reset --hard หรือ clean เพราะอาจลบงานอื่น ใช้ git restore --source=ui-baseline-v1.4.4 -- <รายชื่อไฟล์เดิมที่เปลี่ยน> และนำไฟล์ UI ที่เพิ่มใหม่ออกหลังตรวจว่าไม่มีงานใหม่อ้างถึง จากนั้น typecheck, ทดสอบ และ build desktop ใหม่ แล้วหยุด/เริ่มผ่าน scripts/desktop.mjs
+
+ห้ามย้อนฐานข้อมูล data/ ไฟล์เอกสาร uploads/ output/ หรือ .env.local ตามเวอร์ชัน UI
+สามารถตรวจ protected renderer ว่าไม่เปลี่ยนด้วย git diff ui-baseline-v1.4.4 -- src/lib src/app/actions.ts public/assets
+
+หน้าใหม่ /home เป็นหน้าต้อนรับสาธารณะที่ไม่มีข้อมูลเอกสาร ส่วน / ยังคงเป็นพื้นที่ทำงานและใช้การตรวจสิทธิ์เดิม เมนูหน้าต้อนรับในระบบใช้ตัวเดียวกันโดยไม่ออกจาก workspace

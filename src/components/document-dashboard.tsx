@@ -15,6 +15,7 @@ import {
   FilePenLine,
   FilePlus2,
   Files,
+  Eye,
   FolderSearch,
   FileCheck2,
   Plus,
@@ -27,6 +28,9 @@ import {
 } from "lucide-react";
 import { documentYear, statusLabels, type SavedDraft } from "@/lib/document";
 import { template, templates, type DocumentType } from "@/lib/templates";
+import type {DocumentAssets} from "@/lib/render-document";
+import dynamic from "next/dynamic";
+const DocumentQuickPreview=dynamic(()=>import("./document-quick-preview").then(m=>m.DocumentQuickPreview));
 import styles from "./document-dashboard.module.css";
 import { DocumentSafety } from "./document-safety";
 import { SignedScansManager } from "./signed-scans-manager";
@@ -38,6 +42,7 @@ type SortMode = "updated-desc" | "updated-asc" | "subject" | "number";
 
 type Props = {
   documents: SavedDraft[];
+  assets: DocumentAssets;
   pending: boolean;
   onOpen: (document: SavedDraft) => void;
   onCreate: (type: DocumentType) => void;
@@ -101,6 +106,7 @@ function searchableText(document: SavedDraft) {
 
 export function DocumentDashboard({
   documents,
+  assets,
   pending,
   onOpen,
   onCreate,
@@ -109,6 +115,10 @@ export function DocumentDashboard({
   onDuplicate,
   onDelete,
 }: Props) {
+  const [peekId,setPeekId]=useState<string|null>(null);
+  const peekTrigger=useRef<HTMLButtonElement|null>(null);
+  const peekDocument=documents.find(d=>d.id===peekId);
+  function closePeek(){setPeekId(null);requestAnimationFrame(()=>peekTrigger.current?.isConnected&&peekTrigger.current.focus())}
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<DocumentType | "all">("all");
@@ -298,12 +308,12 @@ export function DocumentDashboard({
               <tbody>{visible.map((document) => {
                 const isSynced = document.syncedVersion === document.version;
                 return <tr key={document.id}>
-                  <td><button className={styles.documentTitle} onClick={() => onOpen(document)}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small><span className={styles.inlineType}>{template(document.type).name} · </span>{document.number || "ยังไม่ระบุเลขที่"}<span className={styles.version}> · ฉบับที่ {document.version}</span></small></span></button><div className={styles.mobileMetadata}><span>{template(document.type).name} · {statusLabels[document.status]}</span>{document.signedScanCount > 0 && <span className={styles.signedBadge}><FileCheck2 size={12}/>มีฉบับลงนาม ({document.signedScanCount})</span>}</div></td>
+                  <td><button className={styles.documentTitle} aria-pressed={peekDocument?peekId===document.id:undefined} title={peekDocument?"ดูตัวอย่างเรื่องนี้":"เปิดแก้ไขเอกสาร"} onClick={event=>{if(peekDocument){peekTrigger.current=event.currentTarget;setPeekId(document.id)}else onOpen(document)}}><span className={styles.fileIcon}><Files size={18} /></span><span><strong>{document.subject}</strong><small><span className={styles.inlineType}>{template(document.type).name} · </span>{document.number || "ยังไม่ระบุเลขที่"}<span className={styles.version}> · ฉบับที่ {document.version}</span></small></span></button><div className={styles.mobileMetadata}><span>{template(document.type).name} · {statusLabels[document.status]}</span>{document.signedScanCount > 0 && <span className={styles.signedBadge}><FileCheck2 size={12}/>มีฉบับลงนาม ({document.signedScanCount})</span>}</div></td>
                   <td><span className={styles.typeBadge}>{template(document.type).name}</span><small className={styles.cellSub}>{document.date ? `${document.yearMode === "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน"} ${documentYear(document.date, document.yearMode)}` : "ยังไม่ระบุปี"}</small></td>
                   <td><strong className={styles.cellMain}>{document.recipient || "—"}</strong><small className={styles.cellSub}>{document.department || document.organization || "ยังไม่ระบุหน่วยงาน"}</small></td>
                   <td><strong className={styles.cellMain}>{formatter.format(new Date(document.updatedAt))}</strong><small className={styles.cellSub}>{timeFormatter.format(new Date(document.updatedAt))} น.</small></td>
                   <td><span className={`${styles.status} ${document.status === "reviewed" ? styles.reviewed : styles.draft}`}>{document.status === "reviewed" ? <CheckCircle2 size={13} /> : <FilePenLine size={13} />}{statusLabels[document.status]}</span>{document.signedScanCount>0&&<span className={styles.signedBadge}><FileCheck2 size={12}/> มีฉบับลงนาม ({document.signedScanCount})</span>}<span className={`${styles.sync} ${isSynced ? styles.synced : ""}`}>{isSynced ? <Cloud size={12} /> : document.driveFileId ? <CloudOff size={12} /> : <HardDrive size={12} />}{isSynced ? "Drive ล่าสุดแล้ว" : document.driveFileId ? "มีฉบับแก้ไขในเครื่อง" : "บันทึกในเครื่องแล้ว"}</span></td>
-                  <td><div className={styles.rowActions}><button title="จัดการไฟล์สแกนฉบับลงนาม" aria-label={`ไฟล์สแกนฉบับลงนามของ ${document.subject}`} onClick={()=>setScanDocument(document)}><Paperclip size={16}/></button>{document.driveFileId && <a href={`https://drive.google.com/file/d/${document.driveFileId}/view`} target="_blank" rel="noreferrer" title="เปิดไฟล์บน Drive" aria-label={`เปิด ${document.subject} บน Drive`}><ExternalLink size={16} /></a>}<button title="ทำสำเนา" aria-label={`ทำสำเนา ${document.subject}`} disabled={pending} onClick={() => onDuplicate(document)}><Copy size={16} /></button><button className={styles.delete} title="ลบร่าง" aria-label={`ลบ ${document.subject}`} disabled={pending} onClick={() => onDelete(document)}><Trash2 size={16} /></button></div></td>
+                  <td><div className={styles.actionGroup}><button className={styles.peekButton} title="ดูตัวอย่าง" aria-label={`ดูตัวอย่าง ${document.subject}`} aria-expanded={peekId===document.id} onClick={event=>{peekTrigger.current=event.currentTarget;setPeekId(document.id)}}><Eye size={17}/></button><div className={styles.rowActions}><button title="จัดการไฟล์สแกนฉบับลงนาม" aria-label={`ไฟล์สแกนฉบับลงนามของ ${document.subject}`} onClick={()=>setScanDocument(document)}><Paperclip size={16}/></button>{document.driveFileId && <a href={`https://drive.google.com/file/d/${document.driveFileId}/view`} target="_blank" rel="noreferrer" title="เปิดไฟล์บน Drive" aria-label={`เปิด ${document.subject} บน Drive`}><ExternalLink size={16} /></a>}<button title="ทำสำเนา" aria-label={`ทำสำเนา ${document.subject}`} disabled={pending} onClick={() => onDuplicate(document)}><Copy size={16} /></button><button className={styles.delete} title="ลบร่าง" aria-label={`ลบ ${document.subject}`} disabled={pending} onClick={() => onDelete(document)}><Trash2 size={16} /></button></div></div></td>
                 </tr>;
               })}</tbody>
             </table>
@@ -322,6 +332,7 @@ export function DocumentDashboard({
           {pageCount > 1 && <div className={styles.pagination}><button aria-label="หน้าก่อน" disabled={page === 1} onClick={() => setPage((value) => value - 1)}><ChevronLeft size={16} /></button><span>หน้า {page.toLocaleString("th-TH")} / {pageCount.toLocaleString("th-TH")}</span><button aria-label="หน้าถัดไป" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}><ChevronRight size={16} /></button></div>}
         </div>
       </section>
+      {peekDocument&&<DocumentQuickPreview document={peekDocument} assets={assets} onClose={closePeek} onEdit={()=>onOpen(peekDocument)}/>}
       <DocumentSafety documents={documents} onChanged={onRefresh}/>
       {scanDocument&&<SignedScansManager document={scanDocument} onClose={()=>setScanDocument(null)} onChanged={onRefresh}/>}
     </main>
