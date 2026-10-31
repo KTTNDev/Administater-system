@@ -1,10 +1,10 @@
 import { z } from "zod";
-export const officeKinds = { incoming: "ทะเบียนหนังสือรับ", outgoing: "ทะเบียนหนังสือส่ง", task: "งานและกำหนดส่ง", meeting: "การประชุม", contact: "ทำเนียบหน่วยงาน", supplies: "วัสดุสำนักงาน", archive: "ดัชนีแฟ้มเอกสาร" } as const;
+export const officeKinds = { incoming: "ทะเบียนหนังสือรับ", outgoing: "ทะเบียนหนังสือส่ง", task: "งานและกำหนดส่ง", meeting: "การประชุม", contact: "ทำเนียบหน่วยงาน", supplies: "วัสดุสำนักงาน", archive: "ดัชนีแฟ้มเอกสาร", project: "โครงการประจำปี" } as const;
 export type OfficeKind = keyof typeof officeKinds;
 const short = z.string().trim().max(500).default("");
 const date = z.union([z.literal(""),z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(v);return !isNaN(+d)&&d.toISOString().slice(0,10)===v;})]).default("");
 export const officeSchema = z.object({
-  kind:z.enum(["incoming","outgoing","task","meeting","contact","supplies","archive"]),
+  kind:z.enum(["incoming","outgoing","task","meeting","contact","supplies","archive","project"]),
   title:z.string().trim().min(1,"กรุณาระบุชื่อเรื่อง").max(300),
   number:short, party:short, owner:short, date, due:date,
   status:z.enum(["new","working","waiting","done"]).default("new"),
@@ -12,6 +12,14 @@ export const officeSchema = z.object({
   notes:z.string().max(20000).default(""),
   documentId:z.union([z.literal(""),z.string().uuid()]).default(""),
   url:z.union([z.literal(""),z.string().url().refine(v=>/^https?:\/\//.test(v),"ใช้ลิงก์ http หรือ https เท่านั้น")]).default(""),
+  // Shared task/project metadata. Defaults keep existing office records readable.
+  projectId:z.union([z.literal(""),z.string().uuid()]).default(""),
+  fiscalYear:z.number().int().refine(v=>v===0||(v>=2400&&v<=2800),"ปีงบประมาณไม่ถูกต้อง").default(0),
+  annual:z.boolean().default(false), archived:z.boolean().default(false),
+  completedAt:z.union([z.literal(""),z.string().datetime()]).default(""),
+  originId:z.union([z.literal(""),z.string().uuid()]).default(""),
+  sortOrder:z.number().int().min(0).max(1000000).default(0),
+  budget:z.number().finite().min(0).max(1e12).default(0),
   quantity:z.number().min(0).max(100000000).default(0), minimum:z.number().min(0).max(100000000).default(0), unit:short,
 });
 export type OfficeInput=z.infer<typeof officeSchema>;

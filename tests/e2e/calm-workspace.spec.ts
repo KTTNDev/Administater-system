@@ -3,8 +3,8 @@ import {createHash} from 'node:crypto';
 const digest=(s:string|null)=>createHash('sha256').update(s||'').digest('hex');
 
 for(const width of [320,375,414,768,1440])test('welcome remains readable at '+width,async({page})=>{
- await page.setViewportSize({width,height:960});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/home');
- await expect(page.getByRole('heading',{level:1})).toHaveText('เริ่มงานวันนี้ให้เป็นระเบียบขึ้น');
+ await page.setViewportSize({width,height:960});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/welcome');
+ await expect(page.getByRole('heading',{level:1})).toHaveText('sarabun');
  await expect(page.getByTestId('welcome-typed')).toHaveText('ร่างบันทึกข้อความ');
  await expect(page.getByRole('button',{name:'หยุดข้อความเคลื่อนไหว'})).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
@@ -13,7 +13,7 @@ for(const width of [320,375,414,768,1440])test('welcome remains readable at '+wi
 });
 
 test('typewriter can pause without shifting the start button',async({page})=>{
- await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/home');
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/welcome');
  const button=page.getByRole('button',{name:'หยุดข้อความเคลื่อนไหว'});await expect(button).toBeVisible();
  const before=await page.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).boundingBox();
  await button.click();const text=await page.getByTestId('welcome-typed').textContent();await page.waitForTimeout(800);expect(await page.getByTestId('welcome-typed').textContent()).toBe(text);
@@ -24,7 +24,7 @@ test('collapsed sidebar hides every label and restores labels on mobile',async({
  await page.goto('/');await page.getByRole('button',{name:'ย่อแถบเมนู',exact:true}).click();
  for(const label of await page.locator('.sidebar .nav-label').all())await expect(label).toBeHidden();
  await expect(page.locator('.sidebar .drive-summary>span')).toBeHidden();await expect(page.locator('.sidebar .brand-copy')).toBeHidden();
- await page.getByRole('button',{name:'หน้าต้อนรับ',exact:true}).click();await expect(page.locator('#welcome-title')).toBeVisible();
+ await page.getByRole('button',{name:'โต๊ะทำงานวันนี้',exact:true}).click();await expect(page.locator('.workdesk')).toBeVisible();
  await page.screenshot({path:'output/calm-sidebar-collapsed.png',fullPage:true});
  await page.setViewportSize({width:375,height:900});await page.getByRole('button',{name:'เปิดเมนู',exact:true}).click();
  for(const label of await page.locator('.sidebar .nav-label').all())await expect(label).toBeVisible();

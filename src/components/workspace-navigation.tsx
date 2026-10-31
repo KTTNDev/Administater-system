@@ -1,11 +1,11 @@
 "use client";
 import {useEffect,useRef} from "react";
-import {Home,Package,BarChart3,BookOpen,BriefcaseBusiness,CalendarDays,ChevronRight,Cloud,DoorOpen,Files,FolderOpen,HelpCircle,LogOut,PanelLeftClose,PanelLeftOpen,Plus,Settings2,Wallet,X} from "lucide-react";
+import {ListTodo,Home,Package,BarChart3,BookOpen,BriefcaseBusiness,CalendarDays,ChevronRight,Cloud,DoorOpen,Files,FolderOpen,HelpCircle,LogOut,PanelLeftClose,PanelLeftOpen,Plus,Settings2,Wallet,X} from "lucide-react";
 
-export type WorkspaceView="home"|"inventory"|"register"|"budget"|"dashboard"|"templates"|"editor"|"settings"|"guide"|"office"|"bookings"|"calendar"|"laws"|"reports";
+export type WorkspaceView="tasks"|"projects"|"home"|"inventory"|"register"|"budget"|"dashboard"|"templates"|"editor"|"settings"|"guide"|"office"|"bookings"|"calendar"|"laws"|"reports";
 const shortLabels:Partial<Record<WorkspaceView,string>>={register:"ทะเบียนรับ–ส่ง",dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
 const groups=[
- {label:"เริ่มต้น",items:[{view:"home",label:"หน้าต้อนรับ",icon:Home}]},
+ {label:"เริ่มต้น",items:[{view:"home",label:"โต๊ะทำงานวันนี้",icon:Home},{view:"tasks",label:"งานของฉัน",icon:ListTodo},{view:"projects",label:"โครงการประจำปี",icon:FolderOpen}]},
  {label:"เอกสาร",items:[{view:"dashboard",label:"แดชบอร์ดเอกสาร",icon:FolderOpen},{view:"templates",label:"แบบหนังสือราชการ",icon:Files},{view:"reports",label:"ภาพรวมและรายงาน",icon:BarChart3}]},
  {label:"งานประจำ",items:[{view:"inventory",label:"พัสดุและครุภัณฑ์",icon:Package},{view:"register",label:"ทะเบียนรับ–ส่งหนังสือ",icon:BookOpen},{view:"office",label:"งานธุรการเทศบาล",icon:BriefcaseBusiness},{view:"budget",label:"โอนงบประมาณ",icon:Wallet},{view:"calendar",label:"ปฏิทินงาน",icon:CalendarDays},{view:"bookings",label:"จองห้องประชุม",icon:DoorOpen}]},
  {label:"คลังและการตั้งค่า",items:[{view:"laws",label:"คลังกฎหมายและระเบียบ",icon:BookOpen},{view:"guide",label:"คู่มือและแหล่งอ้างอิง",icon:HelpCircle},{view:"settings",label:"ตั้งค่าหน่วยงานและ Drive",icon:Settings2}]},
