@@ -5,8 +5,8 @@ const digest=(s:string|null)=>createHash('sha256').update(s||'').digest('hex');
 for(const width of [320,375,414,768,1440])test('welcome remains readable at '+width,async({page})=>{
  await page.setViewportSize({width,height:960});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/welcome');
  await expect(page.getByRole('heading',{level:1})).toHaveText('sarabun');
- await expect(page.getByTestId('welcome-typed')).toHaveText('ร่างบันทึกข้อความ');
- await expect(page.getByRole('button',{name:'หยุดข้อความเคลื่อนไหว'})).toHaveCount(0);
+ // Home's typing remains enabled by explicit product choice, even with reduced motion.
+ await expect(page.getByRole('button',{name:'หยุดข้อความเคลื่อนไหว'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
  await page.screenshot({path:'output/calm-home-'+width+'.png',fullPage:true});
  await page.getByRole('link',{name:'เลือกแบบหนังสือ',exact:true}).click();await expect(page.locator('.template-card').first()).toBeVisible();
