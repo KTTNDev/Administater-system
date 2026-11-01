@@ -1,0 +1,4 @@
+.fields{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0;border:1px solid var(--ui-border);border-radius:var(--ui-radius);padding:16px;background:var(--ui-subtle)}
+.fields label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:14px;color:var(--ui-ink)}
+.fields :is(input,select){width:100%;min-width:0;max-width:100%;font:inherit;background:var(--ui-surface);color:var(--ui-ink)}
+.wide{grid-column:1/-1}
