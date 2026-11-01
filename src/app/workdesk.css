@@ -196,3 +196,17 @@ body:has(.workdesk[data-focus=true]) .main-shell{margin-left:0}
 @media(prefers-reduced-motion:reduce){.capability-copy i,.capability-typewriter>button,.wd-launchers>:is(button,a){animation:none!important;transition:none!important;transform:none!important}}
 
 .welcome-catalog .welcome-actions .primary{background:var(--ui-accent);color:var(--ui-on-accent)}
+/* Hallmark · card detail: related illustrations + clear title contrast · P5 H5 E4 S5 R5 V4 */
+:root{--wd-card-title:20px;--wd-card-art-opacity:.38}
+.wd-launchers>:is(button,a){position:relative;isolation:isolate;overflow:hidden;min-height:152px}
+.wd-launchers>:is(button,a)::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-repeat:no-repeat;background-position:right center;background-size:auto 170px;opacity:var(--wd-card-art-opacity);transition:opacity var(--ui-motion-enter),transform var(--ui-motion-enter)}
+.wd-launchers>:is(button,a)::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,var(--ui-surface) 0%,transparent 90%)}
+.wd-launchers>:is(button,a):nth-child(1)::before{background-image:url('/illustrations/home-documents.svg')}
+.wd-launchers>:is(button,a):nth-child(2)::before{background-image:url('/illustrations/home-tasks.svg')}
+.wd-launchers>:is(button,a):nth-child(3)::before{background-image:url('/illustrations/home-annual-plan.svg')}
+.wd-launchers>:is(button,a)>span{font:700 var(--wd-card-title)/1.5 var(--ui-font);letter-spacing:0;color:var(--ui-ink);text-shadow:0 1px 0 var(--ui-surface)}
+.wd-launchers>:is(button,a)>svg:first-child{width:30px;height:30px}
+.wd-launchers>:is(button,a)>svg:last-child{color:var(--ui-ink)}
+@media(hover:hover){.wd-launchers>:is(button,a):hover::before{opacity:.52;transform:translateX(-3px)}}
+@media(max-width:1000px){.wd-launchers>:is(button,a)>span{font-size:18px}.wd-launchers>:is(button,a)::before{background-size:auto 150px}}
+@media(prefers-reduced-motion:reduce){.wd-launchers>:is(button,a)::before{transition:none;transform:none}}
