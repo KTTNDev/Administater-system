@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "./db";
 import { officeSchema, type OfficeItem } from "./office";
 import {annualCopy} from './workdesk';
+import {projectChecks,type ProjectFile} from './project';
 function connection(){const c=db();c.exec("CREATE TABLE IF NOT EXISTS office_items(id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL)");return c;}
 export function listOffice():OfficeItem[]{return connection().prepare("SELECT * FROM office_items ORDER BY updated_at DESC,id").all().map(row=>({...officeSchema.parse(JSON.parse(String(row.data))),id:String(row.id),version:Number(row.version),updatedAt:String(row.updated_at)}));}
 export function writeOffice(input:unknown,id?:string,version?:number,starterTasks:readonly string[]=[]){
@@ -11,11 +12,20 @@ export function writeOffice(input:unknown,id?:string,version?:number,starterTask
   if(data.documentId&&!c.prepare("SELECT id FROM documents WHERE id=? AND deleted_at IS NULL").get(data.documentId))throw new Error("ไม่พบหนังสือที่เชื่อมโยง กรุณาเลือกใหม่");
   const items=listOffice();const old=items.find(i=>i.id===id);
   if(old&&old.kind!==data.kind)throw new Error("ไม่สามารถเปลี่ยนประเภทของรายการเดิมได้");
+  if(data.notApplicable&&!data.exclusionReason.trim())throw new Error('กรุณาระบุเหตุผลที่งานนี้ไม่เกี่ยวข้อง');
+  if(data.kind==='task'&&data.required&&data.archived&&!data.notApplicable)throw new Error('งานที่ต้องตรวจให้ครบไม่ควรซ่อน หากไม่ใช้ให้ระบุว่าไม่เกี่ยวข้องพร้อมเหตุผลก่อนเก็บ');
+  // Do not detach evidence from its project when a task is moved in another screen.
+  if(old?.projectId&&old.projectId!==data.projectId&&c.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='project_files'").get()&&c.prepare('SELECT 1 FROM project_files WHERE task_id=?').get(key))throw new Error('งานนี้มีหลักฐานในโครงการเดิม กรุณานำหลักฐานออกก่อนย้ายงาน');
   if(data.kind==='task')data.completedAt=data.status==='done'?(old?.status==='done'?(old.completedAt||old.updatedAt):now):'';
   if(data.kind==='project'){
    if(!data.fiscalYear)throw new Error('กรุณาระบุปีงบประมาณของโครงการ');
    if(data.projectId)throw new Error('โครงการไม่สามารถซ้อนในโครงการอื่นได้');
-   if(data.status==='done'&&(starterTasks.length>0||items.some(i=>i.projectId===key&&!i.archived&&i.status!=='done')))throw new Error('ยังมีงานย่อยไม่เสร็จ กรุณาตรวจงานย่อยก่อนปิดโครงการ');
+   if(data.status==='done'&&(starterTasks.length>0||items.some(i=>i.projectId===key&&!i.archived&&!i.notApplicable&&i.status!=='done')))throw new Error('ยังมีงานย่อยไม่เสร็จ กรุณาตรวจงานย่อยก่อนปิดโครงการ');
+   if(data.status==='done'&&data.projectProfile){
+    const files=c.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='project_files'").get()?c.prepare('SELECT task_id FROM project_files WHERE project_id=?').all(key).map(r=>({taskId:String(r.task_id)} as ProjectFile)):[];
+    const check=projectChecks({...data,id:key,version:version||1,updatedAt:now},items,files);
+    if(check.done<check.total)throw new Error('แฟ้มโครงการยังไม่ครบ: '+check.checks.filter(i=>!i.done).slice(0,3).map(i=>i.label).join(', '));
+   }
   }
   if(['project','task'].includes(data.kind)&&data.date&&data.due&&data.due<data.date)throw new Error('กำหนดเสร็จต้องไม่ก่อนวันเริ่มงาน');
   if(data.projectId){
@@ -31,7 +41,7 @@ export function writeOffice(input:unknown,id?:string,version?:number,starterTask
   c.prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(key,id?"office_update":"office_create",id?(version??0)+1:1,now);
  })();return key;
 }
-export function deleteOffice(id:string,version:number){const c=connection();c.transaction(()=>{if(listOffice().some(i=>i.projectId===id))throw new Error('โครงการมีงานย่อย ให้พักโครงการหรือย้ายงานย่อยก่อนลบ');if(!c.prepare("DELETE FROM office_items WHERE id=? AND version=?").run(id,version).changes)throw new Error("ข้อมูลเปลี่ยนแล้ว กรุณารีเฟรช");c.prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(id,"office_delete",version,new Date().toISOString());})();}
+export function deleteOffice(id:string,version:number){const c=connection();c.transaction(()=>{if(listOffice().some(i=>i.projectId===id))throw new Error('โครงการมีงานย่อย ให้พักโครงการหรือย้ายงานย่อยก่อนลบ');if(c.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='project_files'").get()&&c.prepare('SELECT 1 FROM project_files WHERE project_id=? OR task_id=?').get(id,id))throw new Error('รายการมีไฟล์แนบ ให้เก็บรายการไว้แทนการลบ');if(!c.prepare("DELETE FROM office_items WHERE id=? AND version=?").run(id,version).changes)throw new Error("ข้อมูลเปลี่ยนแล้ว กรุณารีเฟรช");c.prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(id,"office_delete",version,new Date().toISOString());})();}
 // One transaction creates the next annual occurrence and all tasks. Repeated clicks return it.
 export function copyAnnualOffice(id:string,version:number){
  const c=connection();let result='';

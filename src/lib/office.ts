@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {projectProfileSchema,stageSchema} from './project';
 export const officeKinds = { incoming: "ทะเบียนหนังสือรับ", outgoing: "ทะเบียนหนังสือส่ง", task: "งานและกำหนดส่ง", meeting: "การประชุม", contact: "ทำเนียบหน่วยงาน", supplies: "วัสดุสำนักงาน", archive: "ดัชนีแฟ้มเอกสาร", project: "โครงการประจำปี" } as const;
 export type OfficeKind = keyof typeof officeKinds;
 const short = z.string().trim().max(500).default("");
@@ -20,6 +21,11 @@ export const officeSchema = z.object({
   originId:z.union([z.literal(""),z.string().uuid()]).default(""),
   sortOrder:z.number().int().min(0).max(1000000).default(0),
   budget:z.number().finite().min(0).max(1e12).default(0),
+  projectProfile:projectProfileSchema.optional(),
+  taskStage:stageSchema.default('planning'),
+  required:z.boolean().default(false),evidenceRequired:z.boolean().default(false),
+  notApplicable:z.boolean().default(false),exclusionReason:z.string().trim().max(2000).default(''),
+  checklistKey:z.string().max(100).default(''),
   quantity:z.number().min(0).max(100000000).default(0), minimum:z.number().min(0).max(100000000).default(0), unit:short,
 });
 export type OfficeInput=z.infer<typeof officeSchema>;

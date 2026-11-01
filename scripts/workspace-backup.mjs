@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 // Shared by manual exports and the background worker; never include credentials.
 export function exportDatabase(databaseFile,localFolder,sourceRoot){
- const tables=['thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
+ const tables=['thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
  const source=new DatabaseSync(databaseFile,{readOnly:true});
  let snapshot,definitions;
  try{
@@ -29,7 +29,8 @@ export function exportDatabase(databaseFile,localFolder,sourceRoot){
  }finally{backup.close();}
  files.push(database);
  const save=(name,bytes)=>{if(path.basename(name)!==name||/[\\/:]/.test(name))throw Error('Invalid backup filename');const file=path.join(folder,name);fs.writeFileSync(file,bytes);files.push(file);};
- for(const [table,rows] of Object.entries(snapshot))save(table+'.json',JSON.stringify(['inventory_files','legal_library','document_attachments','document_appendix_images','signed_scans'].includes(table)?rows.map(({file,original,...rest})=>rest):rows,null,2));
+ for(const [table,rows] of Object.entries(snapshot))save(table+'.json',JSON.stringify(['project_files','inventory_files','legal_library','document_attachments','document_appendix_images','signed_scans'].includes(table)?rows.map(({file,original,...rest})=>rest):rows,null,2));
+ for(const row of snapshot.project_files)if(row.file)save(row.id+'-project'+(row.mime==='application/pdf'?'.pdf':'.png'),Buffer.from(row.file));
  for(const row of [...snapshot.legal_library,...snapshot.document_attachments]){
   if(row.file)save(row.id+'.pdf',Buffer.from(row.file));
   if(row.original){const extension=path.extname(String(row.original_name||'.bin'));save(row.id+'-original'+extension,Buffer.from(row.original));}

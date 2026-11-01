@@ -15,6 +15,7 @@ import {inventorySchemas,inventoryItemSchema,movementSchema} from './inventory';
 import {inventoryFormSchema} from './inventory-forms';
 import {validateInventoryBackup} from './inventory-validation';
 import {officeSchema} from './office';
+import {projectFilesSql,stageSchema} from './project';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
 
@@ -30,6 +31,7 @@ const schemas = {
  recovery_drafts:'id TEXT PRIMARY KEY,scope TEXT NOT NULL,sequence INTEGER NOT NULL,data TEXT NOT NULL,updated_at TEXT NOT NULL',
  budget_transfers:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL,document_id TEXT,generated_version INTEGER',
  office_items:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL',
+ project_files:projectFilesSql,
  meeting_rooms:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL',
  room_bookings:'id TEXT PRIMARY KEY,room_id TEXT NOT NULL,day TEXT NOT NULL,start_min INTEGER NOT NULL,end_min INTEGER NOT NULL,status TEXT NOT NULL,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL',
  calendar_events:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL',
@@ -65,6 +67,11 @@ function inspect(file:string){
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));
+  const office=data.office_items.map(row=>({...officeSchema.parse(JSON.parse(String(row.data))),id:String(row.id)}));
+  for(const row of data.project_files){
+   const p=office.find(i=>i.id===row.project_id&&i.kind==='project');
+   if(!p||row.task_id&&!office.some(i=>i.id===row.task_id&&i.projectId===p.id&&i.kind==='task')||!stageSchema.safeParse(row.stage).success||!['image/png','application/pdf'].includes(String(row.mime))||!(row.file instanceof Uint8Array)||!row.file.byteLength||row.file.byteLength>20*1024*1024||!['0','1'].includes(String(row.include_report)))throw Error('ชุดสำรองมีหลักฐานโครงการไม่ตรงกับงานหรือรูปแบบไม่ถูกต้อง');
+  }
   for(const row of data.document_numbers)if(!documents.has(String(row.document_id)))throw new Error('ชุดสำรองมีเลขทะเบียนที่ไม่ตรงกับเอกสาร');
   const attachments=new Set(data.document_attachments.map(row=>String(row.id)));
   const images=new Set(data.document_appendix_images.map(row=>String(row.id)));

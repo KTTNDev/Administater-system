@@ -1,0 +1,75 @@
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+import sharp from 'sharp';import {PDFDocument} from 'pdf-lib';import JSZip from 'jszip';
+import {db} from '../src/lib/db';
+import {writeOffice,listOffice,copyAnnualOffice,deleteOffice} from '../src/lib/office-db';
+import {officeSchema} from '../src/lib/office';
+import {addProjectFile,projectFiles,readProjectFile,saveProjectProfile,seedProjectChecklist,updateProjectFile,removeProjectFile} from '../src/lib/project-db';
+import {projectChecks,projectFields,projectProfileSchema} from '../src/lib/project';
+import {projectReportHtml,projectReportWord} from '../src/lib/project-report';
+import {projectProgress} from '../src/lib/workdesk';
+import {setStorage,exportWorkspace} from '../src/lib/storage';
+import {prepareBackupRestore,activateBackupRestore} from '../src/lib/workspace-restore';
+let folder:string;
+beforeEach(()=>{folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-project-'));vi.stubEnv('DATABASE_PATH',path.join(folder,'data.sqlite'));vi.stubEnv('SARABUN_SOURCE_DIR',folder);fs.mkdirSync(path.join(folder,'scripts'));fs.copyFileSync('scripts/restore-backup.mjs',path.join(folder,'scripts/restore-backup.mjs'));setStorage(path.join(folder,'files'),'','');});
+afterEach(()=>{db().close();(globalThis as unknown as {sarabunDb?:unknown}).sarabunDb=undefined;vi.unstubAllEnvs()});
+const read=(id:string)=>listOffice().find(i=>i.id===id)!;
+const project=()=>writeOffice({kind:'project',title:'โครงการทดสอบผู้สูงอายุ',fiscalYear:2570,annual:true,owner:'เจ้าหน้าที่ทดสอบ',date:'2026-11-01',due:'2026-11-30',projectProfile:{department:'กองสวัสดิการสังคม'}});
+const upload=(id:string,taskId:string,file:File)=>{const f=new FormData();f.set('projectId',id);f.set('taskId',taskId);f.set('stage','planning');f.set('file',file);return addProjectFile(f)};
+const pdfFile=async()=>{const pdf=await PDFDocument.create();pdf.addPage([300,400]);return new File([new Uint8Array(await pdf.save())],'หลักฐาน.pdf',{type:'application/pdf'})};
+it('keeps legacy records readable and seeds editable phase tasks idempotently',()=>{
+ expect(officeSchema.parse({kind:'task',title:'งานเดิม'}).taskStage).toBe('planning');
+ const id=project();seedProjectChecklist(id,read(id).version);seedProjectChecklist(id,read(id).version);
+ expect(listOffice().filter(t=>t.projectId===id)).toHaveLength(8);
+ const p=read(id);saveProjectProfile(id,p.version,{...p.projectProfile,category:'training'});seedProjectChecklist(id,read(id).version);
+ expect(listOffice().filter(t=>t.projectId===id)).toHaveLength(9);
+ expect(()=>saveProjectProfile(id,p.version,{rationale:'ข้อมูลเก่า'})).toThrow(/เปลี่ยน/);
+});
+it('distinguishes completed tasks, evidence and justified exclusions; prevents premature closure',async()=>{
+ const id=project(),task=writeOffice({kind:'task',title:'อนุมัติ',projectId:id,required:true,evidenceRequired:true,owner:'ผู้รับผิดชอบ'});
+ writeOffice({...read(task),status:'done'},task,read(task).version);
+ expect(projectProgress(id,listOffice()).percent).toBe(100);
+ expect(projectChecks(read(id),listOffice(),[]).checks.find(c=>c.taskId===task)?.done).toBe(false);
+ const file=await upload(id,task,await pdfFile());
+ expect(projectChecks(read(id),listOffice(),projectFiles(id)).checks.find(c=>c.taskId===task)?.done).toBe(true);
+ expect(()=>writeOffice({...read(task),archived:true},task,read(task).version)).toThrow(/ซ่อน/);
+ expect(()=>writeOffice({...read(task),notApplicable:true},task,read(task).version)).toThrow(/เหตุผล/);
+ expect(()=>writeOffice({...read(id),status:'done'},id,read(id).version)).toThrow(/ยังไม่ครบ/);
+ const profile=projectProfileSchema.parse({department:'กองทดสอบ',...Object.fromEntries(projectFields.map(([key])=>[key,'รายละเอียดที่ตรวจแล้ว'])),actualBudget:0,reviewer:'ผู้ตรวจ',reviewNote:'ตรวจฉบับที่ใช้แล้ว',indicators:[{id:randomUUID(),label:'ผู้เข้าร่วม',target:10,actual:10,unit:'คน',method:'ทะเบียนผู้เข้าร่วม'}]});
+ saveProjectProfile(id,read(id).version,profile);expect(projectChecks(read(id),listOffice(),projectFiles(id)).percent).toBe(100);
+ writeOffice({...read(id),status:'done'},id,read(id).version);
+ await expect(upload(id,task,await pdfFile())).rejects.toThrow(/เปิดโครงการ/);expect(()=>removeProjectFile(file)).toThrow(/เปิดโครงการ/);
+});
+it('validates file contents, project ownership and protects linked evidence when moving or deleting',async()=>{
+ const id=project(),other=project(),task=writeOffice({kind:'task',title:'กิจกรรม',projectId:id});
+ await expect(upload(other,task,await pdfFile())).rejects.toThrow(/ไม่พบงานย่อย/);
+ await expect(upload(id,task,new File(['<script>bad</script>'],'ภาพ.png',{type:'image/png'}))).rejects.toThrow();
+ await expect(upload(id,task,new File(['%PDF-invalid'],'ข้อมูล.pdf',{type:'application/pdf'}))).rejects.toThrow();
+ const image=await sharp({create:{width:400,height:200,channels:3,background:'#abc'}}).jpeg().toBuffer();
+ const file=await upload(id,task,new File([new Uint8Array(image)],'กิจกรรม.jpg',{type:'image/jpeg'}));
+ expect(readProjectFile(file).mime).toBe('image/png');expect((await sharp(readProjectFile(file).file).metadata()).width).toBe(400);
+ expect(()=>writeOffice({...read(task),projectId:other},task,read(task).version)).toThrow(/หลักฐาน/);
+ expect(()=>deleteOffice(task,read(task).version)).toThrow(/ไฟล์แนบ/);
+ updateProjectFile(file,'ภาพกิจกรรม',false);expect(projectFiles(id)[0].includeInReport).toBe(false);
+});
+it('backs up and restores project narrative, files, associations and captions',async()=>{
+ const id=project(),task=writeOffice({kind:'task',title:'เก็บหลักฐาน',projectId:id});
+ const fid=await upload(id,task,await pdfFile());updateProjectFile(fid,'หลักฐานการดำเนินงาน',true);
+ saveProjectProfile(id,read(id).version,{rationale:'ที่มาที่ต้องเก็บไว้'});
+ const backup=exportWorkspace();removeProjectFile(fid);saveProjectProfile(id,read(id).version,{rationale:'แก้หลังสำรอง'});
+ const preview=await prepareBackupRestore(path.basename(backup.folder));expect(preview.counts.project_files).toBe(1);activateBackupRestore(preview.token,'กู้คืนข้อมูล');
+ expect(read(id).projectProfile?.rationale).toBe('ที่มาที่ต้องเก็บไว้');expect(readProjectFile(fid).taskId).toBe(task);expect(readProjectFile(fid).caption).toBe('หลักฐานการดำเนินงาน');expect((await PDFDocument.load(readProjectFile(fid).file)).getPageCount()).toBe(1);
+});
+it('new annual copies reset results, approval and evidence while retaining plan inputs',async()=>{
+ const id=project();saveProjectProfile(id,read(id).version,{rationale:'ที่มา',outputs:'ผลปีเก่า',approval:'อนุมัติแล้ว',actualBudget:100,reviewer:'ผู้ตรวจเดิม',indicators:[{id:randomUUID(),label:'จำนวน',target:10,actual:9,unit:'คน',method:'นับ'}]});
+ await upload(id,'',await pdfFile());const next=copyAnnualOffice(id,read(id).version);
+ expect(read(next).projectProfile).toMatchObject({rationale:'ที่มา',outputs:'',approval:'',actualBudget:null,reviewer:''});expect(read(next).projectProfile?.indicators[0].actual).toBeNull();expect(projectFiles(next)).toHaveLength(0);
+});
+it('exports editable Thai Word and escaped report content with explicit draft status',async()=>{
+ const id=project();saveProjectProfile(id,read(id).version,{rationale:'<script>alert(1)</script>\nย่อหน้าต่อไป'});
+ const font=(file:string)=>'data:font/ttf;base64,'+fs.readFileSync(path.join('public/fonts',file)).toString('base64');
+ const input={project:read(id),items:listOffice(),files:[],organization:'หน่วยงานทดสอบ',font:font('THSarabunNew.ttf'),bold:font('THSarabunNew-Bold.ttf')};
+ const html=projectReportHtml(input);expect(html).not.toContain('<script>');expect(html).toContain('&lt;script&gt;');expect(html).toContain('ฉบับร่าง');expect(html).toContain('7. สรุปการตรวจความครบถ้วน');
+ const zip=await JSZip.loadAsync(await projectReportWord(input)),xml=await zip.file('word/document.xml')!.async('string');expect(xml).toContain('thaiDistribute');expect(xml).toContain('ย่อหน้าต่อไป');expect(xml).not.toContain('<w:br/>');
+});
