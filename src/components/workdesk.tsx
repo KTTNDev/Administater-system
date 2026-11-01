@@ -5,6 +5,7 @@ import {officeSchema,officeStatuses,type OfficeInput,type OfficeItem} from '@/li
 import {activeTasks,dailyTasks,bangkokDay,fiscalBounds,fiscalYearOf,projectProgress,projectStarters,safeCsv,taskSort} from '@/lib/workdesk';
 import {createNextAnnualOffice,createWorkProject,getOfficeItems,saveOfficeItem} from '@/app/office-actions';
 import {CapabilityTypewriter} from './capability-typewriter';
+import {HomeHeroVideo} from './home-hero-video';
 import {DraftLinkPicker} from './draft-link-picker';
 import type {SavedDraft} from '@/lib/document';
 import {ProjectDossier} from './project-dossier';
@@ -75,11 +76,11 @@ export function Workdesk({mode,initialItems,documents,onItemsChange,onNavigate,o
  return <main className="page-main workdesk" data-focus={focused}>
   <header className={`wd-heading ${mode==="home"?"":"function-banner"}`}><div>{mode==='home'?<span className="wd-eyebrow">โต๊ะทำงาน</span>:<h1>{mode==='tasks'?'งานของฉัน':'โครงการประจำปี'}</h1>}</div><div className="wd-tools"><button className="wd-icon" aria-label="รีเฟรชรายการงาน" disabled={loading||pending} onClick={()=>void refresh()}><RefreshCw size={18} className={loading?'wd-spin':''}/></button>{mode==='home'&&<button onClick={()=>void fullscreen()}>{focused?<Minimize2 size={17}/>:<Maximize2 size={17}/>}<span>{focused?'ออกจากเต็มจอ':'เต็มจอ'}</span></button>}<button className="primary" onClick={()=>newItem(mode==='projects'?'project':'task')} disabled={pending||dossierBusy||dossierDirty}><Plus size={17}/>{mode==='projects'?'เพิ่มโครงการ':'เพิ่มงาน'}</button></div></header>
   {mode==='home'&&<>
-   <section className="wd-hero" aria-labelledby="wd-home-title"><div className="wd-hero-copy"><h1 id="wd-home-title">sarabun</h1><CapabilityTypewriter/></div><div className="wd-hero-date"><time suppressHydrationWarning>{now?new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok',hourCycle:'h23'}).format(now):'—:—'}</time><span>{now?new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Bangkok'}).format(now):''}</span></div></section>
+   <section className="wd-hero" aria-labelledby="wd-home-title"><HomeHeroVideo/><div className="wd-hero-copy"><h1 id="wd-home-title">sarabun</h1><CapabilityTypewriter/></div><div className="wd-hero-date"><time suppressHydrationWarning>{now?new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok',hourCycle:'h23'}).format(now):'—:—'}</time><span>{now?new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Bangkok'}).format(now):''}</span></div></section>
    <div className="wd-launchers" role="group" aria-label="เลือกงานในระบบ">
-    <button onClick={()=>go('templates')}><FileText size={25}/><span>หนังสือราชการ</span><ArrowRight size={18}/></button>
-    <button onClick={()=>go('tasks')}><ListTodo size={25}/><span>งานของฉัน</span><ArrowRight size={18}/></button>
-    <button onClick={()=>go('projects')}><FolderOpen size={25}/><span>โครงการประจำปี</span><ArrowRight size={18}/></button>
+    <button data-workspace-category="documents" onClick={()=>go('templates')}><FileText size={25}/><span>หนังสือราชการ</span><ArrowRight size={18}/></button>
+    <button data-workspace-category="tasks" onClick={()=>go('tasks')}><ListTodo size={25}/><span>งานของฉัน</span><ArrowRight size={18}/></button>
+    <button data-workspace-category="projects" onClick={()=>go('projects')}><FolderOpen size={25}/><span>โครงการประจำปี</span><ArrowRight size={18}/></button>
    </div>
    <section className="wd-summary-strip" aria-label="ภาพรวมวันนี้"><button onClick={()=>{setFilter('today');go('tasks')}}><strong>{today.length}</strong> ครบกำหนดวันนี้</button><button onClick={()=>{setFilter('late');go('tasks')}} className={overdue.length?'wd-late':''}><strong>{overdue.length}</strong> เกินกำหนด</button><span><strong>{completedToday.length}</strong> ปิดงานวันนี้</span><button onClick={()=>go('calendar')}>ปฏิทินงาน<ArrowUpRight size={15}/></button></section>
   </>}

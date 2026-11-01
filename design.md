@@ -321,3 +321,26 @@ Branch codex/calm-home-ux, baseline ui-baseline-v1.4.4. The Home route is a coas
 Home typewriter is grapheme-aware, pauses on hover/focus/hidden tabs, has an explicit pause control, and becomes static under reduced motion. Dashboard quick preview is a non-modal side panel using documentHtml and AttachmentPreview, with a separate edit action; row management actions remain visible on touch and keyboard focus. Labels remain visible rather than becoming floating placeholders. Preserve desktop editor split-view, mobile stacking, and the existing section progress navigation.
 
 The owner approved completing and publishing this UI on 2026-10-30. See docs/calm-ui-rollback.md for the code-only rollback baseline.
+
+## Craft-inspired categories — 1 November 2026
+
+This section supersedes the earlier neutral-only visual restriction. The owner chose
+Craft as a public visual reference and explicitly requested colors by work category.
+Keep the existing routes, workflow, paper typography and export renderers intact.
+
+- Documents / registry: powder blue; tasks / office: peach; projects: sage.
+- Inventory: pale gold; reports / budget: lavender; calendar / booking: aqua.
+- Reference / settings: warm stone; Home: misty blue-green.
+- Category tokens live in `src/app/workspace-craft.css`; view mapping lives in
+  `src/lib/workspace-theme.ts`. Menu icons, selected menu, headers and shortcuts
+  share these colors. Success, warning and error retain their original meanings.
+- Large colored section headers, rounded corners and illustrations separate chapters.
+  Data-entry cards remain white; the canvas is warm off-white. UI fonts are local
+  Leelawadee UI / Tahoma / Segoe UI. Document fonts remain unchanged.
+- The original coastal Canvas animation is exported as a local 12-second WebM.
+  It is an illustration, not footage of a real location. It has a still poster,
+  explicit pause/play, offscreen pause and reduced-motion support. The independently
+  controlled typing headline keeps the looping behavior requested by the owner.
+- No Craft images, video or fonts are redistributed. Public reference: https://www.craft.do/
+- Baseline before this redesign: `df7e78c`. See `docs/craft-ui.md` for file boundaries
+  and rollback instructions. Publish only after the owner reviews this revision.

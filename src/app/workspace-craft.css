@@ -1,0 +1,149 @@
+/* Hallmark · modern-minimal workbench / Craft-inspired category fields.
+ * Warm neutral canvas, colored chapter headers, quiet white working surfaces.
+ * P5 H5 E4 S5 R5 V4. UI scope only; never target paper, iframes or print output. */
+.app-shell {
+  --ui-font: "Leelawadee UI", Tahoma, "Segoe UI", sans-serif;
+  --ui-ink: #292e31;
+  --ui-muted: #636767;
+  --ui-border: #e6e5e1;
+  --ui-border-strong: #b8bebc;
+  --ui-rest: #f7f6f2;
+  --ui-rest-soft: #fcfbf8;
+  --ui-hover: #efeee9;
+  --ui-radius: 12px;
+  --ui-radius-sm: 8px;
+  --category-documents: #e3edf9;
+  --category-documents-ink: #31547c;
+  --category-tasks: #fae6d9;
+  --category-tasks-ink: #88482c;
+  --category-projects: #e0eedf;
+  --category-projects-ink: #365e40;
+  --category-inventory: #f4edcb;
+  --category-inventory-ink: #725b1d;
+  --category-reports: #ede5f7;
+  --category-reports-ink: #654684;
+  --category-calendar: #dcf0ed;
+  --category-calendar-ink: #2c6862;
+  --category-reference: #ede9e4;
+  --category-reference-ink: #64584b;
+  --category-home: #e4eef0;
+  --category-home-ink: #375a67;
+  --category-soft: var(--category-home);
+  --category-ink: var(--category-home-ink);
+  --ui-accent: var(--category-ink);
+  --ui-accent-hover: color-mix(in srgb, var(--category-ink), var(--ui-ink) 25%);
+  --ui-accent-soft: var(--category-soft);
+  --ui-focus: var(--category-ink);
+  --craft-hero-veil: #f5f9f4;
+  --craft-hero-ink: #233e3d;
+  --craft-radius-feature: 24px;
+  --craft-shadow: 0 6px 20px #292e3107;
+}
+
+/* One mapping for all views and for independent shortcuts within those views. */
+.app-shell[data-workspace-category=documents],.app-shell [data-workspace-category=documents] {--category-soft:var(--category-documents);--category-ink:var(--category-documents-ink)}
+.app-shell[data-workspace-category=tasks],.app-shell [data-workspace-category=tasks] {--category-soft:var(--category-tasks);--category-ink:var(--category-tasks-ink)}
+.app-shell[data-workspace-category=projects],.app-shell [data-workspace-category=projects] {--category-soft:var(--category-projects);--category-ink:var(--category-projects-ink)}
+.app-shell[data-workspace-category=inventory],.app-shell [data-workspace-category=inventory] {--category-soft:var(--category-inventory);--category-ink:var(--category-inventory-ink)}
+.app-shell[data-workspace-category=reports],.app-shell [data-workspace-category=reports] {--category-soft:var(--category-reports);--category-ink:var(--category-reports-ink)}
+.app-shell[data-workspace-category=calendar],.app-shell [data-workspace-category=calendar] {--category-soft:var(--category-calendar);--category-ink:var(--category-calendar-ink)}
+.app-shell[data-workspace-category=reference],.app-shell [data-workspace-category=reference] {--category-soft:var(--category-reference);--category-ink:var(--category-reference-ink)}
+.app-shell [data-workspace-category=home] {--category-soft:var(--category-home);--category-ink:var(--category-home-ink)}
+
+.app-shell .sidebar {background:var(--ui-rest-soft)}
+.app-shell .sidebar nav button {border-radius:10px;min-height:42px;gap:10px;color:var(--ui-muted)}
+.app-shell .sidebar nav button>svg {color:var(--category-ink);flex-shrink:0}
+.app-shell .sidebar nav button.active {background:var(--category-soft);color:var(--category-ink);font-weight:700}
+.app-shell .sidebar nav button.active>svg {color:var(--category-ink)}
+.app-shell .sidebar nav button:hover:not(.active) {background:color-mix(in srgb,var(--category-soft) 55%,var(--ui-rest-soft));color:var(--category-ink)}
+.app-shell .sidebar .new-document {background:var(--category-documents-ink);border-color:var(--category-documents-ink);border-radius:10px}
+.app-shell .sidebar .new-document:hover {background:var(--ui-ink)}
+.app-shell .sidebar .brand-icon {color:var(--category-documents-ink)}
+.app-shell .topbar {background:var(--ui-rest-soft);border-bottom:1px solid var(--ui-border)}
+.app-shell .topbar .breadcrumbs strong {color:var(--category-ink)}
+.app-shell .page-main .primary {border-radius:var(--ui-radius-sm)}
+
+/* Color lives mainly in page headings; the data-entry areas remain quiet. */
+.app-shell .function-banner {
+  min-height:148px;
+  padding:32px!important;
+  margin-bottom:28px;
+  border:1px solid color-mix(in srgb,var(--category-ink) 10%,var(--category-soft));
+  border-radius:var(--craft-radius-feature);
+  background:var(--category-soft);
+  box-shadow:var(--craft-shadow);
+}
+.app-shell .function-banner::before {background-position:90% center;background-size:auto 210px;opacity:.25}
+.app-shell .function-banner h1 {font-size:clamp(24px,2.2vw,32px)!important;color:var(--category-ink);letter-spacing:-.025em}
+.app-shell .function-banner p {color:var(--ui-ink);line-height:1.85}
+.app-shell .function-banner .workspace-heading-icon {color:var(--category-ink);background:none}
+.app-shell :is(.template-feature,.report-totals>a) {background:color-mix(in srgb,var(--category-soft) 42%,var(--ui-surface));border-color:var(--ui-border);border-radius:16px}
+.app-shell .template-feature:hover {background:var(--category-soft)}
+.app-shell :is(.wd-panel,.pd-section,.storage-card,.review-card) {box-shadow:var(--craft-shadow)}
+.app-shell .wd-panel .wd-section-title {background:color-mix(in srgb,var(--category-soft) 42%,var(--ui-surface))}
+.app-shell .wd-project-shortcut {--category-soft:var(--category-projects);--category-ink:var(--category-projects-ink)}
+.app-shell .wd-project-shortcut progress {accent-color:var(--category-projects-ink)}
+.app-shell .wd-home-aside .wd-panel .wd-section-title {background:var(--category-projects)}
+.app-shell .wd-paper-link {background:var(--category-documents);border-radius:16px}
+.app-shell .wd-paper-link :is(h2,button,svg) {color:var(--category-documents-ink)}
+.app-shell .editor-main .form-section>summary {background:color-mix(in srgb,var(--category-soft) 28%,var(--ui-surface))}
+
+/* Original coastal loop, with a stable poster and an opaque reading area. */
+.app-shell .wd-hero {
+  overflow:hidden;
+  min-height:370px;
+  align-items:center;
+  padding:44px 40px 64px;
+  border:0;
+  border-radius:var(--craft-radius-feature);
+  background:var(--craft-hero-veil);
+  box-shadow:var(--craft-shadow);
+  margin-bottom:24px;
+}
+.app-shell .wd-hero::before {display:none}
+.home-hero-media {position:absolute;inset:0;z-index:-1;pointer-events:none;background:var(--craft-hero-veil) url('/media/home-coast-poster.png') center/cover no-repeat}
+.home-hero-media video {display:block;width:100%;height:100%;object-fit:cover;opacity:.82}
+.home-hero-media::after {content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--craft-hero-veil) 0%,color-mix(in srgb,var(--craft-hero-veil) 92%,transparent) 30%,color-mix(in srgb,var(--craft-hero-veil) 30%,transparent) 68%,transparent 100%)}
+.app-shell .wd-hero h1 {color:var(--craft-hero-ink);font-weight:650!important;margin-bottom:24px}
+.app-shell .wd-hero .capability-copy {color:var(--craft-hero-ink);font-size:clamp(22px,2.5vw,36px)}
+.app-shell .wd-hero .capability-typewriter {max-width:680px}
+.app-shell .wd-hero-date {align-self:flex-end;padding-bottom:8px;color:var(--craft-hero-ink)}
+.app-shell .wd-hero-date time {font-size:32px;color:var(--craft-hero-ink)}
+.app-shell .home-hero-motion {
+  position:absolute;right:20px;bottom:16px;z-index:1;
+  display:inline-flex;gap:6px;padding:5px 10px;min-height:32px;
+  font:12px/1.6 var(--ui-font);color:var(--craft-hero-ink);
+  background:var(--ui-glass-surface);border:1px solid var(--ui-border);border-radius:20px;
+}
+.app-shell .home-hero-motion:hover {background:var(--ui-surface)}
+.app-shell .home-hero-motion:focus-visible {outline:2px solid var(--ui-focus);outline-offset:3px}
+.app-shell .home-hero-motion:active {transform:translateY(1px)}
+.app-shell .wd-launchers>:is(button,a) {background:var(--category-soft);border:1px solid color-mix(in srgb,var(--category-ink) 12%,var(--category-soft));border-radius:20px;min-height:174px;box-shadow:var(--craft-shadow)}
+.app-shell .wd-launchers>:is(button,a)::after {background:linear-gradient(90deg,var(--category-soft) 0%,transparent 95%)}
+.app-shell .wd-launchers>:is(button,a)::before {opacity:.5;background-size:auto 180px}
+.app-shell .wd-launchers>:is(button,a)>span {color:var(--category-ink);text-shadow:none}
+.app-shell .wd-launchers>:is(button,a)>svg {color:var(--category-ink)}
+@media(hover:hover) {
+  .app-shell .wd-launchers>:is(button,a):hover {background:var(--category-soft);border-color:var(--category-ink);transform:translateY(-2px)}
+}
+@media(max-width:1000px) {
+  .app-shell .wd-hero {min-height:340px;padding:32px 28px 58px}
+  .app-shell .function-banner {padding:24px!important}
+}
+@media(max-width:768px) {
+  .app-shell .function-banner {min-height:130px;padding:24px 20px!important;border-radius:18px;gap:16px}
+  .app-shell .function-banner::before {background-position:right center;background-size:auto 160px;opacity:.14}
+  .app-shell .wd-hero {min-height:310px;padding:32px 20px 64px;border-radius:20px}
+  .app-shell .wd-hero h1 {font-size:clamp(54px,11vw,84px)!important}
+  .app-shell .wd-hero .capability-copy {font-size:clamp(20px,4.8vw,28px)}
+  .app-shell .wd-launchers>:is(button,a) {min-height:146px;border-radius:16px}
+  .home-hero-media video {object-position:65% center}
+}
+@media(prefers-reduced-motion:reduce) {
+  .app-shell .wd-launchers>:is(button,a),.app-shell .home-hero-motion {transition:none;transform:none}
+}
+@media(forced-colors:active) {
+  .home-hero-media,.app-shell .function-banner::before,.app-shell .wd-launchers>button::before,.app-shell .wd-launchers>button::after {display:none}
+  .app-shell .sidebar nav button.active {outline:2px solid Highlight}
+}
+@media print {.home-hero-media,.home-hero-motion {display:none}}
