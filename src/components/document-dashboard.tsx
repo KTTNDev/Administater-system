@@ -209,7 +209,7 @@ export function DocumentDashboard({
 
   return (
     <main className={`page-main notion-home ${styles.dashboard} ${showDetails ? styles.detailed : styles.comfortable}`}>
-      <section className={styles.hero}>
+      <section className={`${styles.hero} function-banner`}>
         <div className={styles.heroTop}>
           <div>
             <h1>พื้นที่ทำงาน</h1>

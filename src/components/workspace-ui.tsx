@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import {ChevronDown,type LucideIcon} from 'lucide-react';
 
 export function WorkspaceHeading({icon:Icon,title,description,actions}:{icon:LucideIcon;title:string;description?:string;actions?:ReactNode}){
- return <header className="workspace-heading"><div className="workspace-heading-copy"><span className="workspace-heading-icon" aria-hidden="true"><Icon size={25}/></span><div><h1>{title}</h1>{description&&<p>{description}</p>}</div></div>{actions&&<div className="workspace-heading-actions">{actions}</div>}</header>;
+ return <header className="workspace-heading function-banner"><div className="workspace-heading-copy"><span className="workspace-heading-icon" aria-hidden="true"><Icon size={25}/></span><div><h1>{title}</h1>{description&&<p>{description}</p>}</div></div>{actions&&<div className="workspace-heading-actions">{actions}</div>}</header>;
 }
 
 export function DetailNote({title,children}:{title:string;children:ReactNode}){

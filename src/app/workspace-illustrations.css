@@ -1,0 +1,21 @@
+/* Hallmark · shared illustrated sections · P5 H5 E4 S5 R5 V4
+   Opt-in UI markers only. Document editor, forms and print renderers are excluded. */
+.app-shell{--section-art:url('/illustrations/home-documents.svg')}
+.app-shell[data-workspace-view=tasks],.app-shell[data-workspace-view=office]{--section-art:url('/illustrations/home-tasks.svg')}
+.app-shell:is([data-workspace-view=projects],[data-workspace-view=calendar],[data-workspace-view=bookings],[data-workspace-view=budget]){--section-art:url('/illustrations/home-annual-plan.svg')}
+.app-shell[data-workspace-view=inventory]{--section-art:url('/illustrations/workspace-inventory.svg')}
+.app-shell[data-workspace-view=reports]{--section-art:url('/illustrations/workspace-reports.svg')}
+.app-shell[data-workspace-view=settings]{--section-art:url('/illustrations/workspace-cloud.svg')}
+.app-shell .function-banner{position:relative;isolation:isolate;min-width:0;padding:24px!important;border:1px solid var(--ui-border);border-radius:var(--ui-radius);background:var(--ui-subtle);margin-bottom:24px}
+.app-shell .function-banner::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;background-image:var(--section-art);background-position:85% center;background-size:auto 170px;background-repeat:no-repeat;opacity:.18}
+.app-shell .function-banner h1{font-family:var(--ui-font);font-weight:700;color:var(--ui-ink);line-height:1.5;overflow-wrap:anywhere}
+.app-shell .function-banner p{color:var(--ui-muted);max-width:65ch}
+.app-shell .function-banner :is(button,a){position:relative}
+.app-shell :is(.template-feature,.report-totals>a,.wd-project-shortcut){position:relative;isolation:isolate}
+.app-shell :is(.template-feature,.report-totals>a,.wd-project-shortcut)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;background-image:var(--section-art);background-position:right center;background-size:auto 145px;background-repeat:no-repeat;opacity:.14}
+.app-shell .template-feature .template-choice-copy h3{font-weight:700}
+.app-shell .wd-project-shortcut{--section-art:url('/illustrations/home-annual-plan.svg')}
+.app-shell .wd-project-shortcut strong{font-weight:600}
+.app-shell .report-totals>a>strong{position:relative;font-weight:700}
+@media(max-width:768px){.app-shell .function-banner{padding:20px 16px!important}.app-shell .function-banner::before{background-size:auto 125px;background-position:right top;opacity:.11}}
+@media print{.app-shell .function-banner::before,.app-shell :is(.template-feature,.report-totals>a,.wd-project-shortcut)::before{display:none}}

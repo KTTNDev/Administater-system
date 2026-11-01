@@ -163,7 +163,7 @@ export function Workspace({initialDirectory,initialCalendar,initialBookings,init
   }
   const exportPdf=()=>exportDocument('pdf'),exportWord=()=>exportDocument('word');
   function asyncJob(job:()=>Promise<void>){startTransition(async()=>{try{await job()}catch(e){setToast({text:e instanceof Error?e.message:"ดำเนินการไม่สำเร็จ",error:true})}})}
-  return <div className={`app-shell ${sidebarCollapsed?"sidebar-collapsed":""}`}>
+  return <div data-workspace-view={view} className={`app-shell ${sidebarCollapsed?"sidebar-collapsed":""}`}>
     <a className="skip-link" href="#workspace-content">ข้ามไปยังเนื้อหา</a>
     {directoryOpen&&<dialog ref={directoryDialog} className="organization-directory-dialog" aria-label="จัดการรายชื่อหน่วยงาน" onCancel={e=>{e.preventDefault();closeDirectory();}}><div className="directory-dialog-close"><button type="button" disabled={directoryBusy} onClick={closeDirectory}><X size={16}/>ปิดรายชื่อหน่วยงาน</button></div><OrganizationDirectoryManager entries={directory} onChange={setDirectory} onDirty={setDirectoryDirty} onBusy={setDirectoryBusy}/></dialog>}
     <WorkspaceNavigation view={view} count={documents.length} connected={drive.connected} local={local} organization={organization.name} collapsed={sidebarCollapsed} mobileOpen={mobileNav} onToggle={toggleSidebar} onClose={closeMobileNav} onNavigate={navigate} onLogout={()=>{if(!busyNavigation())asyncJob(async()=>{await logout()})}}/>
