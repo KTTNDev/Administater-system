@@ -343,4 +343,5 @@ Keep the existing routes, workflow, paper typography and export renderers intact
   controlled typing headline keeps the looping behavior requested by the owner.
 - No Craft images, video or fonts are redistributed. Public reference: https://www.craft.do/
 - Baseline before this redesign: `df7e78c`. See `docs/craft-ui.md` for file boundaries
-  and rollback instructions. Publish only after the owner reviews this revision.
+  and rollback instructions. The owner authorized final testing and GitHub publication
+  as release 1.5.0 on 2026-11-02; see docs/RELEASE-1.5.0.md.

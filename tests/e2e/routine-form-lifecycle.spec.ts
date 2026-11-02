@@ -3,6 +3,19 @@ import {officeKinds} from '../../src/lib/office';
 test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Requires disposable release data');
 for(const [kind,label] of Object.entries(officeKinds))test(`office ${kind}: create, reopen and update`,async({page})=>{
  const title=`ตรวจงาน ${kind} ${Date.now()}`;
+ if(kind==='project'){
+  // Projects moved from the legacy office tabs to their dedicated dossier workspace.
+  await page.goto('/?view=projects');await page.getByRole('button',{name:'เพิ่มโครงการ',exact:true}).first().click();
+  const dialog=page.locator('dialog[open]');await dialog.getByLabel('ชื่อโครงการ',{exact:true}).fill(title);
+  await dialog.getByRole('button',{name:'บันทึกโครงการ',exact:true}).click();await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('heading',{name:title,exact:true})).toBeVisible();
+  await page.reload();await page.locator('.wd-project-list>button').filter({hasText:title}).click();
+  await page.getByRole('region',{name:'รายละเอียดโครงการ'}).getByRole('button',{name:'แก้ไข',exact:true}).first().click();
+  await expect(dialog.getByLabel('ชื่อโครงการ',{exact:true})).toHaveValue(title);
+  await dialog.getByLabel('ชื่อโครงการ',{exact:true}).fill(title+' แก้ไข');
+  await dialog.getByRole('button',{name:'บันทึกโครงการ',exact:true}).click();
+  await expect(page.getByRole('heading',{name:title+' แก้ไข',exact:true})).toBeVisible();return;
+ }
  await page.goto('/?view=office');await page.getByRole('navigation',{name:'หมวดงานธุรการ'}).getByRole('button',{name:new RegExp(label)}).click();
  await page.getByRole('button',{name:'เพิ่มรายการ',exact:true}).click();await page.getByLabel('ชื่อเรื่อง / ชื่องาน / ชื่อรายการ').fill(title);
  if(kind==='supplies'){await page.getByLabel('จำนวนคงเหลือ').fill('10');await page.getByLabel('หน่วยนับ').fill('ชุด');}

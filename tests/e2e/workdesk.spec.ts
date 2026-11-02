@@ -13,6 +13,7 @@ test('tasks persist, complete, undo and archive without losing the original reco
 
 test('annual starter produces editable project tasks and a single next-year copy',async({page})=>{
  test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Isolated data only');page.on('dialog',d=>d.accept());await page.goto('/?view=projects');
+ const starters=page.locator('details.wd-starters');if(!await starters.evaluate((el:HTMLDetailsElement)=>el.open))await starters.locator('summary').click();
  await page.getByRole('button',{name:/^กิจกรรมส่งเสริมคุณภาพชีวิตผู้สูงอายุ/}).click();
  const dialog=page.getByRole('dialog',{name:'เพิ่มโครงการ',exact:true});await expect(dialog).toBeVisible();
  await dialog.getByLabel('ชื่อโครงการ',{exact:true}).fill('แผนผู้สูงอายุสำหรับทดสอบ');await dialog.getByLabel('ปีงบประมาณ',{exact:true}).fill('2570');await dialog.getByLabel('ผู้รับผิดชอบ',{exact:true}).fill('เจ้าหน้าที่ทดสอบ');await dialog.getByLabel('วันเริ่ม',{exact:true}).fill('2027-04-01');await dialog.getByLabel('กำหนดเสร็จ',{exact:true}).fill('2027-04-13');
@@ -20,9 +21,9 @@ test('annual starter produces editable project tasks and a single next-year copy
  const detail=page.getByRole('region',{name:'รายละเอียดโครงการ'});await expect(detail.getByRole('checkbox')).toHaveCount(6);await detail.getByRole('checkbox').first().click();await expect(detail.locator('.pd-summary')).toContainText('1/6');
  await page.screenshot({path:'output/workdesk-project.png',fullPage:true});
  await detail.getByRole('button',{name:'สร้างปีถัดไป',exact:true}).click();await expect(page.getByLabel('ปีงบประมาณ',{exact:true})).toHaveValue('2571');await expect(detail.getByRole('checkbox')).toHaveCount(6);await expect(detail.getByRole('checkbox',{checked:true})).toHaveCount(0);
- await page.getByRole('button',{name:'ปีงบประมาณก่อนหน้า',exact:true}).click();await page.locator('.wd-project-list').getByRole('button').filter({hasText:'แผนผู้สูงอายุสำหรับทดสอบ'}).click();await detail.getByRole('button',{name:'สร้างปีถัดไป',exact:true}).click();await expect(page.locator('.wd-project-list>button')).toHaveCount(1);
+ await page.getByRole('button',{name:'ปีงบประมาณก่อนหน้า',exact:true}).click();await page.locator('.wd-project-list').getByRole('button').filter({hasText:'แผนผู้สูงอายุสำหรับทดสอบ'}).click();await detail.getByRole('button',{name:'สร้างปีถัดไป',exact:true}).click();await expect(page.locator('.wd-project-list>button').filter({hasText:'แผนผู้สูงอายุสำหรับทดสอบ'})).toHaveCount(1);
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'ส่งออกแผน CSV',exact:true}).click();const file=await download;const csv=fs.readFileSync((await file.path())!,'utf8');expect(csv.charCodeAt(0)).toBe(0xfeff);expect(csv).toContain('แผนผู้สูงอายุสำหรับทดสอบ');expect(csv).toContain('2571');
- await detail.getByRole('button',{name:'พักโครงการ',exact:true}).click();await expect(page.locator('.wd-project-list>button')).toHaveCount(0);await page.getByLabel('ดูโครงการที่พักไว้',{exact:true}).check();await page.locator('.wd-project-list>button').click();await detail.getByRole('button',{name:'เปิดโครงการกลับมา',exact:true}).click();await page.getByLabel('ดูโครงการที่พักไว้',{exact:true}).uncheck();await expect(page.locator('.wd-project-list>button')).toHaveCount(1);
+ await detail.getByRole('button',{name:'พักโครงการ',exact:true}).click();await expect(page.locator('.wd-project-list>button')).toHaveCount(0);await page.getByLabel('ดูโครงการที่พักไว้',{exact:true}).check();await page.locator('.wd-project-list>button').click();await detail.getByRole('button',{name:'เปิดโครงการกลับมา',exact:true}).click();await page.getByLabel('ดูโครงการที่พักไว้',{exact:true}).uncheck();await expect(page.locator('.wd-project-list>button').filter({hasText:'แผนผู้สูงอายุสำหรับทดสอบ'})).toHaveCount(1);
 });
 
 for(const width of [320,375,414,768,1440])test('workdesk fits '+width,async({page})=>{

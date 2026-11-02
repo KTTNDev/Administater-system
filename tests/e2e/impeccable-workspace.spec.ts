@@ -7,7 +7,9 @@ test('all quick-create actions remain reachable on narrow screens',async({page})
   await page.setViewportSize({width,height:900});
   for(const name of ['หนังสือภายนอก','หนังสือภายใน','คำสั่ง','ประกาศ']){
    const action=quick.getByRole('button',{name,exact:true});await expect(action).toBeVisible();
-   const box=await action.boundingBox();expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
+   // Reach the control as a user would, then wait through resize/hydration layout changes.
+   await action.scrollIntoViewIfNeeded();
+   await expect.poll(async()=>{const box=await action.boundingBox();return !!box&&box.x>=0&&box.x+box.width<=width+1;}).toBe(true);
   }
   await page.screenshot({path:`output/impeccable-home-${width}.png`});
  }

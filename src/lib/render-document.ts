@@ -230,7 +230,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   const dotAdvance=dotContext.measureText('.').width;
   for(const field of root.querySelectorAll('.memo-value,.opinion-line')){
     const guide=document.createElement('span');guide.className='document-dot-guide';guide.setAttribute('aria-hidden','true');
-    guide.textContent='.'.repeat(Math.max(0,Math.floor(field.clientWidth/dotAdvance)));field.append(guide);
+    guide.textContent='.'.repeat(Math.max(0,Math.floor((field.clientWidth||field.getBoundingClientRect().width)/dotAdvance)));field.append(guide);
   }
   document.getElementById('source').remove();window.__paginationDone=true;window.__pageCount=count;window.__overflow=overflow;
   parent.postMessage({source:'sarabun-preview',pages:count,height:document.body.scrollHeight,overflow,missingOverlayPages,compactSignoff:document.body.classList.contains('compact-signoff')},'*');
