@@ -1,3 +1,4 @@
+import {inlineBody} from './body-typography';
 import {defaultThaiPairs} from './thai-dictionary';
 import {thaiLayoutScript} from './thai-layout';
 import {previewOverlayScript} from "./preview-overlays";
@@ -9,7 +10,7 @@ const isTableRule=(line:string)=>/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.t
 const cells=(line:string)=>line.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(x=>x.trim());
 export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Record<string,string>={}, options:{wordParagraphs?:boolean;bodyBlocks?:string[]}={}): string {
   const e=(s:string)=>escapeHtml(numerals(s,d.numeralStyle)), t=template(d.type), date=thaiDate(d.date), blocks:string[]=[];
-  const inline=(s:string)=>e(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  const inline=(s:string)=>inlineBody(s,e);
   const p=(content:string,cls="") => blocks.push(`<p class="${cls}">${content || "&nbsp;"}</p>`);
   const field=(label:string,value:string,cls="") => p(`<span class="label">${e(label)}</span> ${cls==="memo-field"?`<span class="memo-value">${e(value)||'&nbsp;'}</span>`:e(value)}`,cls);
   const formattedLines=(text:string,cls="body-text")=>{
@@ -19,7 +20,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
         const head=cells(lines[i]);i+=2;const rows:string[][]=[];
         while(i<lines.length&&lines[i].includes('|'))rows.push(cells(lines[i++]));i--;
         blocks.push(`<table class="document-table"><thead><tr>${head.map(cell=>`<th>${inline(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${head.map((_,n)=>`<td>${inline(row[n]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
-      }else p(inline(lines[i]),cls);
+      }else if(lines[i].startsWith("## "))p(inline(lines[i].slice(3)),"title body-subheading");else p(inline(lines[i]),cls);
     }
   };
   const body=() => options.bodyBlocks ? blocks.push(...options.bodyBlocks) : d.contentBlocks.length&&!(d.type==='minutes'&&d.minutesMode==='agenda')?d.contentBlocks.forEach(b=>{
@@ -127,7 +128,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   .content{height:240mm;display:flow-root}.page:first-child .content,.counterpart-first-page .content{height:${d.firstPageTop==='25'?240:250}mm}
   p{margin:0 0 6pt;white-space:pre-wrap;overflow-wrap:anywhere;orphans:2;widows:2}.body-text{text-indent:25mm}
   .body-text,.appendix-text{text-align:justify;text-justify:inter-character;text-align-last:start;white-space:normal;word-break:normal;line-break:auto;overflow-wrap:break-word;hyphens:none}
-  .body-text.paragraph-continues,.appendix-text.paragraph-continues{text-align-last:justify}
+  .body-subheading{text-indent:0;break-after:avoid}.body-text.paragraph-continues,.appendix-text.paragraph-continues{text-align-last:justify}
   .garuda{position:relative;display:inline-block;overflow:hidden;flex-shrink:0;height:30mm;width:calc(30mm * 1194 / 1340)}.garuda-source{position:absolute;max-width:none;width:calc(100% * 2320 / 1194);height:calc(100% * 1811 / 1340);left:calc(-100% * 498 / 1194);top:calc(-100% * 324 / 1340)}.letter-head{position:relative;min-height:38mm;padding-top:23mm;margin-bottom:6pt;display:flex;justify-content:space-between;gap:8mm}
   .letter-head .garuda{position:absolute;top:0;left:calc(50% - 5mm);transform:translateX(-50%)}.letter-number{max-width:50%}.letter-agency{width:65mm;padding-left:10mm;white-space:pre-wrap;overflow-wrap:anywhere}
   .date{margin-left:75mm}.memo-head{padding-right:var(--center-inset);position:relative;height:${d.urgency!=="ปกติ"?27:18}mm;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3pt}

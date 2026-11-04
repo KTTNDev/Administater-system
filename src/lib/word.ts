@@ -20,10 +20,10 @@ const emu = (px: number) => Math.round(px * 9525);
 const decode = (source: string) => Buffer.from(source.slice(source.indexOf(',')+1),'base64');
 function textRuns(runs: WordRun[]) {
   // Word owns paragraph wrapping. Invisible word joiners preserve explicit compound-word groups.
-  return runs.flatMap((run,index) => (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).map(text => new TextRun({
+  return runs.flatMap((run,index) => run.softBreak?[new TextRun({break:1})] : (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).map(text => new TextRun({
     ...(text==='\t'?{children:[new Tab()]}:{text}),
     font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,
-    color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
+    characterSpacing:Math.round((run.tracking||0)*20),color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
   })));
 }
 function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
@@ -42,10 +42,11 @@ function paragraphs(p: WordParagraph, before = 0, left = 0, width = p.width) {
   // Explicit newlines (addresses, acting positions, text boxes) start real
   // paragraphs, never Shift+Enter breaks inside a distributed paragraph.
   const groups: WordRun[][] = [[]];
-  for(const run of p.runs) run.text.split(/\r\n|[\r\n\u2028\u2029]/).forEach((text,index)=>{
+  for(const run of p.runs) {if(run.softBreak){groups.at(-1)!.push(run);continue;}run.text.split(/\r\n|[\r\n\u2028\u2029]/).forEach((text,index)=>{
     if(index) groups.push([]);
     if(text) groups.at(-1)!.push({...run,text});
   });
+  }
   return groups.map((runs,index)=>paragraph({...p,runs,keep:index<groups.length-1||p.keep},index===0?before:0,left,width));
 }
 function image(img: WordImage) {

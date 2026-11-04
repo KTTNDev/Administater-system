@@ -1,6 +1,6 @@
 // Read the same measured layout used by the preview. Text remains text in DOCX;
 // only existing images and uploaded PDF pages are raster images.
-export type WordRun = { keepGroup?:string; text: string; bold: boolean; underline: boolean; size: number; color: string };
+export type WordRun = { keepGroup?:string; softBreak?:boolean; tracking?:number; text: string; bold: boolean; underline: boolean; size: number; color: string };
 export type Box = { x: number; y: number; width: number; height: number };
 export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean };
 export type WordTable = Box & { kind: 'table'; rows: { header: boolean; cells: WordParagraph[] }[] };
@@ -21,7 +21,7 @@ export function extractWordPages(): WordPage[] {
         if (node.nodeType === Node.TEXT_NODE || node instanceof HTMLBRElement) {
           const parent = node.parentElement!, css = getComputedStyle(parent);
           const rgb = css.color.match(/\d+/g)?.slice(0,3).map(n => Number(n).toString(16).padStart(2,'0')).join('') || '111111';
-          result.push({ keepGroup:parent.closest<HTMLElement>('.thai-keep')?.dataset.keepId, text: node instanceof HTMLBRElement ? '\n' : node.textContent || '', bold: Number(css.fontWeight) >= 600, underline: css.textDecorationLine.includes('underline') || getComputedStyle(el).textDecorationLine.includes('underline'), size: parseFloat(css.fontSize) * .75, color: rgb });
+          result.push({ softBreak:node instanceof HTMLBRElement&&node.hasAttribute('data-soft-break'),tracking:(parseFloat(css.letterSpacing)||0)*.75, keepGroup:parent.closest<HTMLElement>('.thai-keep')?.dataset.keepId, text: node instanceof HTMLBRElement ? '\n' : node.textContent || '', bold: Number(css.fontWeight) >= 600, underline: css.textDecorationLine.includes('underline') || getComputedStyle(el).textDecorationLine.includes('underline'), size: parseFloat(css.fontSize) * .75, color: rgb });
         } else node.childNodes.forEach((child,index)=>{
           if(index && node instanceof Element && node.matches('.memo-field')) result.push({text:' ',bold:false,underline:false,size:16,color:'111111'});
           walk(child);
@@ -39,7 +39,7 @@ export function extractWordPages(): WordPage[] {
           text.push(...runs(child));
         });
       }
-      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling), border:false };
+      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:el.classList.contains('body-subheading') || el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling), border:false };
     };
     const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),blocks:[],overlays:[]};
     const walk = (el: Element, floating = false) => {

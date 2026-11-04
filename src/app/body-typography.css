@@ -1,0 +1,8 @@
+.word-body-editor>div[role=toolbar]{display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:12px;background:var(--ui-subtle);border:1px solid var(--ui-border);border-radius:8px}
+.word-body-editor>div[role=toolbar] button{min-height:36px;padding:6px 10px;background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:6px;font:13px var(--ui-font)}
+.word-body-editor label{display:grid;gap:4px;font:12px var(--ui-font)}
+.word-body-editor select{min-height:36px;width:130px;font:13px var(--ui-font)}
+.word-body-help{font:12px/1.8 var(--ui-font);color:var(--ui-muted)}
+.word-body-surface{min-height:260px;max-height:65vh;overflow:auto;background:#fff;color:#111;border:1px solid var(--ui-border);border-radius:8px;padding:20px;font:22px/1.5 Sarabun,serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.word-body-surface p{margin:0 0 8px;text-indent:2.5em}.word-body-surface h3{font:700 22px/1.5 Sarabun,serif;text-indent:0;margin:8px 0}
+.word-body-surface:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
