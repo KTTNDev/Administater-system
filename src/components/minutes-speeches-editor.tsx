@@ -24,6 +24,7 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 /* นำเข้า ../lib/document.ts — สัญญาข้อมูลร่างหนังสือ: กฎตรวจค่าจริง ชนิด TypeScript ค่าเริ่มต้น และลำดับเนื้อหาที่ใช้สร้างเอกสาร; import type ใช้ตอนตรวจชนิดเท่านั้น */
 import type { Draft } from "@/lib/document";
+import {AIWritingAssistant} from './ai-writing-assistant';
 
 /* ชนิด Speeches: อธิบายรูปข้อมูลให้ TypeScript ตรวจ ไม่ได้สร้างข้อมูลหรือ validate ค่าใน runtime; NonNullable ตัด null/undefined ออก และ [number] เลือกชนิดสมาชิกหนึ่งตัวของ array */
 /* อ่านจากซ้ายไปขวา: Draft → meetingAgenda (array) → [number] (หนึ่งวาระ) → speeches (array ที่อาจ undefined) → NonNullable เอา undefined ออก */
@@ -178,6 +179,7 @@ export function MinutesSpeechesEditor({
             value={speech.text}
             onChange={(e) => edit(index, { text: e.target.value })}
           />
+          <AIWritingAssistant value={speech.text} onChange={text=>edit(index,{text})}/>
         </section>
       ))}
       {speeches.length >= 50 && (

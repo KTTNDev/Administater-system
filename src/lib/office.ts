@@ -1,10 +1,12 @@
 import { z } from "zod";
 import {projectProfileSchema,stageSchema} from './project';
+import {taskTrackingFields} from './task-progress';
 export const officeKinds = { incoming: "ทะเบียนหนังสือรับ", outgoing: "ทะเบียนหนังสือส่ง", task: "งานและกำหนดส่ง", meeting: "การประชุม", contact: "ทำเนียบหน่วยงาน", supplies: "วัสดุสำนักงาน", archive: "ดัชนีแฟ้มเอกสาร", project: "โครงการประจำปี" } as const;
 export type OfficeKind = keyof typeof officeKinds;
 const short = z.string().trim().max(500).default("");
 const date = z.union([z.literal(""),z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(v);return !isNaN(+d)&&d.toISOString().slice(0,10)===v;})]).default("");
 export const officeSchema = z.object({
+  ...taskTrackingFields,
   kind:z.enum(["incoming","outgoing","task","meeting","contact","supplies","archive","project"]),
   title:z.string().trim().min(1,"กรุณาระบุชื่อเรื่อง").max(300),
   number:short, party:short, owner:short, date, due:date,

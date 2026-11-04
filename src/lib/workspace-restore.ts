@@ -18,9 +18,11 @@ import {officeSchema} from './office';
 import {projectFilesSql,stageSchema} from './project';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
+import {homeLayoutSchema,homeLayoutSql} from './home-layout';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ home_layout:homeLayoutSql,
  thai_dictionary:thaiDictionarySql,
  ...inventorySchemas,
  organization_directory:organizationDirectorySql,
@@ -64,6 +66,8 @@ function inspect(file:string){
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
   const models={thai_dictionary:thaiTermSchema,inventory_form_drafts:inventoryFormSchema,inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
+  if(data.home_layout.length>1)throw Error('ชุดสำรองมีค่าหน้าหลักซ้ำ');
+  for(const row of data.home_layout){if(row.id!=='home'||!Number.isSafeInteger(row.version)||Number(row.version)<1)throw Error('ข้อมูลหน้าหลักในชุดสำรองไม่ถูกต้อง');homeLayoutSchema.parse(JSON.parse(String(row.data)));}
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));

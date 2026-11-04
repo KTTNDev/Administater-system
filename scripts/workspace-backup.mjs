@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 // Shared by manual exports and the background worker; never include credentials.
 export function exportDatabase(databaseFile,localFolder,sourceRoot){
- const tables=['thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
+ const tables=['home_layout','thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
  const source=new DatabaseSync(databaseFile,{readOnly:true});
  let snapshot,definitions;
  try{
@@ -40,7 +40,7 @@ export function exportDatabase(databaseFile,localFolder,sourceRoot){
  for(const row of snapshot.signed_scans)if(row.file)save(row.id+'-signed'+(row.mime==='application/pdf'?'.pdf':row.mime==='image/png'?'.png':'.jpg'),Buffer.from(row.file));
  for(const name of ['ict.pdf','ict-2569.pdf','equipment.pdf','classification.pdf']){const file=path.join(sourceRoot,'data','budget-references',name);if(fs.existsSync(file))save('budget-reference-'+name,fs.readFileSync(file));}
  const reference=path.join(sourceRoot,'data/template-references/20170502100402.pdf');if(fs.existsSync(reference))save('template-reference-20170502100402.pdf',fs.readFileSync(reference));
- const manifest={schemaVersion:2,at:new Date().toISOString(),counts:Object.fromEntries(Object.entries(snapshot).map(([table,rows])=>[table,rows.length])),files:files.map(file=>({name:path.basename(file),sha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex')})),note:'ข้อมูลธุรกิจและไฟล์แนบ ไม่รวมการตั้งค่า รหัสผ่าน หรือ Google OAuth'};
+ const manifest={schemaVersion:2,at:new Date().toISOString(),counts:Object.fromEntries(Object.entries(snapshot).map(([table,rows])=>[table,rows.length])),files:files.map(file=>({name:path.basename(file),sha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex')})),note:'ข้อมูลธุรกิจ ไฟล์แนบ และการจัดหน้าหลัก ไม่รวมการตั้งค่าการเชื่อมต่อ รหัสผ่าน หรือ Google OAuth'};
  // Only completed exports get a manifest and appear in the restore catalog.
  fs.writeFileSync(path.join(folder,'manifest.json'),JSON.stringify(manifest,null,2));
  return {folder,files:files.length+1,counts:manifest.counts};

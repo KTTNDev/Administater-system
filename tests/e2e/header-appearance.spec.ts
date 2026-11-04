@@ -1,0 +1,49 @@
+import {test,expect,type Page} from '@playwright/test';
+import sharp from 'sharp';
+import {headerMenus,type HeaderTarget} from '../../src/lib/home-layout';
+
+async function settings(page:Page){await page.goto('/?view=settings');const panel=page.getByRole('region',{name:'ปรับแต่งหน้าหลัก',exact:true});await expect(panel).toBeVisible();return panel;}
+async function reset(page:Page){const panel=await settings(page);await panel.getByRole('button',{name:'คืนค่าเริ่มต้น',exact:true}).click();const save=panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true});if(await save.isEnabled()){await save.click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');}}
+async function openHeaders(page:Page){const panel=await settings(page);const area=panel.locator('details[aria-label="พื้นหลังส่วนหัวแต่ละเมนู"]');await area.locator('summary').click();return {panel,area};}
+async function moveSlider(page:Page,label:string,value:number){const slider=page.getByRole('slider',{name:label,exact:true});await slider.fill(String(value));}
+async function photo(){return await sharp({create:{width:300,height:600,channels:3,background:'#7f9fb5'}}).composite([{input:Buffer.from('<svg width="300" height="600"><rect width="300" height="180" fill="#d97558"/><rect y="420" width="300" height="180" fill="#285e63"/><rect width="40" height="600" fill="#e6c76c"/></svg>')}]).png().toBuffer();}
+test.beforeEach(async({page})=>{await reset(page);});test.afterEach(async({page})=>{await reset(page);});
+
+test('stores independent styles for all menu headers and applies them to the actual pages',async({page})=>{
+ const {panel,area}=await openHeaders(page);
+ for(const target of Object.keys(headerMenus) as HeaderTarget[]){await area.getByLabel('เมนูที่จะปรับส่วนหัว',{exact:true}).selectOption(target);await area.getByLabel('พื้นหลังส่วนหัวเมนู',{exact:true}).selectOption('solid');await area.getByLabel('สีส่วนหัวเมนู',{exact:true}).selectOption(target==='tasks'?'calendar':'reports');}
+ await panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');
+ for(const target of Object.keys(headerMenus) as HeaderTarget[]){
+  if(target==='editor'){await page.goto('/?view=templates');await page.locator('.template-feature').first().click();}else await page.goto('/?view='+target);
+  const heading=page.locator(target==='editor'?'.editor-header':'.function-banner').first();await expect(heading).toBeVisible();await expect(page.locator('.app-shell')).toHaveAttribute('data-header-custom','true');await expect(heading).toHaveCSS('background-color',target==='tasks'?'rgb(220, 240, 237)':'rgb(237, 229, 247)');if(target==='editor')await expect(heading).toHaveCSS('position','relative');
+ }
+ await page.goto('/home');await expect(page.locator('.app-shell')).toHaveAttribute('data-header-custom','false');await expect(page.locator('.wd-hero')).toBeVisible();
+});
+
+test('uploads a header image, drags its crop, changes zoom, and preserves position after reload',async({page})=>{
+ const {panel,area}=await openHeaders(page);await area.getByLabel('พื้นหลังส่วนหัวเมนู',{exact:true}).selectOption('image');await area.getByLabel('รูปส่วนหัวเมนู',{exact:true}).setInputFiles({name:'test-background.png',mimeType:'image/png',buffer:await photo()});await expect(panel.getByRole('status')).toContainText('เตรียมรูปส่วนหัวแล้ว');
+ await moveSlider(page,'ตำแหน่งภาพส่วนหัวเมนู ซูม',150);await moveSlider(page,'ตำแหน่งภาพส่วนหัวเมนู ซ้าย–ขวา',40);await moveSlider(page,'ตำแหน่งภาพส่วนหัวเมนู บน–ล่าง',60);
+ const surface=area.getByRole('button',{name:'ตำแหน่งภาพส่วนหัวเมนู · ลากภาพหรือตั้งค่าด้วยลูกศร',exact:true});await surface.scrollIntoViewIfNeeded();await expect(surface.locator('img')).toBeVisible();const box=(await surface.boundingBox())!;
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+60,box.y+box.height/2+20,{steps:5});await page.mouse.up();
+ const x=Number(await page.getByRole('slider',{name:'ตำแหน่งภาพส่วนหัวเมนู ซ้าย–ขวา',exact:true}).inputValue()),y=Number(await page.getByRole('slider',{name:'ตำแหน่งภาพส่วนหัวเมนู บน–ล่าง',exact:true}).inputValue());expect(x).toBeLessThan(40);expect(y).toBeLessThan(60);
+ await panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');await page.goto('/?view=tasks');const banner=page.locator('.function-banner').first();
+ expect(await banner.evaluate(el=>getComputedStyle(el,'::before').backgroundImage)).toContain('data:image/webp;base64,');expect(await banner.evaluate(el=>getComputedStyle(el,'::before').backgroundPosition)).toBe(`${x}% ${y}%`);expect(await banner.evaluate(el=>getComputedStyle(el,'::before').transform)).toBe('matrix(1.5, 0, 0, 1.5, 0, 0)');
+ const reopened=await openHeaders(page);await expect(page.getByRole('slider',{name:'ตำแหน่งภาพส่วนหัวเมนู ซ้าย–ขวา',exact:true})).toHaveValue(String(x));await expect(page.getByRole('slider',{name:'ตำแหน่งภาพส่วนหัวเมนู บน–ล่าง',exact:true})).toHaveValue(String(y));await expect(reopened.area.locator('.image-focus-preview img')).toBeVisible();await reopened.area.screenshot({path:'output/header-appearance-settings.png'});
+ await reopened.area.getByRole('button',{name:'คืนค่าเฉพาะเมนูนี้',exact:true}).click();await reopened.panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(reopened.panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');await page.goto('/?view=tasks');await expect(page.locator('.app-shell')).toHaveAttribute('data-header-custom','false');
+});
+
+test('supports focal positioning for Home cards and the Home header',async({page})=>{
+ const panel=await settings(page);await panel.getByRole('combobox',{name:'พื้นหลังการ์ด',exact:true}).selectOption('image');await panel.getByLabel('รูปพื้นหลังการ์ด',{exact:true}).setInputFiles({name:'card.png',mimeType:'image/png',buffer:await photo()});await expect(panel.getByRole('status')).toContainText('เตรียมรูปแล้ว');
+ await moveSlider(page,'ตำแหน่งภาพการ์ด ซ้าย–ขวา',25);await moveSlider(page,'ตำแหน่งภาพการ์ด บน–ล่าง',80);await moveSlider(page,'ตำแหน่งภาพการ์ด ซูม',175);
+ await panel.getByText('ส่วนหัวและองค์ประกอบหน้าหลัก',{exact:true}).click();await panel.getByRole('combobox',{name:'ขนาดการ์ด',exact:true}).selectOption('compact');await panel.getByRole('combobox',{name:'พื้นหลังส่วนหัว',exact:true}).selectOption('image');await panel.getByLabel('รูปพื้นหลังส่วนหัว',{exact:true}).setInputFiles({name:'hero.png',mimeType:'image/png',buffer:await photo()});await expect(panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true})).toBeEnabled();await moveSlider(page,'ตำแหน่งภาพส่วนหัวหน้าหลัก ซ้าย–ขวา',70);await moveSlider(page,'ตำแหน่งภาพส่วนหัวหน้าหลัก บน–ล่าง',30);await moveSlider(page,'ตำแหน่งภาพส่วนหัวหน้าหลัก ซูม',150);
+ await panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');await page.goto('/home');const card=page.locator('[data-home-card]').first();expect(await card.evaluate(el=>getComputedStyle(el,'::before').backgroundPosition)).toBe('25% 80%');expect(await card.evaluate(el=>getComputedStyle(el,'::before').backgroundSize)).toBe('cover');await expect(page.locator('.home-custom-hero-image')).toHaveCSS('background-position','70% 30%');await expect(page.locator('.home-custom-hero-image')).toHaveCSS('transform','matrix(1.5, 0, 0, 1.5, 0, 0)');
+});
+
+test('header settings and focal controls fit mobile widths and support keyboard operation',async({page})=>{
+ for(const width of [320,375,414,768]){await page.setViewportSize({width,height:960});const {area}=await openHeaders(page);await area.getByLabel('พื้นหลังส่วนหัวเมนู',{exact:true}).selectOption('illustration');const surface=area.getByRole('button',{name:'ตำแหน่งภาพส่วนหัวเมนู · ลากภาพหรือตั้งค่าด้วยลูกศร',exact:true});await surface.focus();await page.keyboard.press('ArrowLeft');await expect(page.getByRole('slider',{name:'ตำแหน่งภาพส่วนหัวเมนู ซ้าย–ขวา',exact:true})).toHaveValue('84');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);await page.getByRole('button',{name:'ยกเลิกการแก้ไข',exact:true}).click();}
+});
+test('custom editor backgrounds leave document preview content and paper styling unchanged',async({page})=>{
+ page.on('dialog',dialog=>dialog.accept());
+ async function paper(){await page.goto('/?view=templates');await page.locator('.template-feature').first().click();await page.getByRole('button',{name:'ใช้ข้อมูลตัวอย่าง',exact:true}).click();const frame=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');await expect(frame.locator('.body-text').first()).toBeVisible();return frame.locator('body').evaluate(async el=>{await document.fonts.ready;return {text:(el as HTMLElement).innerText,background:getComputedStyle(el).backgroundColor,width:el.scrollWidth};});}
+ const before=await paper();const {panel,area}=await openHeaders(page);await area.getByLabel('เมนูที่จะปรับส่วนหัว',{exact:true}).selectOption('editor');await area.getByLabel('พื้นหลังส่วนหัวเมนู',{exact:true}).selectOption('image');await area.getByLabel('รูปส่วนหัวเมนู',{exact:true}).setInputFiles({name:'editor-header.png',mimeType:'image/png',buffer:await photo()});await expect(panel.getByRole('status')).toContainText('เตรียมรูปส่วนหัวแล้ว');await moveSlider(page,'ตำแหน่งภาพส่วนหัวเมนู ซูม',200);await panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');expect(await paper()).toEqual(before);await expect(page.locator('.editor-header')).toHaveCSS('position','relative');await page.screenshot({path:'output/header-appearance-editor.png'});
+});

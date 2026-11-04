@@ -30,6 +30,7 @@ import type { Draft } from "@/lib/document";
 import { TorDetailsEditor } from "./minutes-details";
 /* นำเข้า ./minutes-speeches-editor.tsx — ฟอร์มผู้พูดหลายรายการในวาระเดียว ส่งรายการใหม่กลับให้ parent โดยไม่บันทึกฐานข้อมูลเอง */
 import { MinutesSpeechesEditor } from "./minutes-speeches-editor";
+import {AIWritingAssistant} from './ai-writing-assistant';
 
 const suggestions = [
   "เรื่องที่ประธานแจ้งให้ที่ประชุมทราบ",
@@ -308,6 +309,7 @@ export function MinutesEditor({
                   placeholder="ระบุผู้เสนอ ประเด็น และความคิดเห็นที่ต้องบันทึก"
                 />
               </label>
+              <AIWritingAssistant value={agenda.discussion} onChange={discussion=>edit(index,{discussion})}/>
               <label className="check-label">
                 {/* checked ผูกสถานะช่องเลือกกับ !!agenda.torDetails; อ่าน e.target.checked เป็น boolean ใน onChange */}
                 <input
@@ -365,6 +367,7 @@ export function MinutesEditor({
                   placeholder="ไม่กรอก ระบบจะไม่แสดงหัวข้อนี้ในเอกสาร"
                 />
               </label>
+              <AIWritingAssistant value={agenda.resolution} maxLength={5000} onChange={resolution=>edit(index,{resolution})}/>
             </section>
           ))}
           <button

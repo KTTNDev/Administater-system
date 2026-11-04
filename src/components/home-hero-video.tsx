@@ -5,7 +5,7 @@ import {Pause, Play} from "lucide-react";
 
 /** A local, silent illustration. Pause offscreen and in hidden tabs to save resources.
  * Reduced-motion users see the poster unless they explicitly choose to play. */
-export function HomeHeroVideo() {
+export function HomeHeroVideo({autoPlay=true}:{autoPlay?:boolean}) {
   const video = useRef<HTMLVideoElement>(null);
   const [choice, setChoice] = useState<boolean | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -18,7 +18,7 @@ export function HomeHeroVideo() {
     let visible = false;
     let disposed = false;
     const sync = () => {
-      const enabled = choice ?? !preference.matches;
+      const enabled = choice ?? (autoPlay && !preference.matches);
       if (enabled && visible && !document.hidden) {
         void element.play().catch(() => { if (!disposed) setPlaying(false); });
       } else element.pause();
@@ -37,7 +37,7 @@ export function HomeHeroVideo() {
       document.removeEventListener("visibilitychange", sync);
       element.pause();
     };
-  }, [choice, failed]);
+  }, [choice, failed, autoPlay]);
 
   return <>
     <div className="home-hero-media" aria-hidden="true">

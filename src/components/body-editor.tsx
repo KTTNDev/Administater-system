@@ -3,6 +3,7 @@ import { useRef,useState } from "react";
 import {ThaiProofreadPanel} from './thai-proofread-panel';
 import {writeThaiTerm} from '@/app/thai-dictionary-actions';
 import {WordBodyEditor} from "./word-body-editor";
+import {AIWritingAssistant} from './ai-writing-assistant';
 import { Bold,Table2 } from "lucide-react";
 
 export function BodyEditor({value,onChange,required=false,id,rows=12,placeholder="พิมพ์เนื้อหาหนังสือ… ใช้ **ข้อความ** เพื่อทำตัวหนา หรือกดแทรกตาราง"}:{value:string;onChange:(value:string)=>void;required?:boolean;id?:string;rows?:number;placeholder?:string}) {
@@ -26,7 +27,7 @@ export function BodyEditor({value,onChange,required=false,id,rows=12,placeholder
   const next=prefix+separator+table+value.slice(start);onChange(next);
   requestAnimationFrame(()=>{input.focus();const cursor=(prefix+separator+"| หัวข้อ | รายละเอียด |\n| --- | --- |\n| ").length;input.setSelectionRange(cursor,cursor)});
  }
- if(rich)return <div className="body-editor"><button type="button" onClick={()=>setRich(false)}>กลับโหมดข้อความ / ตาราง</button><WordBodyEditor value={value} onChange={onChange} id={id} required={required}/></div>;
+ if(rich)return <div className="body-editor"><button type="button" onClick={()=>setRich(false)}>กลับโหมดข้อความ / ตาราง</button><WordBodyEditor value={value} onChange={onChange} id={id} required={required}/><AIWritingAssistant value={value} onChange={onChange}/></div>;
  return <div className="body-editor"><button type="button" onClick={()=>setRich(true)}>โหมดจัดข้อความแบบ Word</button>
   <div className="body-format-toolbar" role="toolbar" aria-label="จัดรูปแบบข้อความ">
    <button type="button" className="secondary" onClick={wrapBold} title="ทำข้อความที่เลือกเป็นตัวหนา"><Bold size={17}/>ตัวหนา</button>
@@ -36,5 +37,6 @@ export function BodyEditor({value,onChange,required=false,id,rows=12,placeholder
   {termMessage&&<small role="status">{termMessage}</small>}
   <textarea id={id} ref={ref} required={required} value={value} rows={rows} onChange={e=>onChange(e.target.value)} placeholder={placeholder} />
   <ThaiProofreadPanel value={value} onChange={onChange}/>
+  <AIWritingAssistant value={value} onChange={onChange}/>
  </div>;
 }
