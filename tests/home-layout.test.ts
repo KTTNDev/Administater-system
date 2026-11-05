@@ -1,7 +1,7 @@
 import {beforeEach,afterEach,expect,it,vi} from 'vitest';
 import fs from 'node:fs';import path from 'node:path';import os from 'node:os';
 import sharp from 'sharp';
-import {defaultHomeLayout,homeCardImage,homeLayoutSchema,newHomeCard} from '../src/lib/home-layout';
+import {defaultHomeLayout,homeHeroOpacity,homeCardImage,homeLayoutSchema,newHomeCard} from '../src/lib/home-layout';
 import {readHomeLayout,writeHomeLayout} from '../src/lib/home-layout-db';
 import {db,getSetting,setSetting} from '../src/lib/db';
 import {setStorage,exportWorkspace} from '../src/lib/storage';
@@ -47,7 +47,27 @@ it('checks authentication before saving a layout',async()=>{
 it('round-trips layout and photos in business backups without exporting credentials',async()=>{
  const image=await sharp({create:{width:10,height:10,channels:3,background:'#aabbcc'}}).webp().toBuffer();
  const layout=defaultHomeLayout();layout.title='โต๊ะงานสวัสดิการ';layout.cards[0].background='image';layout.cards[0].image='data:image/webp;base64,'+image.toString('base64');
- const first=writeHomeLayout(layout,0);setSetting('google:token','test-secret-not-for-backup');const backup=exportWorkspace();expect(backup.counts.home_layout).toBe(1);
+ layout.canvasColor='#292d32';const first=writeHomeLayout(layout,0);setSetting('google:token','test-secret-not-for-backup');const backup=exportWorkspace();expect(backup.counts.home_layout).toBe(1);
  expect(fs.readFileSync(path.join(backup.folder,'home_layout.json'),'utf8')).toContain('data:image/webp;base64,');expect(fs.existsSync(path.join(backup.folder,'settings.json'))).toBe(false);
  const second=writeHomeLayout(defaultHomeLayout(),first.version);const preview=await prepareBackupRestore(path.basename(backup.folder));activateBackupRestore(preview.token,'กู้คืนข้อมูล');const restored=readHomeLayout();expect(restored.layout).toEqual(layout);expect(restored.version).toBeGreaterThan(second.version);expect(getSetting('google:token')).toBe('test-secret-not-for-backup');expect(()=>writeHomeLayout(defaultHomeLayout(),second.version)).toThrow();
+});
+it('opens legacy clock settings with defaults and rejects unsupported fonts or sizes',()=>{
+ const old:Record<string,unknown>={...defaultHomeLayout()};
+ for(const key of ['clockSize','dateSize','clockFont','dateFont'])delete old[key];
+ expect(homeLayoutSchema.parse(old)).toMatchObject({clockSize:32,dateSize:12,clockFont:'system',dateFont:'system'});
+ for(const patch of [{clockFont:'https://bad.example/font'},{dateFont:'unknown'},{clockSize:113},{clockSize:23},{dateSize:41},{dateSize:11}]){
+  expect(homeLayoutSchema.safeParse({...defaultHomeLayout(),...patch}).success).toBe(false);
+ }
+ const saved=writeHomeLayout({...defaultHomeLayout(),clockFont:'kanit',dateFont:'mali',clockSize:88,dateSize:28},0);
+ expect(readHomeLayout()).toEqual(saved);
+});
+it('preserves legacy hero opacity and validates adjustable background alpha',()=>{
+ const legacy=defaultHomeLayout();
+ expect(homeHeroOpacity(legacy)).toBe(1);
+ expect(homeHeroOpacity({...legacy,heroBackground:'image'})).toBe(.22);
+ for(const opacity of [0,.45,1]){
+  const saved=homeLayoutSchema.parse({...legacy,heroOpacity:opacity});
+  expect(homeHeroOpacity(saved)).toBe(opacity);
+ }
+ for(const opacity of [-.01,1.01,NaN])expect(homeLayoutSchema.safeParse({...legacy,heroOpacity:opacity}).success).toBe(false);
 });

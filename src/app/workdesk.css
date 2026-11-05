@@ -148,9 +148,6 @@
 .wd-form-error{margin:0 24px 20px;color:var(--ui-danger);font-size:13px}
 .wd-spin{animation:wd-spin 1.2s linear infinite}
 @keyframes wd-spin{to{transform:rotate(360deg)}}
-body:has(.workdesk[data-focus=true]) .sidebar,body:has(.workdesk[data-focus=true]) .topbar{display:none}
-body:has(.workdesk[data-focus=true]) .main-shell{margin-left:0}
-.workdesk[data-focus=true]{margin:auto;padding-top:40px}
 @media(hover:hover){.wd-project-list>button:hover,.wd-project-shortcut:hover,.wd-starters button:hover{background:var(--ui-subtle)}.wd-tools>button:not(.primary):hover,.wd-icon:hover{background:var(--ui-hover)}}
 @media(max-width:1200px){.wd-dayboard{grid-template-columns:1fr 1.3fr;gap:24px}.wd-day-note{grid-column:1/-1;border-left:0;border-top:1px solid var(--wd-rule);padding:16px 0 0;display:flex;gap:16px;align-items:center;flex-wrap:wrap}.wd-day-note p{margin:0;flex:1}.wd-home-grid{grid-template-columns:minmax(0,1fr)}.wd-home-aside{grid-template-columns:repeat(2,minmax(0,1fr))}.wd-project-grid{grid-template-columns:minmax(220px,.8fr) minmax(0,1.4fr)}}
 @media(max-width:768px){.wd-heading{align-items:flex-start;flex-wrap:wrap;gap:16px}.wd-heading h1{font-size:24px!important}.wd-tools{margin-left:auto}.wd-dayboard{padding:24px;gap:24px;grid-template-columns:minmax(0,1fr)}.wd-clock{grid-template-columns:24px auto;justify-content:start}.wd-day-stats{border-top:1px solid var(--wd-rule);padding-top:12px}.wd-day-note{display:none}.wd-home-aside,.wd-project-grid{grid-template-columns:minmax(0,1fr)}.wd-project-list{max-height:320px;overflow-y:auto}.wd-paper-link{margin-left:0}.wd-year-bar{gap:12px}.wd-project-facts{grid-template-columns:minmax(0,1fr);gap:12px}.wd-project-facts>span{display:flex;justify-content:space-between;gap:12px}.wd-project-facts strong{margin:0}.wd-form-grid{grid-template-columns:minmax(0,1fr)}}
@@ -210,3 +207,41 @@ body:has(.workdesk[data-focus=true]) .main-shell{margin-left:0}
 @media(hover:hover){.wd-launchers>:is(button,a):hover::before{opacity:.52;transform:translateX(-3px)}}
 @media(max-width:1000px){.wd-launchers>:is(button,a)>span{font-size:18px}.wd-launchers>:is(button,a)::before{background-size:auto 150px}}
 @media(prefers-reduced-motion:reduce){.wd-launchers>:is(button,a)::before{transition:none;transform:none}}
+/* Hallmark · component: Home task zone · existing Craft tokens
+ * Pre-emit critique: P5 H5 E4 S5 R5 V4 */
+.workdesk .home-task-panel{min-width:0}
+.home-task-scroll{
+  max-height:460px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+}
+.home-task-scroll:focus-visible{outline:2px solid var(--ui-focus);outline-offset:-3px}
+.home-task-group{margin:0;border:0}
+.home-task-group>summary{
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:10px 24px;
+  background:var(--ui-subtle);
+  color:var(--ui-ink);
+  border-block:1px solid var(--ui-border);
+  font:600 12px/1.8 var(--ui-font);
+  cursor:pointer;
+}
+.home-task-group>summary>span{margin-left:6px}
+.home-task-group>summary>small{float:right;font-weight:400;color:var(--ui-muted)}
+.home-task-group[data-task-group=late]>summary>span{color:var(--ui-danger)}
+.home-task-group>summary:hover{background:var(--ui-hover)}
+.home-task-group>summary:focus-visible{outline:2px solid var(--ui-focus);outline-offset:-3px}
+.home-task-group .wd-task{padding:12px 24px}
+
+@media(max-width:600px){
+ .home-task-scroll{max-height:400px}
+ .home-task-group>summary{padding-inline:16px}
+ .home-task-group .wd-task{padding:12px 16px}
+ .workdesk .home-task-panel .wd-filter-bar{flex-wrap:wrap}
+ .workdesk .home-task-panel .wd-search{flex-basis:100%}
+ .workdesk .home-task-panel .wd-filter-bar select{flex:1;min-width:0;max-width:100%}
+}

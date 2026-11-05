@@ -112,3 +112,98 @@
 .minutes-members .agenda-card,.minutes-signing .agenda-card,.tor-details .agenda-card,.minutes-speeches .agenda-card{padding:14px;margin:12px 0;border:1px solid var(--ui-border,#dce5e0);border-radius:8px;background:var(--ui-surface,#fff)}
 .tor-details{margin:18px 0;padding:16px;background:var(--ui-bg,#f8faf8);border-radius:9px}.tor-details>h4{margin:0 0 12px}.tor-details summary,.minutes-signing summary,.minutes-speeches summary{cursor:pointer;padding:8px 0;font-weight:600}.minutes-speeches{margin:14px 0}
 @media(max-width:620px){.minutes-fields{grid-template-columns:1fr}}
+/* Hallmark component · guided form entry · existing workspace colors and type. */
+.app-shell .form-mode-control{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 16px}
+.app-shell .form-mode-control>span{font-size:12px;color:var(--ui-muted);margin-right:auto}
+.app-shell .form-mode-control button,.app-shell .form-step-controls button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:8px 12px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);background:var(--ui-surface);color:var(--ui-ink);font:13px/1.5 var(--ui-font);transition:background-color .15s,border-color .15s}
+.app-shell .form-mode-control button[aria-pressed=true]{background:var(--ui-hover);color:var(--ui-accent-hover);border-color:var(--ui-accent)}
+.app-shell :is(.form-mode-control,.form-step-controls) button:hover:not(:disabled){background:var(--ui-hover)}
+.app-shell :is(.form-mode-control,.form-step-controls) button:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+.app-shell :is(.form-mode-control,.form-step-controls) button:active:not(:disabled){transform:translateY(1px)}
+.app-shell .form-step-controls button:disabled{opacity:.4;cursor:default}
+.app-shell .form-step-controls{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 16px;padding:10px 0;border-bottom:1px solid var(--ui-border)}
+.app-shell .form-step-controls>span{font-size:12px;color:var(--ui-muted);text-align:center;min-width:0;overflow-wrap:anywhere}
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=header]) #form-header,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=attendees]) #form-attendees,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=body]) #form-body,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=signing]) #form-signing,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=attachments]) #form-attachments,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=options]) #form-options,
+.app-shell .form-pane[data-form-mode=steps]:not([data-form-step=review]) :is(#form-review,.storage-card){display:none}
+@media(prefers-reduced-motion:reduce){.app-shell :is(.form-mode-control,.form-step-controls) button{transition:none}}
+
+
+/* One opaque sticky surface for section shortcuts and step controls.
+   Insets follow the actual pane padding at each editor width. */
+.app-shell .editor-main .form-navigation-sticky{
+  position:sticky;
+  top:var(--form-nav-sticky-top,0px);
+  z-index:5;
+  margin:0 calc(-1 * var(--form-nav-right,0px)) 16px calc(-1 * var(--form-nav-left,0px));
+  padding:0;
+  background:var(--ui-subtle);
+  border-bottom:1px solid var(--ui-border);
+}
+.app-shell .editor-main .form-navigation-sticky .form-jump-nav{
+  padding:10px var(--form-nav-right,0px) 12px var(--form-nav-left,0px);
+  position:static;
+  margin:0;
+  border-bottom:0;
+}
+.app-shell .editor-main .form-navigation-sticky .form-step-controls{
+  padding:10px var(--form-nav-right,0px) 10px var(--form-nav-left,0px);
+  position:static;
+  margin:0;
+  border-top:1px solid var(--ui-border);
+  border-bottom:0;
+}
+/* Compact document toolbar: title, view toggle and export/save share a row. */
+.app-shell .editor-main .editor-header{
+  min-height:56px;
+  padding:8px 20px;
+  gap:12px;
+  flex-wrap:nowrap;
+}
+.app-shell .editor-main .editor-title{flex:1;min-width:0;gap:10px}
+.app-shell .editor-main .editor-title>div{min-width:0}
+.app-shell .editor-main .editor-title h1{
+  font-size:16px;
+  line-height:22px;
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.app-shell .editor-main .editor-title .eyebrow{font-size:11px;line-height:16px;margin:0}
+.app-shell .editor-main .editor-actions{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;flex-shrink:0;width:auto}
+.app-shell .editor-main .editor-actions>button{
+  min-height:40px;
+  padding:7px 10px;
+  font:13px/1.5 var(--ui-font);
+  white-space:nowrap;
+}
+.app-shell .editor-main .editor-actions .secondary span{display:inline}
+.app-shell .editor-main .editor-actions .editor-view-controls{
+  padding:0;
+  margin:0;
+  border:0;
+  background:transparent;
+}
+.app-shell .editor-main .editor-actions .editor-view-controls button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:40px;
+  width:40px;
+  padding:0;
+  margin:0;
+}
+@media(max-width:700px){
+  .app-shell .editor-main .editor-header{flex-wrap:wrap;gap:6px;padding:8px 12px}
+  .app-shell .editor-main .editor-title{flex-basis:100%}
+  .app-shell .editor-main .editor-title>div{display:flex;align-items:baseline;gap:8px}
+  .app-shell .editor-main .editor-title .eyebrow{flex-shrink:0}
+  .app-shell .editor-main .editor-title h1{font-size:14px;line-height:22px}
+  .app-shell .editor-main .editor-actions{width:100%;justify-content:flex-end}
+  .app-shell .editor-main .editor-actions>button{padding:7px 8px;gap:5px}
+}

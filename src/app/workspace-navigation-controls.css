@@ -1,0 +1,8 @@
+/* Hallmark · component: Page navigation · existing Craft tokens
+ * States: default, hover, focus, active, disabled, loading, error, success.
+ * Pre-emit critique: P5 H4 E4 S5 R5 V4. Screen navigation only. */
+.workspace-page-navigation{display:flex;align-items:center;gap:4px;flex-shrink:0}.workspace-page-navigation>button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;min-width:32px;padding:6px;border:1px solid transparent;border-radius:var(--ui-radius-sm);background:transparent;color:var(--ui-ink);font:12px/1.6 var(--ui-font);white-space:nowrap}.workspace-page-navigation>button:hover:not(:disabled){background:var(--ui-hover);border-color:var(--ui-border)}.workspace-page-navigation>button:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}.workspace-page-navigation>button:active:not(:disabled){transform:translateY(1px)}.workspace-page-navigation>button:disabled{opacity:.4;cursor:default}.app-shell .topbar .breadcrumbs{min-width:0}.app-shell .topbar .breadcrumbs>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-shell .workspace-page-navigation{flex-direction:row;flex-wrap:nowrap;margin:0}
+@media(max-width:1100px){.app-shell .topbar .breadcrumbs>span,.app-shell .topbar .breadcrumbs>svg{display:none}}
+@media(max-width:700px){.app-shell .topbar{flex-wrap:nowrap;gap:8px}.app-shell .topbar .breadcrumbs{gap:4px}.app-shell .topbar .breadcrumbs>strong{display:none}}
+@media(prefers-reduced-motion:reduce){.workspace-page-navigation>button{transition:none;transform:none!important}}

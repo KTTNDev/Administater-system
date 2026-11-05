@@ -3,7 +3,8 @@ import {useEffect,useRef} from "react";
 import {workspaceCategories} from "@/lib/workspace-theme";
 import {ListTodo,Home,Package,BarChart3,BookOpen,BriefcaseBusiness,CalendarDays,ChevronRight,Cloud,DoorOpen,Files,FolderOpen,HelpCircle,LogOut,PanelLeftClose,PanelLeftOpen,Plus,Settings2,Wallet,X} from "lucide-react";
 
-export type WorkspaceView="tasks"|"projects"|"home"|"inventory"|"register"|"budget"|"dashboard"|"templates"|"editor"|"settings"|"guide"|"office"|"bookings"|"calendar"|"laws"|"reports";
+import type {WorkspaceView} from '@/lib/workspace-location';
+export type {WorkspaceView} from '@/lib/workspace-location';
 const shortLabels:Partial<Record<WorkspaceView,string>>={register:"ทะเบียนรับ–ส่ง",dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
 const groups=[
  {label:"เริ่มต้น",items:[{view:"home",label:"โต๊ะทำงานวันนี้",icon:Home},{view:"tasks",label:"งานของฉัน",icon:ListTodo},{view:"projects",label:"โครงการประจำปี",icon:FolderOpen}]},

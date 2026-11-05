@@ -23,3 +23,34 @@
 @media(max-width:768px){.app-shell .home-custom-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.app-shell .home-custom-shortcuts [data-home-card]{padding:18px!important;min-height:140px;gap:18px}.app-shell .home-custom-shortcuts [data-home-card]>span{font-size:16px}.home-settings-heading{flex-direction:column;gap:0;margin-bottom:16px}.home-settings-heading h2{font-size:19px}}
 @media(max-width:480px){.home-settings-grid,.home-widget-options{grid-template-columns:minmax(0,1fr)}.app-shell .home-custom-shortcuts{grid-template-columns:minmax(0,1fr)}.home-card-toolbar{align-items:flex-start;flex-direction:column;gap:8px}.home-settings-footer{gap:8px}.home-settings-footer button{white-space:nowrap}.home-display-options{padding:12px}}
 @media(prefers-reduced-motion:reduce){.home-layout-settings button{transition:none;transform:none}}
+/* Hallmark · component: Home shortcut elevation · existing Craft cards
+ * P5 H5 E4 S5 R5 V4. Small lift, stable dimensions and static artwork. */
+@media screen{
+ .app-shell .workdesk[data-home-custom=true]{
+  --home-card-elevation:0 2px 6px #18222614,0 10px 22px #1822261a,inset 0 1px 0 #ffffff9e;
+  --home-card-elevation-hover:0 4px 10px #1822261c,0 16px 30px #18222624,inset 0 1px 0 #ffffffb3;
+ }
+ .app-shell .workdesk[data-home-custom=true] .home-custom-shortcuts [data-home-card]{
+  box-shadow:var(--home-card-elevation);
+  transition:transform 180ms var(--ui-ease-out),box-shadow 180ms var(--ui-ease-out),border-color 180ms var(--ui-ease-out);
+ }
+ .app-shell .workdesk[data-home-custom=true] .home-custom-shortcuts [data-home-card]:focus-visible{
+  box-shadow:var(--home-card-elevation-hover);
+ }
+ @media(hover:hover) and (pointer:fine){
+  .app-shell .workdesk[data-home-custom=true] .home-custom-shortcuts [data-home-card]:hover{
+   transform:translateY(-3px);
+   box-shadow:var(--home-card-elevation-hover);
+  }
+ }
+ .app-shell .workdesk[data-home-custom=true] .home-custom-shortcuts [data-home-card]:active{
+  transform:translateY(0);
+  box-shadow:var(--home-card-elevation);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .app-shell .workdesk[data-home-custom=true] .home-custom-shortcuts [data-home-card]{
+  transition:none!important;
+  transform:none!important;
+ }
+}

@@ -1,7 +1,9 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {HomeClock} from './home-clock';
+import {homeCanvasPresets,homeCanvasStyle} from '@/lib/home-canvas';
 import {ArrowDown,ArrowUp,ImagePlus,Plus,Save,Settings2,Trash2,Undo2} from 'lucide-react';
-import {defaultHomeLayout,homeArt,homeCardFocus,homeLayoutSchema,homeMenus,homeTones,newHomeCard,type HomeCard,type HomeLayout,type HomeLayoutSnapshot,type HomeTarget} from '@/lib/home-layout';
+import {defaultHomeLayout,homeClockFonts,homeHeroOpacity,homeArt,homeCardFocus,homeLayoutSchema,homeMenus,homeTones,newHomeCard,type HomeCard,type HomeLayout,type HomeLayoutSnapshot,type HomeTarget} from '@/lib/home-layout';
 import {getHomeLayout,prepareHomeImage,saveHomeLayout} from '@/app/home-layout-actions';
 import {HomeShortcutCard} from './home-shortcuts';
 import {ImageFocusEditor} from './image-focus-editor';
@@ -10,8 +12,14 @@ import {defaultImageFocus} from '@/lib/image-focus';
 
 type Props={snapshot:HomeLayoutSnapshot;onSaved:(value:HomeLayoutSnapshot)=>void;onDirty:(value:boolean)=>void;onBusy:(value:boolean)=>void};
 export function HomeLayoutSettings({snapshot,onSaved,onDirty,onBusy}:Props){
+ const [clockPreviewTime,setClockPreviewTime]=useState<Date|null>(null);
+ useEffect(()=>setClockPreviewTime(new Date()),[]);
  const [layout,setLayout]=useState(snapshot.layout),[saved,setSaved]=useState(snapshot),[selected,setSelected]=useState(snapshot.layout.cards[0]?.id||''),[newTarget,setNewTarget]=useState<HomeTarget>('inventory');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [ready,setReady]=useState(false);
+ // This panel is loaded separately from the app toolbar. Disable SSR inputs
+ // until their handlers attach, so an early Back click cannot lose typed data.
+ useEffect(()=>{setReady(true)},[]);
  const dirty=JSON.stringify(layout)!==JSON.stringify(saved.layout),card=layout.cards.find(c=>c.id===selected),index=layout.cards.findIndex(c=>c.id===selected);
  useEffect(()=>{onDirty(dirty);return()=>onDirty(false);},[dirty,onDirty]);
  useEffect(()=>{onBusy(busy);return()=>onBusy(false);},[busy,onBusy]);
@@ -33,16 +41,40 @@ export function HomeLayoutSettings({snapshot,onSaved,onDirty,onBusy}:Props){
  const toggles=[['showTyping','ข้อความความสามารถระบบ'],['showClock','นาฬิกาและวันที่'],['showSummary','แถบสรุปงานวันนี้'],['showTasks','รายการงาน'],['showProjects','โครงการประจำปี'],['showDocuments','ทางลัดเลือกแบบหนังสือ']] as const;
  return <section className="panel settings-card home-layout-settings" aria-labelledby="home-layout-title" data-state={busy?'loading':error?'error':notice?'success':'default'}>
   <header className="home-settings-heading"><div><h2 id="home-layout-title"><Settings2 size={21}/>ปรับแต่งหน้าหลัก</h2><p>เลือกงานที่เปิดบ่อย จัดลำดับ และเปลี่ยนภาพของแต่ละทางลัด</p></div><a href="/home" target="_blank" rel="noreferrer">เปิดหน้าหลัก ↗</a></header>
-  <fieldset disabled={busy} className="home-settings-fields">
+  <fieldset disabled={busy||!ready} className="home-settings-fields">
    <details className="home-display-options"><summary>ส่วนหัวและองค์ประกอบหน้าหลัก</summary><div className="home-settings-grid">
     <label>ชื่อที่แสดงบนหน้าหลัก<input maxLength={60} value={layout.title} onChange={e=>patch({title:e.target.value})}/></label>
     <label>ขนาดการ์ด<select value={layout.cardSize} onChange={e=>patch({cardSize:e.target.value as HomeLayout['cardSize']})}><option value="comfortable">ปกติ · ภาพเด่น</option><option value="compact">กะทัดรัด · เห็นหลายเมนู</option></select></label>
     <label>พื้นหลังส่วนหัว<select value={layout.heroBackground} onChange={e=>patch({heroBackground:e.target.value as HomeLayout['heroBackground']})}><option value="coast">ภาพชายฝั่งของระบบ</option><option value="plain">สีพื้นเรียบ</option><option value="image">รูปของฉัน</option></select></label>
+    {layout.heroBackground!=='plain'&&<label className="home-background-opacity">ความชัดภาพพื้นหลัง ({Math.round(homeHeroOpacity(layout)*100)}%)<input type="range" aria-label="ความชัดภาพพื้นหลังหน้าหลัก" min={0} max={100} step={1} value={Math.round(homeHeroOpacity(layout)*100)} onChange={e=>patch({heroOpacity:Number(e.target.value)/100})}/><small>0% ซ่อนภาพ · เลื่อนเพิ่มเพื่อให้ภาพชัดขึ้น</small></label>}
+    <div className="home-background-preview" aria-label="ตัวอย่างความชัดพื้นหลังหน้าหลัก">
+     {(layout.heroBackground==='coast'||layout.heroBackground==='image'&&!!layout.heroImage)&&<img alt="" src={layout.heroBackground==='image'?layout.heroImage:'/media/home-coast-poster.png'} style={{opacity:homeHeroOpacity(layout),objectPosition:layout.heroBackground==='image'?layout.heroFocus.x+'% '+layout.heroFocus.y+'%':'center',transform:'scale('+(layout.heroBackground==='image'?layout.heroFocus.zoom/100:1)+')',transformOrigin:layout.heroFocus.x+'% '+layout.heroFocus.y+'%'}}/>}
+     <strong>{layout.title}</strong>
+    </div>
     <label className="home-check"><input type="checkbox" checked={layout.heroMotion} onChange={e=>patch({heroMotion:e.target.checked})}/>เล่นวิดีโอพื้นหลังอัตโนมัติ</label>
-    {layout.heroBackground==='image'&&<div className="home-photo-control"><label>รูปพื้นหลังส่วนหัว<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{void upload(e.target.files?.[0],'hero');e.target.value='';}}/></label>{layout.heroImage&&<><img alt="ตัวอย่างพื้นหลังส่วนหัว" src={layout.heroImage}/><button type="button" onClick={()=>patch({heroImage:'',heroBackground:'plain'})}>ลบรูปส่วนหัว</button></>}</div>}
-    {layout.heroBackground==='image'&&layout.heroImage&&<ImageFocusEditor src={layout.heroImage} value={layout.heroFocus} onChange={heroFocus=>patch({heroFocus})} kind="hero" label="ตำแหน่งภาพส่วนหัวหน้าหลัก" opacity={.22}/>}
+    {layout.heroBackground==='image'&&<div className="home-photo-control"><label>รูปพื้นหลังส่วนหัว<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{void upload(e.target.files?.[0],'hero');e.target.value='';}}/></label>{layout.heroImage&&<><img alt="ตัวอย่างพื้นหลังส่วนหัว" src={layout.heroImage} style={{opacity:homeHeroOpacity(layout)}}/><button type="button" onClick={()=>patch({heroImage:'',heroBackground:'plain'})}>ลบรูปส่วนหัว</button></>}</div>}
+    {layout.heroBackground==='image'&&layout.heroImage&&<ImageFocusEditor src={layout.heroImage} value={layout.heroFocus} onChange={heroFocus=>patch({heroFocus})} kind="hero" label="ตำแหน่งภาพส่วนหัวหน้าหลัก" opacity={homeHeroOpacity(layout)}/>}
     <div className="home-widget-options">{toggles.map(([key,label])=><label className="home-check" key={key}><input type="checkbox" checked={layout[key]} onChange={e=>patch({[key]:e.target.checked})}/>{label}</label>)}</div>
    </div></details>
+   <details className="home-display-options home-canvas-settings" open><summary>สีพื้นหลังหน้าหลัก</summary>
+    <div className="home-canvas-presets" role="group" aria-label="เลือกสีพื้นหลังหน้าหลัก">{homeCanvasPresets.map(preset=><button type="button" key={preset.label} aria-pressed={layout.canvasColor===preset.color} onClick={()=>patch({canvasColor:preset.color})}><i aria-hidden="true" style={{background:preset.color||"var(--ui-rest)"}}/>{preset.label}</button>)}</div>
+    <label className="home-canvas-color">เลือกสีเอง<input type="color" aria-label="สีพื้นหลังหน้าหลักที่กำหนดเอง" value={layout.canvasColor||"#f7f6f2"} onChange={e=>patch({canvasColor:e.target.value})}/><span>{layout.canvasColor||"สีเดิมของระบบ"}</span></label>
+    <div className="home-canvas-preview" aria-label="ตัวอย่างสีพื้นหลังและข้อความ" style={homeCanvasStyle(layout.canvasColor||"#f7f6f2")}>
+     <strong>โต๊ะทำงาน</strong><span>งานวันนี้ · เกินกำหนด · ปฏิทินงาน</span>
+     <div className="home-canvas-sample-card"><strong>รายการงาน</strong><span>ตัวอย่างการ์ดบนพื้นหลังที่เลือก</span></div>
+    </div>
+    <p className="home-help">ข้อความนอกการ์ดเลือกสีดำหรือขาวอัตโนมัติเพื่อให้อ่านตัดกับพื้นหลัง กดบันทึกหน้าหลักเพื่อใช้สีนี้</p>
+   </details>
+   <details className="home-display-options home-clock-settings" open><summary>นาฬิกาและวันที่</summary>
+    <div className="home-settings-grid">
+     <label>ฟอนต์นาฬิกา<select value={layout.clockFont} onChange={e=>patch({clockFont:e.target.value as HomeLayout['clockFont']})}>{Object.entries(homeClockFonts).map(([key,font])=><option key={key} value={key}>{font.label}</option>)}</select></label>
+     <label>ขนาดนาฬิกา ({layout.clockSize} px)<input type="range" aria-label="ขนาดนาฬิกา" min={24} max={112} step={2} value={layout.clockSize} onChange={e=>patch({clockSize:Number(e.target.value)})}/></label>
+     <label>ฟอนต์วันที่<select value={layout.dateFont} onChange={e=>patch({dateFont:e.target.value as HomeLayout['dateFont']})}>{Object.entries(homeClockFonts).map(([key,font])=><option key={key} value={key}>{font.label}</option>)}</select></label>
+     <label>ขนาดวันที่ ({layout.dateSize} px)<input type="range" aria-label="ขนาดวันที่" min={12} max={40} value={layout.dateSize} onChange={e=>patch({dateSize:Number(e.target.value)})}/></label>
+    </div>
+    <div className="home-clock-preview" aria-label="ตัวอย่างนาฬิกาและวันที่"><HomeClock layout={layout} now={clockPreviewTime}/></div>
+    <p className="home-help">ดูตัวอย่างแล้วกดบันทึกหน้าหลัก ฟอนต์ทั้ง 4 แบบเก็บไว้ในโปรแกรมและใช้ได้แบบออฟไลน์</p>
+   </details>
    <MenuHeaderSettings headers={layout.headers} onChange={headers=>patch({headers})} onBusy={setBusy} onError={setError} onMessage={setNotice}/>
    <div className="home-menu-workbench">
     <section className="home-menu-list" aria-label="รายการทางลัดหน้าหลัก"><h3>เมนูบนหน้าหลัก <small>{layout.cards.filter(c=>c.visible).length} แสดง / {layout.cards.length} ทั้งหมด</small></h3>

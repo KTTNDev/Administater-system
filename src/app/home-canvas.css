@@ -1,0 +1,34 @@
+/* Hallmark · component: configurable solid Home canvas · original card surfaces
+ * Pre-emit critique: P5 H5 E4 S5 R5 V4.
+ * Foreground variables are used only on text placed directly over the canvas. */
+@media screen{
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .main-shell{background:var(--home-canvas-color)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .page-main.workdesk{background:transparent}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-heading .wd-eyebrow,
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .workspace-page-context strong{color:var(--home-canvas-ink)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .workspace-page-context::before{background:var(--home-canvas-ink)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-summary-strip,
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-summary-strip :is(button,strong,span,svg){color:var(--home-canvas-ink)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-summary-strip .wd-late,
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-summary-strip .wd-late strong{color:var(--home-canvas-danger)!important}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-tabs{border-color:color-mix(in srgb,var(--home-canvas-ink) 25%,transparent)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-tabs button{color:var(--home-canvas-ink)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-tabs button[aria-current=page]{border-bottom-color:var(--home-canvas-ink)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-tabs button:hover{background:color-mix(in srgb,var(--home-canvas-ink) 12%,transparent)}
+ .app-shell[data-home-canvas=true][data-workspace-view=home] .wd-tabs span{background:transparent;color:var(--home-canvas-ink);border:1px solid color-mix(in srgb,var(--home-canvas-ink) 35%,transparent)}
+}
+.home-canvas-presets{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.home-canvas-presets>button{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;min-height:40px;background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm)}
+.home-canvas-presets>button[aria-pressed=true]{background:var(--ui-accent-soft);border-color:var(--ui-focus)}
+.home-canvas-presets>button:hover{border-color:var(--ui-border-strong)}
+.home-canvas-presets>button:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+.home-canvas-presets>button:active{transform:translateY(1px)}
+.home-canvas-presets i{width:18px;height:18px;border:1px solid var(--ui-border-strong);border-radius:50%;flex-shrink:0}
+.home-layout-settings .home-canvas-color{display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.home-layout-settings .home-canvas-color input[type=color]{width:56px;min-height:40px;padding:3px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);cursor:pointer}
+.home-canvas-preview{display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:var(--ui-radius);background:var(--home-canvas-color);color:var(--home-canvas-ink)}
+.home-canvas-preview>strong{font:600 20px/1.6 var(--ui-font)}
+.home-canvas-preview>span{font-size:13px}
+.home-canvas-sample-card{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:20px;border:1px solid var(--ui-border);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-ink);font-size:13px}
+@media(max-width:600px){.home-canvas-preview{padding:16px}}
+@media(prefers-reduced-motion:reduce){.home-canvas-presets>button{transform:none!important;transition:none}}

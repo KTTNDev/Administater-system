@@ -1,9 +1,9 @@
 "use client";
 
 import "./document-form.css";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Building2, ChevronDown, FileText, ListChecks, Paperclip, PenLine, Settings2, Users } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft, ChevronRight, FileText, ListChecks, Paperclip, PenLine, Settings2, Users } from "lucide-react";
 import {documentChecks, type Draft } from "@/lib/document";
 import {isSignature} from "@/lib/floating-item";
 import type {DirectoryOrganization,OrganizationInput} from "@/lib/organization-directory";
@@ -35,21 +35,57 @@ function Section({id,title,icon,children,tone="green"}:{id:string;title:string;i
   </details>;
 }
 
+type FormMode='scroll'|'steps';
+const FormFlowContext=createContext<{mode:FormMode;setMode:(mode:FormMode)=>void;selected:string;setSelected:(id:string)=>void}|null>(null);
+
+// All sections stay mounted when changing steps, including unsaved editor input.
+export function DocumentFormFlow({children}:{children:ReactNode}){
+  const [mode,setMode]=useState<FormMode>('scroll');
+  const [selected,setSelected]=useState('header');
+  useEffect(()=>{try{if(localStorage.getItem('sarabun.form-mode')==='steps')setMode('steps');}catch{}},[]);
+  function chooseMode(value:FormMode){setMode(value);try{localStorage.setItem('sarabun.form-mode',value);}catch{}}
+  return <FormFlowContext.Provider value={{mode,setMode:chooseMode,selected,setSelected}}><div className="form-pane" data-form-mode={mode} data-form-step={selected}>{children}</div></FormFlowContext.Provider>;
+}
+
 export function DocumentFormNav({external,progressKey,issueCount}:{external:boolean;progressKey:Draft;issueCount:number}){
-  const navRef=useRef<HTMLElement>(null);
+  const {mode,setMode,selected,setSelected}=useContext(FormFlowContext)!;
+  const navRef=useRef<HTMLDivElement>(null);
   const checks=documentChecks(progressKey);
   const total=checks.length+1,done=checks.filter(c=>c.complete).length+(progressKey.status==='reviewed'&&issueCount===0?1:0),percent=Math.floor(done/total*100);
   const counts=Object.fromEntries(['header','attendees','body','signing'].map(id=>{const list=checks.filter(c=>c.section===id);return [id,list.length?list.filter(c=>c.complete).length+'/'+list.length:''];}));
-  useEffect(()=>{const nav=navRef.current,pane=nav?.closest<HTMLElement>(".form-pane");if(!nav||!pane)return;const measure=()=>pane.style.setProperty("--section-nav-height",`${nav.offsetHeight}px`);const observer=new ResizeObserver(measure);observer.observe(nav);measure();return()=>observer.disconnect();},[]);
+  useEffect(()=>{
+    const nav=navRef.current,pane=nav?.closest<HTMLElement>(".form-pane");
+    if(!nav||!pane)return;
+    const measure=()=>{
+      const style=getComputedStyle(pane);
+      const scrollsInPane=/(auto|scroll)/.test(style.overflowY);
+      pane.style.setProperty("--section-nav-height",nav.offsetHeight+"px");
+      pane.style.setProperty("--form-nav-sticky-top",scrollsInPane?"-"+style.paddingTop:"0px");
+      pane.style.setProperty("--form-nav-left",style.paddingLeft);
+      pane.style.setProperty("--form-nav-right",style.paddingRight);
+    };
+    const observer=new ResizeObserver(measure);
+    observer.observe(nav);observer.observe(pane);
+    window.addEventListener("resize",measure);
+    measure();
+    return()=>{observer.disconnect();window.removeEventListener("resize",measure);};
+  },[]);
   const cancelMotion=useRef<()=>void>(()=>{});
-  const [selected,setSelected]=useState('header');
-  useEffect(()=>{const pane=navRef.current?.closest<HTMLElement>('.form-pane');if(!pane)return;let frame=0;
+  useEffect(()=>{setSelected('header');},[progressKey.type,setSelected]);
+  useEffect(()=>{const pane=navRef.current?.closest<HTMLElement>('.form-pane');if(!pane||mode==='steps')return;let frame=0;
    const sync=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const sections=Array.from(pane.querySelectorAll<HTMLElement>('[id^="form-"]')).filter(e=>e.getClientRects().length);const top=Math.max(0,pane.getBoundingClientRect().top)+(navRef.current?.offsetHeight||0)+40;const current=sections.filter(e=>e.getBoundingClientRect().top<=top).at(-1)||sections[0];if(current)setSelected(current.id.replace('form-',''));});};
    const focus=(e:Event)=>{const section=(e.target as HTMLElement).closest<HTMLElement>('[id^="form-"]');if(section)setSelected(section.id.replace('form-',''));};
    pane.addEventListener('scroll',sync,{passive:true});window.addEventListener('scroll',sync,{passive:true});pane.addEventListener('focusin',focus);sync();return()=>{cancelAnimationFrame(frame);pane.removeEventListener('scroll',sync);window.removeEventListener('scroll',sync);pane.removeEventListener('focusin',focus);};
-  },[progressKey.type]);
+  },[progressKey.type,mode,setSelected]);
   useEffect(()=>()=>cancelMotion.current(),[]);
   function jump(id:string){
+    setSelected(id);
+    if(mode==='steps'){
+      cancelMotion.current();
+      requestAnimationFrame(()=>scrollToSection(id));
+    }else scrollToSection(id);
+  }
+  function scrollToSection(id:string){
     cancelMotion.current();
     const section=document.getElementById(`form-${id}`);
     if(!section)return;
@@ -59,10 +95,10 @@ export function DocumentFormNav({external,progressKey,issueCount}:{external:bool
     let parent=section.parentElement;
     while(parent&&(!/(auto|scroll)/.test(getComputedStyle(parent).overflowY)||parent.scrollHeight<=parent.clientHeight))parent=parent.parentElement;
     const scroller=parent??document.scrollingElement??document.documentElement;
-    const nav=section.closest(".form-pane")?.querySelector(".form-jump-nav");
+    const nav=section.closest(".form-pane")?.querySelector(".form-navigation-sticky");
     const start=scroller.scrollTop;
     const top=parent?parent.getBoundingClientRect().top+parent.clientTop:0;
-    const destination=Math.max(0,Math.min(scroller.scrollHeight-scroller.clientHeight,start+section.getBoundingClientRect().top-top-(nav?.getBoundingClientRect().height??76)-(parent?parseFloat(getComputedStyle(parent).paddingTop)||0:0)-16));
+    const destination=Math.max(0,Math.min(scroller.scrollHeight-scroller.clientHeight,start+section.getBoundingClientRect().top-top-(nav?.getBoundingClientRect().height??76)-16));
     const duration=reduced?0:Math.min(850,480+Math.abs(destination-start)*.12);
     let frame=0;
     let glow:Animation|undefined;
@@ -90,7 +126,8 @@ export function DocumentFormNav({external,progressKey,issueCount}:{external:bool
     frame=requestAnimationFrame(step);
   }
   const links=[{id:"header",label:"ส่วนหัว",icon:Building2},...(external?[{id:"attachments",label:"สิ่งที่ส่งมาด้วย",icon:Paperclip}]:[]),...(progressKey.type==='minutes'?[{id:'attendees',label:'ผู้ประชุม',icon:Users}]:[]),{id:"body",label:"เนื้อหา",icon:FileText},{id:"signing",label:"ส่วนท้าย",icon:PenLine},...(!external?[{id:"attachments",label:"แนบท้าย",icon:Paperclip}]:[]),{id:"options",label:"เครื่องมือ",icon:Settings2},{id:"review",label:"ตรวจทาน",icon:ListChecks}];
-  return <><section className="document-completion" aria-label="ความคืบหน้าเอกสาร"><div><strong>ความพร้อม {percent}%</strong><span>{done}/{total} รายการสำคัญ</span></div><progress aria-label="ข้อมูลสำคัญและการตรวจทาน" max={100} value={percent}/><small>อยู่ที่: {links.find(l=>l.id===selected)?.label||'ส่วนหัว'} · 100% หมายถึงกรอกและยืนยันตรวจทานแล้ว ไม่ใช่การอนุมัติ</small>{issueCount>0&&<details><summary>ยังขาด {issueCount} รายการ</summary>{checks.filter(c=>!c.complete).map(c=><button type="button" key={c.id} onClick={()=>jump(c.section)}>{c.label}</button>)}</details>}</section><nav ref={navRef} className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" aria-label={label} aria-current={selected===id?'step':undefined} className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span>{counts[id]&&<small title="รายการสำคัญที่ครบแล้ว / ทั้งหมด">{counts[id]}</small>}{id==="review"&&<small>{issueCount||"✓"}</small>}</button>)}</nav></>;
+  const currentIndex=Math.max(0,links.findIndex(link=>link.id===selected));
+  return <><div className="form-mode-control" role="group" aria-label="วิธีกรอกแบบฟอร์ม"><span>วิธีกรอก</span>{([{value:'scroll',label:'แสดงทุกส่วน'},{value:'steps',label:'กรอกทีละส่วน'}] as const).map(option=><button type="button" key={option.value} aria-pressed={mode===option.value} onClick={()=>{cancelMotion.current();setMode(option.value);requestAnimationFrame(()=>scrollToSection(selected));}}>{option.label}</button>)}</div><section className="document-completion" aria-label="ความคืบหน้าเอกสาร"><div><strong>ความพร้อม {percent}%</strong><span>{done}/{total} รายการสำคัญ</span></div><progress aria-label="ข้อมูลสำคัญและการตรวจทาน" max={100} value={percent}/><small>อยู่ที่: {links.find(l=>l.id===selected)?.label||'ส่วนหัว'} · 100% หมายถึงกรอกและยืนยันตรวจทานแล้ว ไม่ใช่การอนุมัติ</small>{issueCount>0&&<details><summary>ยังขาด {issueCount} รายการ</summary>{checks.filter(c=>!c.complete).map(c=><button type="button" key={c.id} onClick={()=>jump(c.section)}>{c.label}</button>)}</details>}</section><div ref={navRef} className="form-navigation-sticky"><nav className="form-jump-nav" aria-label="ไปยังส่วนของแบบฟอร์ม">{links.map(({id,label,icon:Icon})=><button key={id} type="button" aria-label={label} aria-current={selected===id?'step':undefined} className={selected===id?"is-selected":undefined} onClick={()=>jump(id)}><Icon size={16}/><span>{label}</span>{counts[id]&&<small title="รายการสำคัญที่ครบแล้ว / ทั้งหมด">{counts[id]}</small>}{id==="review"&&<small>{issueCount||"✓"}</small>}</button>)}</nav>{mode==='steps'&&<div className="form-step-controls"><button type="button" disabled={currentIndex===0} onClick={()=>jump(links[currentIndex-1].id)}><ChevronLeft size={16}/>ย้อนกลับ</button><span role="status">ส่วนที่ {currentIndex+1}/{links.length} · {links[currentIndex].label}</span><button type="button" disabled={currentIndex===links.length-1} onClick={()=>jump(links[currentIndex+1].id)}>ถัดไป<ChevronRight size={16}/></button></div>}</div></>;
 }
 
 type Props={

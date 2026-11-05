@@ -38,9 +38,23 @@ export const homeCardSchema=z.object({
  focusX:z.number().min(0).max(100).optional(),focusY:z.number().min(0).max(100).default(50),zoom:z.number().min(100).max(250).default(100),
 });
 export type HomeCard=z.infer<typeof homeCardSchema>;
+export const homeClockFonts={
+ system:{label:'ฟอนต์ระบบ',family:'var(--ui-font)'},
+ kanit:{label:'Kanit · เรียบคม',family:'var(--home-font-kanit)'},
+ chakrapetch:{label:'Chakra Petch · ดิจิทัล',family:'var(--home-font-chakrapetch)'},
+ ibmplexsansthai:{label:'IBM Plex Sans Thai · ร่วมสมัย',family:'var(--home-font-ibmplexsansthai)'},
+ mali:{label:'Mali · ลายมือ',family:'var(--home-font-mali)'},
+} as const;
+export type HomeClockFont=keyof typeof homeClockFonts;
+const clockFontSchema=z.enum(['system','kanit','chakrapetch','ibmplexsansthai','mali']);
 export const homeLayoutSchema=z.object({
  title:z.string().trim().min(1).max(60),showTyping:z.boolean(),showClock:z.boolean(),showSummary:z.boolean(),showTasks:z.boolean(),showProjects:z.boolean(),showDocuments:z.boolean(),
+ canvasColor:z.string().regex(/^(?:|#[a-fA-F0-9]{6})$/).default(''),
+ heroOpacity:z.number().min(0).max(1).optional(),
  cardSize:z.enum(['comfortable','compact']),heroBackground:z.enum(['coast','image','plain']),heroImage:homeImageSchema,heroMotion:z.boolean(),
+ clockSize:z.number().int().min(24).max(112).default(32),
+ dateSize:z.number().int().min(12).max(40).default(12),
+ clockFont:clockFontSchema.default('system'),dateFont:clockFontSchema.default('system'),
  cards:z.array(homeCardSchema).max(16),
  heroFocus:imageFocusSchema.default(defaultImageFocus),
  headers:z.partialRecord(z.enum(Object.keys(headerMenus) as [HeaderTarget,...HeaderTarget[]]),headerAppearanceSchema).default({}),
@@ -56,9 +70,10 @@ export function newHomeCard(target:HomeTarget,id:string):HomeCard {
  const menu=homeMenus[target];return {id,target,label:menu.label,visible:true,tone:menu.category,background:'illustration',art:menu.art,image:'',opacity:.5,position:'right',focusY:50,zoom:100};
 }
 export function defaultHomeLayout():HomeLayout {
- return {title:'sarabun',showTyping:true,showClock:true,showSummary:true,showTasks:true,showProjects:true,showDocuments:true,cardSize:'comfortable',heroBackground:'coast',heroImage:'',heroMotion:true,heroFocus:defaultImageFocus(),headers:{},
+ return {canvasColor:'',title:'sarabun',showTyping:true,showClock:true,showSummary:true,showTasks:true,showProjects:true,showDocuments:true,cardSize:'comfortable',heroBackground:'coast',heroImage:'',heroMotion:true,heroFocus:defaultImageFocus(),headers:{},clockSize:32,dateSize:12,clockFont:'system',dateFont:'system',
  cards:[newHomeCard('templates','default-documents'),newHomeCard('tasks','default-tasks'),newHomeCard('projects','default-projects')]};
 }
+export function homeHeroOpacity(layout:Pick<HomeLayout,'heroOpacity'|'heroBackground'>){return layout.heroOpacity??(layout.heroBackground==='image'?.22:1);}
 export function homeCardImage(card:HomeCard){return card.background==='solid'?'none':`url("${card.background==='image'?card.image:homeArt[card.art]}")`;}
 export function homeCardFocus(card:HomeCard):ImageFocus{return {x:card.focusX??({left:0,center:50,right:100}[card.position]),y:card.focusY,zoom:card.zoom};}
 export function headerAppearanceStyle(value:HeaderAppearance){
