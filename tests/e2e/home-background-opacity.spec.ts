@@ -9,7 +9,7 @@ async function settings(page:Page){
  await page.goto('/?view=settings');
  const panel=page.getByRole('region',{name:'ปรับแต่งหน้าหลัก',exact:true});
  await expect(panel.getByLabel('ชื่อปุ่มเมนู',{exact:true})).toBeEnabled();
- await panel.getByText('ส่วนหัวและองค์ประกอบหน้าหลัก',{exact:true}).click();
+ await panel.getByRole('tab',{name:'พื้นหลังหน้าหลัก',exact:true}).click();
  return panel;
 }
 test('background opacity previews, persists for coast and custom photos, and keeps clock sizes independent',async({page})=>{
@@ -29,6 +29,7 @@ test('background opacity previews, persists for coast and custom photos, and kee
  await range(page,'ความชัดภาพพื้นหลังหน้าหลัก','45');
  await expect(panel.locator('.home-background-preview img')).toHaveCSS('opacity','0.45');
  await expect(panel.getByRole('region',{name:'ตำแหน่งภาพส่วนหัวหน้าหลัก',exact:true}).locator('img')).toHaveCSS('opacity','0.45');
+ await panel.getByRole('tab',{name:'นาฬิกาและวันที่',exact:true}).click();
  await expect(panel.locator('.home-clock-settings')).toHaveAttribute('open','');
  await range(page,'ขนาดนาฬิกา','80');await range(page,'ขนาดวันที่','24');
  await page.screenshot({path:'output/home-opacity-settings.png',fullPage:true});

@@ -1,4 +1,5 @@
 import 'server-only';
+import {documentSourcesSql,wordImportAnalysisSchema,WORD_IMPORT_LIMIT,DOCX_MIME} from './word-import-model';
 import {thaiTermSchema,thaiDictionarySql} from './thai-dictionary';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,10 +19,13 @@ import {officeSchema} from './office';
 import {projectFilesSql,stageSchema} from './project';
 import {roomSchema,bookingSchema} from './booking';
 import {calendarSchema} from './calendar';
+import {taskAlertRecordSchema,taskAlertsSql} from './task-alerts';
 import {homeLayoutSchema,homeLayoutSql} from './home-layout';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ document_sources:documentSourcesSql,
+ task_alerts:taskAlertsSql,
  home_layout:homeLayoutSql,
  thai_dictionary:thaiDictionarySql,
  ...inventorySchemas,
@@ -68,6 +72,10 @@ function inspect(file:string){
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   if(data.home_layout.length>1)throw Error('ชุดสำรองมีค่าหน้าหลักซ้ำ');
   for(const row of data.home_layout){if(row.id!=='home'||!Number.isSafeInteger(row.version)||Number(row.version)<1)throw Error('ข้อมูลหน้าหลักในชุดสำรองไม่ถูกต้อง');homeLayoutSchema.parse(JSON.parse(String(row.data)));}
+  for(const row of data.task_alerts){
+   const value=taskAlertRecordSchema.parse(JSON.parse(String(row.data)));
+   if(!Number.isSafeInteger(row.version)||Number(row.version)<1||value.kind==='settings'&&row.id!=='settings'||value.kind==='notice'&&!/^notice:[a-f0-9]{64}$/.test(String(row.id)))throw Error('ข้อมูลแจ้งเตือนในชุดสำรองไม่ถูกต้อง');
+  }
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));
@@ -81,6 +89,10 @@ function inspect(file:string){
   const images=new Set(data.document_appendix_images.map(row=>String(row.id)));
   for(const row of data.documents){const doc=documentSchema.parse(JSON.parse(String(row.data)));if(doc.attachmentFiles.some(item=>!attachments.has(item.id))||doc.appendixImages.some(item=>!images.has(item.id))||doc.floatingItems.some(item=>item.kind==='image'&&!images.has(item.image.id)))throw new Error('ชุดสำรองขาดไฟล์แนบที่หนังสืออ้างถึง');}
   for(const row of data.signed_scans)if(!documents.has(String(row.document_id))||Number(row.bytes)!==(row.file as Uint8Array).byteLength)throw new Error('ชุดสำรองมีไฟล์สแกนที่ไม่ตรงกับรายการเอกสาร');
+  for(const row of data.document_sources){
+   const analysis=wordImportAnalysisSchema.parse(JSON.parse(String(row.analysis)));
+   if(!documents.has(String(row.document_id))||row.mime!==DOCX_MIME||!(row.file instanceof Uint8Array)||!row.file.byteLength||row.file.byteLength>WORD_IMPORT_LIMIT||Number(row.bytes)!==row.file.byteLength||createHash('sha256').update(row.file).digest('hex')!==row.sha256||analysis.sha256!==row.sha256||!String(row.name).toLowerCase().endsWith('.docx')||/[\\/\x00-\x1f]/.test(String(row.name))||!/^[a-f0-9]{64}$/.test(String(row.request_hash)))throw Error('ไฟล์ Word ต้นฉบับในชุดสำรองไม่สมบูรณ์หรือไม่ตรงกับร่าง');
+  }
   const registerIds=new Set(data.correspondence_entries.map(r=>String(r.id)));
   for(const row of data.correspondence_entries){const entry=registerSchema.parse(JSON.parse(String(row.data)));if(entry.attachmentFiles.some(a=>!attachments.has(a.id))||entry.relatedId&&!registerIds.has(entry.relatedId))throw Error('ชุดสำรองขาดรายการหรือไฟล์ที่ทะเบียนอ้างถึง');}
   for(const row of data.correspondence_events){const entry=registerSchema.parse(JSON.parse(String(row.snapshot)));if(!registerIds.has(String(row.entry_id))||entry.attachmentFiles.some(a=>!attachments.has(a.id)))throw Error('ชุดสำรองมีประวัติทะเบียนไม่ครบ');}

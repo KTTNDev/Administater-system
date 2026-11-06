@@ -34,7 +34,7 @@ it('keeps the attachment and its count while hiding its name in external and int
  const hidden={...file,showNameInDocument:false};
  for(const type of ['external','internal'] as const){
   const html=documentHtml({...newDraft(type),attachmentFiles:[hidden]},assets);
-  expect(html).toContain('เอกสารแนบ จำนวน 2 ฉบับ');
+  expect(html).toContain('เอกสารแนบ จำนวน ๒ ฉบับ');
   expect(html).not.toContain(file.description);
   expect(html).not.toContain(file.name);
  }
@@ -53,9 +53,9 @@ it('lists authored pages, picture sheets, uploaded files, and separately deliver
  const rows=Array.from(html.matchAll(/<p class="enclosure-row[^"]*">([^]*?)<\/p>/g),match=>match[1]);
  expect(rows).toHaveLength(4);
  expect(rows[0]).toContain('สิ่งที่ส่งมาด้วย');
- expect(rows[0]).toContain('รายละเอียดโครงการ จำนวน 1 ฉบับ');
- expect(rows[1]).toContain('ภาพประกอบการตรวจสอบ จำนวน 2 แผ่น');
- expect(rows[2]).toContain('กำหนดการ จำนวน 2 ฉบับ');
- expect(rows[3]).toContain('วัสดุประกอบ จำนวน 1 ชุด (ส่งทางพัสดุไปรษณีย์)');
+ expect(rows[0]).toContain('รายละเอียดโครงการ จำนวน ๑ ฉบับ');
+ expect(rows[1]).toContain('ภาพประกอบการตรวจสอบ จำนวน ๒ แผ่น');
+ expect(rows[2]).toContain('กำหนดการ จำนวน ๒ ฉบับ');
+ expect(rows[3]).toContain('วัสดุประกอบ จำนวน ๑ ชุด (ส่งทางพัสดุไปรษณีย์)');
  expect(html.indexOf('สิ่งที่ส่งมาด้วย')).toBeLessThan(html.indexOf('เนื้อหา'));
 });

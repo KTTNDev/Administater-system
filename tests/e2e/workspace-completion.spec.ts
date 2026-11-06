@@ -12,7 +12,7 @@ function connection(){
 }
 test('local-only storage and complete backup activation preserve settings and create a safety backup',async({page})=>{
  await page.goto('/?view=settings');
- await page.locator('.settings-disclosure > summary').click();
+ await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();
  const storage=page.locator('section').filter({has:page.getByRole('heading',{name:'พื้นที่จัดเก็บและซิงก์',exact:true})}).first();
  await expect(storage).toContainText(path.join(root!,'data','sarabun.sqlite'));
  await storage.getByLabel('โฟลเดอร์เก็บสำเนา PDF และข้อมูลส่งออก').fill(path.join(root!,'output','storage'));
@@ -41,7 +41,7 @@ test('Google client import rejects malformed files and accepts a valid local con
  page.on('dialog',dialog=>dialog.accept());let external=0;
  await page.route('https://**/*',route=>{external++;return route.abort();});
  await page.goto('/?view=settings');
- const panel=page.getByRole('region',{name:'ความพร้อมใช้งานจริง'});
+ await page.getByRole('tab',{name:'ความพร้อมระบบ',exact:true}).click();const panel=page.getByRole('region',{name:'ความพร้อมใช้งานจริง'});
  await panel.getByText('ตั้งค่า Google Drive',{exact:true}).click();
  await panel.getByLabel('ไฟล์ Google OAuth Client (.json)').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('invalid')});
  await expect(panel.getByRole('alert')).toContainText('อ่านไฟล์ JSON ไม่สำเร็จ');

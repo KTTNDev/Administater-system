@@ -1,3 +1,4 @@
+import {saveLocalDocumentOutput} from '@/lib/local-dossiers';
 import {MissingOverlayPageError} from "@/lib/export-validation";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -12,6 +13,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   let draft;try{draft=readDraft(id);}catch{return NextResponse.json({error:"ไม่พบร่างหนังสือ"},{status:404});}
   try {
     const data=await renderPdf(draft);
-    return new NextResponse(new Uint8Array(data),{headers:{"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="draft-${id}.pdf"; filename*=UTF-8''${encodeURIComponent(draft.subject+".pdf")}`,"Cache-Control":"private, no-store"}});
+    let storageWarning='';try{saveLocalDocumentOutput(draft,'pdf',data);}catch{storageWarning='local-copy-incomplete';}
+    return new NextResponse(new Uint8Array(data),{headers:{"X-Sarabun-Storage-Warning":storageWarning,"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="draft-${id}.pdf"; filename*=UTF-8''${encodeURIComponent(draft.subject+".pdf")}`,"Cache-Control":"private, no-store"}});
   }catch(error){if(error instanceof MissingOverlayPageError)return NextResponse.json({error:error.message},{status:422});return NextResponse.json({error:"สร้าง PDF ไม่สำเร็จ ตรวจการติดตั้ง Chromium และความยาวส่วนหัวของหนังสือ"},{status:500});}
 }

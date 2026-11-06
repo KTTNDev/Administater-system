@@ -1,3 +1,4 @@
+import {saveLocalDocumentOutput} from '@/lib/local-dossiers';
 import {MissingOverlayPageError} from "@/lib/export-validation";
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -13,7 +14,8 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   let draft;try {draft=readDraft(id);} catch {return NextResponse.json({error:'ไม่พบร่างหนังสือ'},{status:404});}
   try {
     const data=await renderWord(draft);
-    return new NextResponse(new Uint8Array(data),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':`attachment; filename="draft-${id}.docx"; filename*=UTF-8''${encodeURIComponent(draft.subject+'.docx')}`,'Cache-Control':'private, no-store'}});
+    let storageWarning='';try{saveLocalDocumentOutput(draft,'docx',data);}catch{storageWarning='local-copy-incomplete';}
+    return new NextResponse(new Uint8Array(data),{headers:{"X-Sarabun-Storage-Warning":storageWarning,'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':`attachment; filename="draft-${id}.docx"; filename*=UTF-8''${encodeURIComponent(draft.subject+'.docx')}`,'Cache-Control':'private, no-store'}});
   } catch(error) {
     if(error instanceof MissingOverlayPageError)return NextResponse.json({error:error.message},{status:422});
     console.error('Word export failed',error);

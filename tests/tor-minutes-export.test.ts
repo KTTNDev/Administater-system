@@ -1,3 +1,4 @@
+import {numerals} from '../src/lib/document';
 import {beforeAll,afterAll,it,expect} from 'vitest';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import JSZip from 'jszip';import {PDFDocument} from 'pdf-lib';
@@ -12,7 +13,7 @@ it('persists a TOR report and exports native editable Word tables and all conten
  expect(loaded.minutesTor).toEqual(d.minutesTor);expect(loaded.meetingMembers).toEqual(d.meetingMembers);expect(loaded.meetingSigners).toEqual(d.meetingSigners);expect(loaded.meetingAgenda[3].speeches).toEqual(d.meetingAgenda[3].speeches);
  const word=await renderWord(loaded),zip=await JSZip.loadAsync(word),xml=await zip.file('word/document.xml')!.async('string');
  const text=[...xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(m=>m[1]).join('').replaceAll('\u2060','');
- for(const marker of ['รายงานการประชุมคณะกรรมการ','ลายมือชื่อ','กรรมการตัวอย่าง 1','เลขานุการตัวอย่าง','ข้อซักถามตัวอย่าง','จบหัวข้อ TOR 8','ให้ทบทวนรายละเอียด'])expect(text).toContain(marker);
+ for(const marker of ['รายงานการประชุมคณะกรรมการ','ลายมือชื่อ','กรรมการตัวอย่าง 1','เลขานุการตัวอย่าง','ข้อซักถามตัวอย่าง','จบหัวข้อ TOR 8','ให้ทบทวนรายละเอียด'])expect(text).toContain(numerals(marker,d.numeralStyle));
  expect(xml).toContain('<w:tbl>');expect(xml).not.toContain('w:altChunk');expect(xml).toContain('w:keepNext');
  const pdf=await renderPdf(loaded);expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(1);
  fs.writeFileSync('output/tor-check/tor-meeting-example.docx',word);fs.writeFileSync('output/tor-check/tor-meeting-example.pdf',pdf);

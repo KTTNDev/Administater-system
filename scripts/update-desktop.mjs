@@ -1,3 +1,4 @@
+import {resolveDatabaseFile} from './data-location.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,7 +15,7 @@ function within(root,name){
  let part=root;for(const segment of name.split('/')){part=path.join(part,segment);if(fs.existsSync(part)&&fs.lstatSync(part).isSymbolicLink())throw Error('Links are not allowed in update paths');}
  return target;
 }
-const controls=['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'];
+const controls=['report-files.mjs','dossier-sync-plan.mjs','dossier-drive.mjs','data-location.mjs','workspace-files.mjs','migrate-data-location.mjs','pick-storage-folder.ps1','desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'];
 const launchers=['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'];
 export function verifyUpdate(folder){
  const m=read(path.join(folder,'update-manifest.json'));
@@ -38,7 +39,7 @@ function launcher(root,command){
 }
 function snapshot(root,folder){
  const envFile=path.join(root,'.env.local');const env=fs.existsSync(envFile)?parseEnv(fs.readFileSync(envFile,'utf8').replace(/^\uFEFF/,'')):{};
- const database=path.resolve(root,env.DATABASE_PATH||'data/sarabun.sqlite');
+ const database=resolveDatabaseFile(root,env.DATABASE_PATH||'data/sarabun.sqlite',env.DATABASE_REQUIRE_EXISTING==='true');
  fs.mkdirSync(folder,{recursive:true});
  const info={database,hasDatabase:fs.existsSync(database),hasEnv:fs.existsSync(envFile),release:read(path.join(root,'.desktop/current.json')),files:[]};
  if(info.hasDatabase){const db=new DatabaseSync(database,{readOnly:true});try{db.exec("VACUUM INTO '"+path.join(folder,'database.sqlite').replaceAll("'","''")+"'");}finally{db.close();}}

@@ -1,4 +1,5 @@
 "use server";
+import {localFileWarnings} from "@/lib/local-dossiers";
 import fs from "node:fs";
 import path from "node:path";
 import { requireUser } from "@/lib/auth";
@@ -6,8 +7,8 @@ import { storageConfig,setStorage,exportWorkspace,reportData } from "@/lib/stora
 import { listLegalReferences,uploadLegalReference } from "./legal-actions";
 import { listDrafts } from "@/lib/db";
 import { syncToDrive,verifyDriveFolder,uploadBackupFile,driveStatus } from "@/lib/drive";
-export async function getStorage(){await requireUser();return {...storageConfig(),drive:driveStatus()};}
-export async function saveStorage(local:string,root:string,backup:string){await requireUser();const id=(v:string)=>v.match(/\/folders\/([\w-]+)/)?.[1]||v.trim();return setStorage(local,id(root),id(backup));}
+export async function getStorage(){await requireUser();return {...storageConfig(),drive:driveStatus(),localFileWarnings:localFileWarnings()};}
+export async function saveStorage(local:string,root:string,backup:string){await requireUser();if(path.resolve(local)!==path.resolve(storageConfig().localFolder))throw Error("ตำแหน่งแฟ้มเปลี่ยนแล้ว กรุณาโหลดตั้งค่าใหม่ หากต้องการย้ายให้ใช้ปุ่มเปลี่ยนโฟลเดอร์ข้อมูลทั้งชุด");const id=(v:string)=>v.match(/\/folders\/([\w-]+)/)?.[1]||v.trim();return setStorage(local,id(root),id(backup));}
 export async function exportLocal(){await requireUser();return exportWorkspace();}
 export async function getReports(){await requireUser();return reportData();}
 export async function checkDrive(){await requireUser();return verifyDriveFolder(storageConfig().driveRoot,false);}

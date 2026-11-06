@@ -14,7 +14,7 @@ export function MenuHeaderSettings({headers,onChange,onBusy,onError,onMessage}:{
  async function upload(file:File|undefined){
   if(!file)return;onBusy(true);onError('');onMessage('');try{const form=new FormData();form.set('file',file);const result=await prepareHomeImage(form);if(!result.ok)throw Error(result.error);patch({image:result.image,background:'image',focus:defaultImageFocus()});onMessage('เตรียมรูปส่วนหัวแล้ว ตรวจตัวอย่างและกดบันทึกหน้าหลักเพื่อใช้จริง');}catch(e){onError(e instanceof Error?e.message:'เตรียมรูปไม่สำเร็จ');}finally{onBusy(false);}
  }
- return <details className="home-display-options menu-header-settings" aria-label="พื้นหลังส่วนหัวแต่ละเมนู"><summary>พื้นหลังส่วนหัวแต่ละเมนู</summary>
+ return <details open className="home-display-options menu-header-settings" aria-label="พื้นหลังส่วนหัวแต่ละเมนู"><summary>พื้นหลังส่วนหัวแต่ละเมนู</summary>
   <div className="home-settings-grid">
    <label>เมนูที่จะปรับส่วนหัว<select aria-label="เมนูที่จะปรับส่วนหัว" value={selected} onChange={e=>setSelected(e.target.value as HeaderTarget)}>{Object.entries(headerMenus).map(([key,menu])=><option key={key} value={key}>{menu.label}</option>)}</select></label>
    <label>พื้นหลังส่วนหัวเมนู<select aria-label="พื้นหลังส่วนหัวเมนู" value={value.background} onChange={e=>patch({background:e.target.value as HeaderAppearance['background']})}><option value="default">ใช้รูปแบบเดิมของเมนู</option><option value="solid">สีพื้น</option><option value="illustration">ภาพประกอบของระบบ</option><option value="image">รูปของฉัน</option></select></label>

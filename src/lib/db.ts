@@ -1,4 +1,7 @@
+import {mirrorLocalOwner} from "./local-dossiers";
 import "server-only";
+import {documentSourcesSql} from "./word-import-model";
+import { resolveDatabaseFile } from "../../scripts/data-location.mjs";
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
@@ -19,10 +22,16 @@ class SQLiteDatabase {
     };
   }
 }
-const globalDb = globalThis as unknown as { sarabunDb?: SQLiteDatabase };
+const globalDb = globalThis as unknown as { sarabunDb?: SQLiteDatabase; sarabunDbFile?:string; sarabunDbRequested?:string };
 export function db() {
-  if (globalDb.sarabunDb) return globalDb.sarabunDb;
-  const file = path.resolve(process.env.SARABUN_SOURCE_DIR || process.cwd(), process.env.DATABASE_PATH || "data/sarabun.sqlite");
+  const root=process.env.SARABUN_SOURCE_DIR||process.cwd(),requested=path.resolve(root,process.env.DATABASE_PATH||'data/sarabun.sqlite');
+  if(globalDb.sarabunDb&&globalDb.sarabunDbRequested===requested){
+    const moved=globalDb.sarabunDb.prepare("SELECT value FROM settings WHERE key='storage:relocatedTo'").get()?.value;
+    if(!moved){if(process.env.DATABASE_REQUIRE_EXISTING==='true'&&!fs.existsSync(globalDb.sarabunDbFile!))throw Error('ไม่พบพื้นที่ฐานข้อมูล กรุณาเชื่อมต่อไดรฟ์เดิม');return globalDb.sarabunDb;}
+  }
+  const file=resolveDatabaseFile(root,requested,process.env.DATABASE_REQUIRE_EXISTING==='true');
+  if(globalDb.sarabunDb){globalDb.sarabunDb.close();globalDb.sarabunDb=undefined;}
+  globalDb.sarabunDbFile=file;globalDb.sarabunDbRequested=requested;
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const conn = new SQLiteDatabase(file);
   conn.pragma("journal_mode = WAL"); conn.pragma("busy_timeout = 5000");
@@ -37,6 +46,7 @@ export function db() {
   CREATE INDEX IF NOT EXISTS documents_updated ON documents(updated_at DESC);`);
   if(!conn.prepare('PRAGMA table_info(documents)').all().some(column=>column.name==='deleted_at'))conn.exec('ALTER TABLE documents ADD COLUMN deleted_at TEXT');
   conn.exec(`CREATE TABLE IF NOT EXISTS document_numbers (id TEXT PRIMARY KEY,year INTEGER NOT NULL,number TEXT NOT NULL,document_id TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(year,number));`);
+  conn.exec('CREATE TABLE IF NOT EXISTS document_sources ('+documentSourcesSql+'); CREATE INDEX IF NOT EXISTS document_sources_document ON document_sources(document_id);');
   globalDb.sarabunDb = conn; return conn;
 }
 type Row = { id: string; data: string; version: number; created_at: string; updated_at: string; drive_file_id: string | null; synced_version: number | null; signed_scan_count: number };
@@ -57,7 +67,7 @@ export function checkNumber(input:Draft,id:string){
 }
 export function writeDraft(input: Draft, id?: string, version?: number) {
   const data = JSON.stringify(documentSchema.parse(input)); const now = new Date().toISOString();
-  return db().transaction(() => {
+  const saved = db().transaction(() => {
     const key = id || randomUUID();
     const previous=id?readDraft(id):null;
     if(!previous||normalizeNumber(previous.number)!==normalizeNumber(input.number)||previous.date.slice(0,4)!==input.date.slice(0,4))checkNumber(input,key);
@@ -69,6 +79,8 @@ export function writeDraft(input: Draft, id?: string, version?: number) {
     db().prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(key, id ? "update" : "create", saved.version, now);
     return saved;
   })();
+  const localFileWarning=mirrorLocalOwner('document',saved.id);
+  return {...saved,localFileWarning};
 }
 export function removeDraft(id: string, version: number) {
   db().transaction(() => {
@@ -77,16 +89,17 @@ export function removeDraft(id: string, version: number) {
     if(db().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='budget_transfers'").get()) db().prepare("UPDATE budget_transfers SET document_id=NULL,generated_version=NULL,version=version+1,updated_at=? WHERE document_id=?").run(new Date().toISOString(),id);
     db().prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(id,"delete", version, new Date().toISOString());
   })();
+  mirrorLocalOwner('document',id);
 }
 export function listTrash(){return (db().prepare('SELECT id,data,version,deleted_at FROM documents WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC').all()).map(row=>({id:String(row.id),subject:String(JSON.parse(String(row.data)).subject||'ไม่ระบุเรื่อง'),version:Number(row.version),deletedAt:String(row.deleted_at)}));}
-export function restoreDraft(id:string,version:number){return db().transaction(()=>{
+export function restoreDraft(id:string,version:number){const saved=db().transaction(()=>{
   const now=new Date().toISOString();
   const result=db().prepare('UPDATE documents SET deleted_at=NULL,version=version+1,updated_at=? WHERE id=? AND version=? AND deleted_at IS NOT NULL').run(now,id,version);
   if(!result.changes)throw new Error('รายการเปลี่ยนแล้ว กรุณาโหลดถังขยะใหม่');
   db().prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(id,'restore',version+1,now);
   return readDraft(id);
-})();}
-export function reserveDraftNumber(id:string,version:number,prefix:string,start:number){return db().transaction(()=>{
+})();mirrorLocalOwner('document',id);return saved;}
+export function reserveDraftNumber(id:string,version:number,prefix:string,start:number){const saved=db().transaction(()=>{
   const draft=readDraft(id);
   if(draft.version!==version)throw new Error('ร่างถูกแก้ไขแล้ว กรุณาโหลดล่าสุด');
   if(draft.number.trim())throw new Error('ร่างนี้มีเลขที่แล้ว กรุณาใช้ทะเบียนตรวจสอบแทนการจองซ้ำ');
@@ -104,8 +117,9 @@ export function reserveDraftNumber(id:string,version:number,prefix:string,start:
   db().prepare('UPDATE documents SET data=?,version=version+1,updated_at=? WHERE id=? AND version=?').run(JSON.stringify(documentSchema.parse(data)),now,id,version);
   db().prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(id,'number_reserved',version+1,now);
   return readDraft(id);
-})();}
+})();mirrorLocalOwner('document',id);return saved;}
 export function numberHistory(){return db().prepare('SELECT n.*,json_extract(d.data,\'$.subject\') subject FROM document_numbers n LEFT JOIN documents d ON d.id=n.document_id ORDER BY n.created_at DESC LIMIT 100').all().map(row=>({number:String(row.number),year:Number(row.year)+543,subject:String(row.subject||''),at:String(row.created_at)}));}
+export function databaseFile(){db();return globalDb.sarabunDbFile!;}
 export function getSetting(key: string) { return (db().prepare("SELECT value FROM settings WHERE key=?").get(key) as {value:string} | undefined)?.value; }
 export function setSetting(key: string, value: string) { db().prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(key,value); }
 export function auditHistory(id: string) { return db().prepare("SELECT action,version,at FROM audit WHERE document_id=? ORDER BY id DESC LIMIT 40").all(id) as {action:string;version:number;at:string}[]; }

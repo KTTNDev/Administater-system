@@ -78,7 +78,9 @@ export type Draft = z.infer<typeof documentSchema>;
 export type SavedDraft = Draft & { id: string; version: number; createdAt: string; updatedAt: string; driveFileId: string | null; syncedVersion: number | null; signedScanCount: number };
 export function today() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 export function newDraft(type: DocumentType = "external"): Draft {
-  return documentSchema.parse({ type, subject: "ร่างหนังสือใหม่", date: today() });
+  // New documents start with Thai numerals. Keep the schema fallback "original"
+  // so existing drafts without this setting retain their previous appearance.
+  return documentSchema.parse({ type, subject: "ร่างหนังสือใหม่", date: today(), numeralStyle: "thai" });
 }
 export function thaiDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";

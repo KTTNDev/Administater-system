@@ -3,7 +3,7 @@ import {DatabaseSync} from 'node:sqlite';import path from 'node:path';
 test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Isolated release data only');
 test('manages agencies in settings and in the form without losing draft text or rewriting saved letters',async({page})=>{
  const name='หน่วยงาน '+Date.now(),department='กองตรวจสอบ';
- await page.goto('/?view=settings');
+ await page.goto('/?view=settings');await page.getByRole('tab',{name:'รายการกรอกอัตโนมัติ',exact:true}).click();
  const manager=page.getByRole('region',{name:'รายการกรอกอัตโนมัติ',exact:true});
  await manager.getByRole('button',{name:'เพิ่มหน่วยงาน',exact:true}).click();
  const editor=page.getByRole('form',{name:'แก้ไขรายชื่อหน่วยงาน'});
@@ -14,7 +14,7 @@ test('manages agencies in settings and in the form without losing draft text or 
  await editor.getByRole('textbox',{name:'รหัสหน่วยงาน',exact:true}).fill('ภก 123');
  await editor.getByRole('button',{name:'บันทึกรายชื่อ',exact:true}).click();
  await expect(manager.getByRole('status')).toContainText('บันทึกรายชื่อหน่วยงานแล้ว');
- await page.reload();await manager.getByRole('searchbox').fill(name);
+ await page.reload();await page.getByRole('tab',{name:'รายการกรอกอัตโนมัติ',exact:true}).click();await manager.getByRole('searchbox').fill(name);
  await expect(manager.getByRole('button',{name:'แก้ไข '+name+' '+department,exact:true})).toBeVisible();
  await page.getByRole('button',{name:'แดชบอร์ดเอกสาร',exact:true}).click();
  await page.getByRole('region',{name:'สร้างเอกสารที่ใช้บ่อย'}).getByRole('button',{name:'หนังสือภายนอก',exact:true}).click();

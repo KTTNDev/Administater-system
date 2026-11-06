@@ -1,0 +1,47 @@
+/* Hallmark · settings navigation · existing Craft workspace tokens
+ * Pre-emit critique: P5 H5 E4 S5 R5 V4. Scoped to settings; no paper selectors. */
+.settings-sections{display:grid;grid-template-columns:224px minmax(0,1fr);gap:28px;align-items:start;min-width:0}
+.settings-category-list{display:flex;flex-direction:column;gap:5px;position:sticky;top:20px;min-width:0}
+.app-shell .settings-category-list>button{display:flex;align-items:center;gap:12px;width:100%;padding:13px 12px;min-height:48px;text-align:left;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--ui-ink);box-shadow:none;font-family:var(--ui-font);transition:background var(--ui-motion-fast),border-color var(--ui-motion-fast)}
+.settings-category-list>button>svg{flex-shrink:0;color:var(--ui-muted)}
+.settings-category-list>button>span:first-of-type{min-width:0;flex:1}
+.settings-category-list strong{display:block;font-size:13px;font-weight:600;line-height:1.6;white-space:nowrap}
+.settings-category-list small{display:block;font-size:11px;line-height:1.7;color:var(--ui-muted);margin-top:2px}
+.app-shell .settings-category-list>button:hover{background:var(--ui-hover)}
+.app-shell .settings-category-list>button[aria-selected=true]{background:var(--ui-surface);border-color:var(--ui-border);box-shadow:var(--ui-shadow);color:var(--ui-accent)}
+.settings-category-list>button[aria-selected=true]>svg{color:var(--ui-accent)}
+.app-shell .settings-category-list>button:focus-visible,.settings-category-panel:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px}
+.app-shell .settings-category-list>button:active{background:var(--ui-accent-soft)}
+.settings-category-dot{width:7px;height:7px;border-radius:50%;background:var(--ui-warning);flex:0 0 7px}
+.settings-category-dot[data-state=loading]{background:var(--ui-accent);animation:settings-busy 1s ease-in-out infinite alternate}
+.settings-category-content,.settings-category-panel{min-width:0}
+.settings-category-panel[hidden]{display:none!important}
+.settings-category-panel>.settings-card{margin:0}
+.settings-main .settings-sections .settings-card{padding:24px}
+.settings-sections[data-compact=true]{display:block}
+.settings-sections[data-compact=true]>.settings-category-list{position:static;flex-direction:row;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--ui-border);padding-bottom:14px;margin-bottom:20px}
+.app-shell .settings-sections[data-compact=true]>.settings-category-list>button{width:auto;min-height:38px;padding:8px 12px;gap:8px;border-radius:7px}
+.app-shell .settings-sections[data-compact=true]>.settings-category-list>button[aria-selected=true]{background:var(--ui-accent-soft);box-shadow:none;border-color:var(--ui-accent-soft)}
+.settings-main .home-layout-settings .home-settings-fields{min-width:0}
+.settings-main .home-layout-settings .home-settings-heading{margin-bottom:20px}
+.settings-main .home-layout-settings .home-settings-footer{border-top:1px solid var(--ui-border);margin-top:24px;padding-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+.settings-main .home-layout-settings .home-settings-footer>button{white-space:nowrap}
+.settings-main .home-settings-pending{color:var(--ui-warning);font-size:12px;margin:12px 0 0}
+.settings-main .settings-category-panel .home-display-options:first-child{margin-top:0}
+.settings-main .settings-category-panel input,.settings-main .settings-category-panel select{max-width:100%;min-width:0}
+@keyframes settings-busy{to{opacity:.4}}
+@media(max-width:1100px){
+ .settings-sections{grid-template-columns:190px minmax(0,1fr);gap:18px}
+ .settings-main .home-menu-workbench{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:800px){
+ .settings-sections{display:block}
+ .settings-sections:not([data-compact=true])>.settings-category-list{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:20px}
+ .settings-category-list small{display:none}
+ .app-shell .settings-category-list>button{gap:8px;padding:10px 8px}
+ .settings-category-list strong{font-size:12px}
+ .settings-main .settings-sections .settings-card{padding:16px}
+ .settings-sections[data-compact=true]>.settings-category-list{gap:4px}
+ .app-shell .settings-sections[data-compact=true]>.settings-category-list>button{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){.app-shell .settings-category-list>button{transition:none}.settings-category-dot[data-state=loading]{animation:none}}

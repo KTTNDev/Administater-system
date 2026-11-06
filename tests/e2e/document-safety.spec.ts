@@ -16,9 +16,9 @@ test('portable installation saves, scans, trashes, restores, reserves and backs 
  await page.getByRole('button',{name:`ลบ ${subject}`,exact:true}).click();await expect(page.locator('.toast')).toContainText('ย้ายเข้าถังขยะ');
  await safety.locator('summary').filter({hasText:'ถังขยะ'}).click();const item=safety.locator('.safety-row').filter({hasText:subject}).first();await expect(item).toBeVisible();await item.getByRole('button',{name:'กู้คืน',exact:true}).click();await expect(safety.getByRole('status')).toContainText('กู้เอกสาร');await expect(page.getByRole('button',{name:`ลบ ${subject}`,exact:true})).toBeVisible();
  await expect(page.getByRole('row').filter({hasText:subject})).toContainText('มีฉบับลงนาม (1)');
- await page.goto('/?view=settings');await page.locator('.settings-disclosure > summary').click();const backup=page.locator('.backup-status');await expect(backup).toContainText(path.join(root!,'output','storage'));
+ await page.goto('/?view=settings');await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();const backup=page.locator('.backup-status');await expect(backup).toContainText(path.join(root!,'output','storage'));
  await backup.getByLabel('รอบการสำรอง').selectOption('6');await expect(backup.getByRole('status')).toContainText('บันทึก');await backup.getByRole('button',{name:'สำรองตอนนี้'}).click();await expect(backup.locator('p').filter({hasText:'สำเร็จล่าสุด:'})).not.toContainText('ยังไม่มี');
- await page.reload();await page.locator('.settings-disclosure > summary').click();await expect(page.getByLabel('รอบการสำรอง')).toHaveValue('6');await page.locator('.backup-status summary').click();await expect(page.locator('.backup-status')).toContainText('สร้างเมื่อ');
+ await page.reload();await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();await expect(page.getByLabel('รอบการสำรอง')).toHaveValue('6');await page.locator('.backup-status summary').click();await expect(page.locator('.backup-status')).toContainText('สร้างเมื่อ');
  await page.screenshot({path:'output/safety-settings.png',fullPage:true});
  const snapshots=fs.readdirSync(path.join(root!,'output','storage','สำรองข้อมูล'));expect(snapshots.length).toBeGreaterThan(0);
 });

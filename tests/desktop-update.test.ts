@@ -15,11 +15,11 @@ function setup(name:string,version='old'){
  fs.copyFileSync(process.execPath,path.join(root,'.desktop/runtime/node.exe'));
  const release={version,appVersion:version==='old'?'1.0.0':'1.0.1',node:process.version,platform:process.platform,arch:process.arch,built:new Date().toISOString()};
  fs.writeFileSync(path.join(root,'.desktop/current.json'),JSON.stringify(release));fs.writeFileSync(path.join(root,'.desktop/versions',version,'app/server.js'),'// fixture');
- for(const file of ['desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'])fs.copyFileSync(path.join('scripts',file),path.join(root,'scripts',file));
+ for(const file of ['report-files.mjs','dossier-sync-plan.mjs','dossier-drive.mjs','data-location.mjs','workspace-files.mjs','migrate-data-location.mjs','pick-storage-folder.ps1','desktop.mjs','backup-worker.mjs','workspace-backup.mjs','export-desktop.mjs','restore-backup.mjs','configure-production.mjs','setup-production.ps1','create-desktop-shortcuts.ps1','update-desktop.mjs','update-desktop.ps1'])fs.copyFileSync(path.join('scripts',file),path.join(root,'scripts',file));
  fs.writeFileSync(path.join(root,'scripts/desktop.mjs'),launcher);
  for(const file of ['Open-Sarabun.cmd','Stop-Sarabun.cmd','Export-Sarabun.cmd','Update-Sarabun.cmd','Rollback-Sarabun.cmd','Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd','QUICK-START-TH.md','DESKTOP-README.md','CHANGELOG.md'])fs.copyFileSync(file,path.join(root,file));
  fs.writeFileSync(path.join(root,'.env.local'),'DATABASE_PATH=./data/sarabun.sqlite\nSESSION_SECRET=fixture-private-secret\n');
- const db=new DatabaseSync(path.join(root,'data/sarabun.sqlite'));db.exec("CREATE TABLE documents(text TEXT);INSERT INTO documents VALUES('original document');CREATE TABLE settings(value TEXT);INSERT INTO settings VALUES('private setting')");db.close();return root;
+ const db=new DatabaseSync(path.join(root,'data/sarabun.sqlite'));db.exec("CREATE TABLE documents(text TEXT);INSERT INTO documents VALUES('original document');CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES('fixture','private setting')");db.close();return root;
 }
 function content(root:string){const db=new DatabaseSync(path.join(root,'data/sarabun.sqlite'));try{return db.prepare('SELECT text FROM documents').get()!.text;}finally{db.close();}}
 let source:string,packageRoot:string;

@@ -27,7 +27,7 @@ test('an oversized protected phrase is flagged rather than silently clipped',asy
 });
 test('staff manage words, review spelling and export protected editable Word text',async({page})=>{
  test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Disposable data only');test.setTimeout(180000);
- await page.goto('/');await page.getByRole('button',{name:'ตั้งค่าหน่วยงานและ Drive',exact:true}).click();
+ await page.goto('/');await page.getByRole('button',{name:'ตั้งค่าหน่วยงานและ Drive',exact:true}).click();await page.getByRole('tab',{name:'คลังคำศัพท์',exact:true}).click();
  const region=page.getByRole('region',{name:'คลังคำภาษาไทย'});
  await expect(region).toBeVisible();await expect(region).toContainText('62,106');
  const term='กล้องบันทึกภาพพิเศษ';
@@ -35,7 +35,7 @@ test('staff manage words, review spelling and export protected editable Word tex
  await expect(region.getByRole('button',{name:'แก้คำ '+term})).toBeVisible();
  await region.getByRole('button',{name:'แก้คำ '+term}).click();await region.getByLabel('คำ / คำคู่',{exact:true}).fill(term+'เทศบาล');await region.getByRole('button',{name:'บันทึกการแก้คำ'}).click();
  await expect(region.getByRole('button',{name:'แก้คำ '+term+'เทศบาล'})).toBeVisible();
- await page.reload();await page.getByRole('button',{name:'ตั้งค่าหน่วยงานและ Drive',exact:true}).click();await expect(region.getByRole('button',{name:'แก้คำ '+term+'เทศบาล'})).toBeVisible();
+ await page.reload();await page.getByRole('button',{name:'ตั้งค่าหน่วยงานและ Drive',exact:true}).click();await page.getByRole('tab',{name:'คลังคำศัพท์',exact:true}).click();await expect(region.getByRole('button',{name:'แก้คำ '+term+'เทศบาล'})).toBeVisible();
  await region.screenshot({path:'output/thai-dictionary-settings.png'});await page.setViewportSize({width:375,height:900});await region.scrollIntoViewIfNeeded();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);await region.screenshot({path:'output/thai-dictionary-mobile.png'});await page.setViewportSize({width:1440,height:1000});
  page.once('dialog',d=>d.accept());await region.getByRole('button',{name:'ลบคำ '+term+'เทศบาล'}).click();
  await expect(region.getByRole('button',{name:'แก้คำ '+term+'เทศบาล'})).toHaveCount(0);

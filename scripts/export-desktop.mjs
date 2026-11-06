@@ -1,3 +1,5 @@
+import {copyWorkspaceFiles,mirrorWorkspaceFiles} from './workspace-files.mjs';
+import {resolveDatabaseFile} from './data-location.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,14 +27,14 @@ try {
   fs.cpSync(path.join(root, '.desktop', 'runtime'), path.join(target, '.desktop', 'runtime'), { recursive: true });
   fs.copyFileSync(path.join(root, '.desktop', 'current.json'), path.join(target, '.desktop', 'current.json'));
   fs.mkdirSync(path.join(target, 'scripts'));
-  for (const file of ['update-desktop.mjs', 'update-desktop.ps1', 'backup-worker.mjs', 'workspace-backup.mjs', 'desktop.mjs', 'export-desktop.mjs', 'restore-backup.mjs', 'configure-production.mjs', 'setup-production.ps1','create-desktop-shortcuts.ps1']) fs.copyFileSync(path.join(root, 'scripts', file), path.join(target, 'scripts', file));
+  for (const file of ['report-files.mjs','dossier-sync-plan.mjs','dossier-drive.mjs','data-location.mjs', 'workspace-files.mjs', 'migrate-data-location.mjs', 'pick-storage-folder.ps1', 'update-desktop.mjs', 'update-desktop.ps1', 'backup-worker.mjs', 'workspace-backup.mjs', 'desktop.mjs', 'export-desktop.mjs', 'restore-backup.mjs', 'configure-production.mjs', 'setup-production.ps1','create-desktop-shortcuts.ps1']) fs.copyFileSync(path.join(root, 'scripts', file), path.join(target, 'scripts', file));
   for (const file of ['Update-Sarabun.cmd', 'Rollback-Sarabun.cmd', 'CHANGELOG.md', 'Open-Sarabun.cmd', 'Stop-Sarabun.cmd', 'Export-Sarabun.cmd', 'Setup-Sarabun-Production.cmd','Create-Shortcuts-Sarabun.cmd', 'DESKTOP-README.md', 'QUICK-START-TH.md']) fs.copyFileSync(path.join(root, file), path.join(target, file));
   const empty = process.argv.includes('--empty');
   fs.mkdirSync(path.join(target, 'data'));
   if (fs.existsSync(path.join(root, 'data'))) fs.cpSync(path.join(root, 'data'), path.join(target, 'data'), { recursive: true, filter: file => !/\.sqlite(?:-wal|-shm)?$/.test(file) });
   if (!empty) {
     const env = parseEnv(fs.readFileSync(path.join(root, '.env.local'), 'utf8').replace(/^\uFEFF/, ''));
-    const source = path.resolve(root, env.DATABASE_PATH || 'data/sarabun.sqlite');
+    const source = resolveDatabaseFile(root, env.DATABASE_PATH || 'data/sarabun.sqlite',env.DATABASE_REQUIRE_EXISTING==='true');
     const dest = path.join(target, 'data', 'sarabun.sqlite');
     // VACUUM INTO creates a consistent snapshot, including committed WAL contents.
     const db = new DatabaseSync(source, { readOnly: true });
@@ -40,8 +42,12 @@ try {
     const copy = new DatabaseSync(dest);
     try {
       if (copy.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') throw new Error('Export database integrity check failed.');
+      const previousFiles=copy.prepare("SELECT value FROM settings WHERE key='storage:local'").get()?.value||path.join(root,'output','storage');
+      const nextFiles=path.join(target,'output','storage');
+      copyWorkspaceFiles(String(previousFiles),nextFiles,source);
+      const organized=mirrorWorkspaceFiles(copy,nextFiles);if(organized.some(r=>!r.ok))throw Error('Export dossier files are incomplete');
       // Machine-specific output folders must not continue writing to the previous PC.
-      copy.prepare("DELETE FROM settings WHERE key IN ('storage:local','storage:backupRoot','storage:lastExport','backup:auto:state','backup:auto:lease')").run();
+      copy.prepare("DELETE FROM settings WHERE key IN ('storage:relocatedTo','storage:local','storage:backupRoot','storage:lastExport','backup:auto:state','backup:auto:lease')").run();
     } finally { copy.close(); }
     let config = fs.readFileSync(path.join(root, '.env.local'), 'utf8');
     config = config.split(/\r?\n/).filter(line => !/^\s*(?:export\s+)?(?:DATABASE_PATH|CHROMIUM_EXECUTABLE_PATH|SARABUN_SOURCE_DIR|SARABUN_DESKTOP_TOKEN|SARABUN_DESKTOP_INSTANCE|APP_URL)\s*=/.test(line)).join('\n');

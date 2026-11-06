@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 // Shared by manual exports and the background worker; never include credentials.
 export function exportDatabase(databaseFile,localFolder,sourceRoot){
- const tables=['home_layout','thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','audit'];
+ const tables=['task_alerts','home_layout','thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','document_sources','audit'];
  const source=new DatabaseSync(databaseFile,{readOnly:true});
  let snapshot,definitions;
  try{
@@ -29,7 +29,7 @@ export function exportDatabase(databaseFile,localFolder,sourceRoot){
  }finally{backup.close();}
  files.push(database);
  const save=(name,bytes)=>{if(path.basename(name)!==name||/[\\/:]/.test(name))throw Error('Invalid backup filename');const file=path.join(folder,name);fs.writeFileSync(file,bytes);files.push(file);};
- for(const [table,rows] of Object.entries(snapshot))save(table+'.json',JSON.stringify(['project_files','inventory_files','legal_library','document_attachments','document_appendix_images','signed_scans'].includes(table)?rows.map(({file,original,...rest})=>rest):rows,null,2));
+ for(const [table,rows] of Object.entries(snapshot))save(table+'.json',JSON.stringify(['project_files','inventory_files','legal_library','document_attachments','document_appendix_images','signed_scans','document_sources'].includes(table)?rows.map(({file,original,...rest})=>rest):rows,null,2));
  for(const row of snapshot.project_files)if(row.file)save(row.id+'-project'+(row.mime==='application/pdf'?'.pdf':'.png'),Buffer.from(row.file));
  for(const row of [...snapshot.legal_library,...snapshot.document_attachments]){
   if(row.file)save(row.id+'.pdf',Buffer.from(row.file));
@@ -37,6 +37,7 @@ export function exportDatabase(databaseFile,localFolder,sourceRoot){
  }
  for(const row of snapshot.document_appendix_images)if(row.file)save(row.id+(row.mime==='image/png'?'.png':'.jpg'),Buffer.from(row.file));
  for(const row of snapshot.inventory_files)if(row.file)save(row.id+'-inventory'+(row.mime==='application/pdf'?'.pdf':row.mime==='image/png'?'.png':'.jpg'),Buffer.from(row.file));
+ for(const row of snapshot.document_sources)if(row.file)save(row.id+'-import-original.docx',Buffer.from(row.file));
  for(const row of snapshot.signed_scans)if(row.file)save(row.id+'-signed'+(row.mime==='application/pdf'?'.pdf':row.mime==='image/png'?'.png':'.jpg'),Buffer.from(row.file));
  for(const name of ['ict.pdf','ict-2569.pdf','equipment.pdf','classification.pdf']){const file=path.join(sourceRoot,'data','budget-references',name);if(fs.existsSync(file))save('budget-reference-'+name,fs.readFileSync(file));}
  const reference=path.join(sourceRoot,'data/template-references/20170502100402.pdf');if(fs.existsSync(reference))save('template-reference-20170502100402.pdf',fs.readFileSync(reference));

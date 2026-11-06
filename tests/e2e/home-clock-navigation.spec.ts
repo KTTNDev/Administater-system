@@ -9,7 +9,7 @@ async function setRange(page:Page,label:string,value:string){
 async function settings(page:Page){
  await page.goto('/?view=settings');
  const panel=page.getByRole('region',{name:'ปรับแต่งหน้าหลัก',exact:true});
- await expect(panel).toBeVisible();return panel;
+ await expect(panel).toBeVisible();await panel.getByRole('tab',{name:'นาฬิกาและวันที่',exact:true}).click();return panel;
 }
 async function reset(page:Page){
  const panel=await settings(page);

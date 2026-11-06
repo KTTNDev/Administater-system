@@ -27,7 +27,7 @@ export function decrypt(value: string) {
 }
 export function driveStatus() { return { configured:!!(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.SESSION_SECRET), connected:!!getSetting("google:token"), email:getSetting("google:email")||"" }; }
 export const escapeDriveQuery = (s:string)=>s.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-async function driveClient() {
+export async function driveClient() {
   const auth=oauthClient(),stored=getSetting("google:token"); if(!stored) throw new Error("ยังไม่ได้เชื่อมต่อ Google Drive ไปที่ตั้งค่าเพื่อเชื่อมต่อบัญชี");
   auth.setCredentials({refresh_token:decrypt(stored)}); return createDrive({version:"v3",auth});
 }
@@ -143,3 +143,5 @@ export async function uploadInventoryFile(input:{id:string;ownerId:string;folder
  };
  const pending=(shared.sarabunSyncQueue||Promise.resolve()).then(run,run);shared.sarabunSyncQueue=pending.catch(()=>{});return pending;
 }
+
+export function queueDriveJob<T>(run:()=>Promise<T>):Promise<T>{const pending=(shared.sarabunSyncQueue||Promise.resolve()).then(run,run);shared.sarabunSyncQueue=pending.catch(()=>{});return pending;}

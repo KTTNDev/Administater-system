@@ -1,3 +1,4 @@
+import {localReportSource,saveLocalReportOutput} from '@/lib/local-dossiers';
 import {authenticated} from '@/lib/auth';
 import {inventorySnapshot} from '@/lib/inventory-db';
 import {inventoryAnalytics} from '@/lib/inventory-analytics';
@@ -13,7 +14,8 @@ export async function GET(request:Request){
  try{const q=new URL(request.url).searchParams,start=daySchema.parse(q.get('start')),end=daySchema.parse(q.get('end')),format=z.enum(['csv','pdf']).parse(q.get('format')),note=z.string().max(500).parse(q.get('note')||'');
  if(start>end||Number(end.slice(0,4))-Number(start.slice(0,4))>20)throw Error('ช่วงวันที่ไม่ถูกต้อง หรือเกิน 20 ปี');
  const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});if(start>today)throw Error('เลือกวันเริ่มต้นไม่เกินวันนี้');const a=inventoryAnalytics(inventorySnapshot(),start,end,today),headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
- if(format==='csv')return new Response(inventoryAnalysisCsv(a,note),{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="inventory-analysis.csv"'}});
- const org=JSON.parse(getSetting('organization')||'{}');return new Response(await inventoryPdf(inventoryAnalysisHtml(a,org.name||'',documentAssets(),note)),{headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'inline; filename="inventory-analysis.pdf"'}});
+ const source=localReportSource('inventory-report','','รายงานวิเคราะห์พัสดุ',{report:'inventory-analysis',start,end,note,today});
+ if(format==='csv'){const bytes=Buffer.from(inventoryAnalysisCsv(a,note),'utf8');saveLocalReportOutput(source,'csv',bytes);return new Response(bytes,{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="inventory-analysis.csv"'}});}
+ const org=JSON.parse(getSetting('organization')||'{}'),bytes=await inventoryPdf(inventoryAnalysisHtml(a,org.name||'',documentAssets(),note));saveLocalReportOutput(source,'pdf',bytes);return new Response(bytes,{headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'inline; filename="inventory-analysis.pdf"'}});
  }catch(e){return Response.json({error:e instanceof Error?e.message:'ส่งออกรายงานไม่สำเร็จ'},{status:400});}
 }

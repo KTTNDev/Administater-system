@@ -1,4 +1,5 @@
 "use server";
+import {mirrorLocalOwner} from "@/lib/local-dossiers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
@@ -16,8 +17,9 @@ export async function uploadSignedScan(documentId:string,form:FormData){
     const file=form.get("file");
     if(!(file instanceof File))throw new Error("กรุณาเลือกไฟล์");
     const item=await storeSignedScan(uuid.parse(documentId),file);
+    const warning=mirrorLocalOwner("document",documentId);
     revalidatePath("/");
-    return {ok:true as const,data:item};
+    return {ok:true as const,data:item,warning};
   }catch(error){
     return {ok:false as const,error:error instanceof Error?error.message:"อัปโหลดไฟล์ไม่สำเร็จ"};
   }
@@ -26,8 +28,9 @@ export async function deleteSignedScan(documentId:string,id:string){
   try{
     await requireUser();
     removeSignedScan(uuid.parse(documentId),uuid.parse(id));
+    const warning=mirrorLocalOwner("document",documentId);
     revalidatePath("/");
-    return {ok:true as const};
+    return {ok:true as const,warning};
   }catch(error){
     return {ok:false as const,error:error instanceof Error?error.message:"ลบไฟล์ไม่สำเร็จ"};
   }

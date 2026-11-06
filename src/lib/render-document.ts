@@ -102,7 +102,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   }
   if(["internal","memorandum"].includes(d.type)) {
     for(const person of d.proposers) blocks.push(`<div class="signature"><div class="sign-space"></div><p>(${e(person.name)})</p><p>${e(person.position)}</p></div>`);
-    for(const opinion of d.opinions) blocks.push(`<div class="opinion"><p class="title">${e(opinion.title)}</p>${opinion.comment?`<p>${e(opinion.comment)}</p>`:Array.from({length:opinion.lines},()=>'<div class="opinion-line"></div>').join('')}<div class="opinion-sign"><p>ลงชื่อ ................................................</p><p>(${e(opinion.name)||'................................................'})</p><p>${e(opinion.position)}</p>${opinion.showDate!==false?'<p>วันที่ ................................................</p>':''}</div></div>`);
+    for(const opinion of d.opinions) blocks.push(`<div class="opinion"><p class="title">${e(opinion.title)}</p>${opinion.comment.trim()?`<p>${e(opinion.comment)}</p>`:Array.from({length:opinion.lines},()=>'<div class="opinion-line"></div>').join('')}<div class="opinion-sign"><p>ลงชื่อ ................................................</p><p>(${e(opinion.name)||'................................................'})</p><p>${e(opinion.position)}</p>${opinion.showDate!==false?'<p>วันที่ ................................................</p>':''}</div></div>`);
   }
   if(d.productionMark && d.type !== "external") blocks.push(`<div class="production"><p>........................ ${e(d.drafter)} / ร่าง</p><p>........................ ${e(d.typist)} / พิมพ์</p><p>........................ ${e(d.checker)} / ตรวจ</p></div>`);
   for(const [index,page] of d.appendixPages.entries()){

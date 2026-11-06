@@ -1,3 +1,4 @@
+import {mirrorLocalOwner} from './local-dossiers';
 import 'server-only';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,13 +26,13 @@ export async function addInventoryFile(ownerId:string,ownerType:'item'|'movement
  c.prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(ownerId,'inventory_file_add:'+id,null,new Date().toISOString());
  })();
  let warning='';try{localInventoryFile(id);}catch{warning='บันทึกในฐานข้อมูลเครื่องแล้ว แต่เขียนสำเนาในโฟลเดอร์ไม่สำเร็จ ตรวจพื้นที่จัดเก็บในตั้งค่า';}
- return {id,warning};
+ warning=mirrorLocalOwner('inventory',ownerId)||warning;return {id,warning};
 }
 export function deleteInventoryFile(id:string){const f=readInventoryFile(id);const folder=path.resolve(storageConfig().localFolder,'พัสดุและครุภัณฑ์',f.ownerType==='item'?'รูปประจำรายการ':'หลักฐานเบิกจ่าย',f.ownerId);
  const target=path.resolve(folder,f.id+(f.mime==='application/pdf'?'.pdf':f.mime==='image/png'?'.png':'.jpg'));
  if(path.dirname(target)!==folder)throw Error('พาธไฟล์ไม่ถูกต้อง');
  if(fs.existsSync(target))fs.unlinkSync(target);
- inventoryDb().transaction(()=>{inventoryDb().prepare('DELETE FROM inventory_files WHERE id=?').run(id);inventoryDb().prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(f.ownerId,'inventory_file_delete:'+id,null,new Date().toISOString());})();
+ inventoryDb().transaction(()=>{inventoryDb().prepare('DELETE FROM inventory_files WHERE id=?').run(id);inventoryDb().prepare('INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)').run(f.ownerId,'inventory_file_delete:'+id,null,new Date().toISOString());})();mirrorLocalOwner('inventory',f.ownerId);
 }
 export async function syncInventoryFile(id:string){const f=readInventoryFile(id),owner=f.ownerType==='item'?readInventoryItem(f.ownerId):readMovement(f.ownerId);
  const folder=f.ownerType==='item'?('code' in owner?owner.code:''):('number' in owner?owner.number:'');

@@ -18,7 +18,7 @@ export function SignedScansManager({document,onClose,onChanged}:{document:SavedD
    for(const file of files){
     const form=new FormData();form.set("file",file);form.set("confirmed","yes");
     const result=await uploadSignedScan(document.id,form);
-    if(!result.ok)throw new Error(result.error);
+    if(!result.ok)throw new Error(result.error);if(result.warning)setError(result.warning);
    }
    setItems(await getSignedScans(document.id));onChanged();setConfirmed(false);
   }catch(e){setItems(await getSignedScans(document.id));onChanged();setError(e instanceof Error?e.message:"อัปโหลดไม่สำเร็จ")}

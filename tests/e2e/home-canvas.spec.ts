@@ -4,7 +4,7 @@ async function settings(page:Page){
  await page.goto('/?view=settings');
  const panel=page.getByRole('region',{name:'ปรับแต่งหน้าหลัก',exact:true});
  await expect(panel.getByLabel('ชื่อปุ่มเมนู',{exact:true})).toBeEnabled();
- return panel;
+ await panel.getByRole('tab',{name:'พื้นหลังหน้าหลัก',exact:true}).click();return panel;
 }
 async function reset(page:Page){
  const panel=await settings(page);await panel.getByRole('button',{name:'คืนค่าเริ่มต้น',exact:true}).click();

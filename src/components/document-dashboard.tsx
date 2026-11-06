@@ -47,6 +47,7 @@ type Props = {
   onOpen: (document: SavedDraft) => void;
   onCreate: (type: DocumentType) => void;
   onOpenTemplates: () => void;
+  onImport?: () => void;
   onRefresh: () => void;
   onDuplicate: (document: SavedDraft) => void;
   onDelete: (document: SavedDraft) => void;
@@ -111,6 +112,7 @@ export function DocumentDashboard({
   onOpen,
   onCreate,
   onOpenTemplates,
+  onImport,
   onRefresh,
   onDuplicate,
   onDelete,
@@ -215,6 +217,7 @@ export function DocumentDashboard({
             <h1>พื้นที่ทำงาน</h1>
             <p className={styles.kicker}>เปิดร่างที่ทำไว้ หรือเริ่มหนังสือฉบับใหม่</p>
           </div>
+          {onImport&&<button className="secondary" onClick={onImport}>นำเข้า Word</button>}
           <button className="primary" onClick={onOpenTemplates}>
             <Plus size={18} /> สร้างหนังสือ
           </button>

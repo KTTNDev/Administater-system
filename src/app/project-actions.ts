@@ -1,4 +1,5 @@
 'use server';
+import {mirrorLocalOwner} from '@/lib/local-dossiers';
 import {z} from 'zod';
 import {requireUser} from '@/lib/auth';
 import {listOffice} from '@/lib/office-db';
@@ -15,6 +16,6 @@ export async function projectAction(input:unknown){try{await requireUser();const
  if(c.type==='checklist')seedProjectChecklist(c.id,c.version);
  if(c.type==='file')projectId=updateProjectFile(c.id,c.caption,c.include);
  if(c.type==='remove-file')projectId=removeProjectFile(c.id);
- return {ok:true as const,items:listOffice(),files:projectFiles(projectId)};
+ mirrorLocalOwner('project',projectId);return {ok:true as const,items:listOffice(),files:projectFiles(projectId)};
  }catch(e){return {ok:false as const,error:message(e)}}}
-export async function uploadProjectEvidence(form:FormData){try{await requireUser();const id=z.string().uuid().parse(form.get('projectId'));readProject(id,true);await addProjectFile(form);return {ok:true as const,files:projectFiles(id)};}catch(e){return {ok:false as const,error:message(e)}}}
+export async function uploadProjectEvidence(form:FormData){try{await requireUser();const id=z.string().uuid().parse(form.get('projectId'));readProject(id,true);await addProjectFile(form);mirrorLocalOwner('project',id);return {ok:true as const,files:projectFiles(id)};}catch(e){return {ok:false as const,error:message(e)}}}

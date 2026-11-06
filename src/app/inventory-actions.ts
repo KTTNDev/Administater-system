@@ -1,4 +1,5 @@
 'use server';
+import {mirrorLocalOwner} from '@/lib/local-dossiers';
 import {requireUser} from '@/lib/auth';
 import {inventorySnapshot,saveInventoryItem,createMovement,transitionMovement} from '@/lib/inventory-db';
 import {addInventoryFile,deleteInventoryFile,syncInventoryFile} from '@/lib/inventory-files';
@@ -20,6 +21,7 @@ export async function inventoryAction(command:unknown){try{
  if(c.type==='transition')selectedId=transitionMovement(c.input).id;
  if(c.type==='delete-file')deleteInventoryFile(c.id);
  if(c.type==='drive')await syncInventoryFile(c.id);
+ if(selectedId){mirrorLocalOwner('inventory',selectedId);if(c.type==='transition')for(const item of inventorySnapshot().items)mirrorLocalOwner('inventory',item.id);}
  return {ok:true as const,data:inventorySnapshot(),selectedId};
  }catch(e){return {ok:false as const,error:message(e)};}
 }

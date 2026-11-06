@@ -10,9 +10,26 @@ describe("Thai correspondence",()=>{
   it("keeps old drafts without a date readable and requires one before review",()=>{const d={...newDraft("internal"),date:""};expect(documentHtml(d,assets)).toContain('<b>วันที่</b><span class="memo-value">&nbsp;</span>');expect(documentSchema.safeParse(d).success).toBe(true);expect(reviewIssues(d)).toContain("ระบุวันที่หนังสือก่อนตรวจทานและส่งออก")});
   it("shows the opinion date by default and allows hiding it independently from the memo date",()=>{const opinion={title:"ความเห็นนายกเทศมนตรี",comment:"",name:"",position:"นายกเทศมนตรี",showDate:true,lines:1};const base={...newDraft("internal"),opinions:[opinion]};const html=documentHtml(base,assets);expect(html).toContain('<b>วันที่</b>');expect(html).toContain("วันที่ ................................................</p>");expect(html.match(/class="opinion-line"/g)).toHaveLength(1);const hidden=documentHtml({...base,opinions:[{...opinion,showDate:false}]},assets);expect(hidden).toContain('<b>วันที่</b>');expect(hidden).not.toContain("วันที่ ................................................</p>");expect(documentSchema.safeParse(base).success).toBe(true)});
   it("formats a stable Bangkok Buddhist date",()=>{expect(thaiDate("2026-09-08")).toBe("8 กันยายน 2569")});
-  it("adds an editable appendix title and groups at most two images on each appendix page",()=>{const base={...newDraft("external"),appendixTitle:"ภาพประกอบแสดงอุปกรณ์",appendixImages:[{id:"00000000-0000-4000-8000-000000000001",name:"landscape-a.png",mime:"image/png" as const,bytes:100,width:1600,height:900,caption:"อุปกรณ์หมายเลข 1",widthMm:165},{id:"00000000-0000-4000-8000-000000000002",name:"landscape-b.png",mime:"image/png" as const,bytes:100,width:1600,height:900,caption:"อุปกรณ์หมายเลข 2",widthMm:165}]};const html=documentHtml(base,assets,{[base.appendixImages[0].id]:"data:image/png;base64,IMAGE_A",[base.appendixImages[1].id]:"data:image/png;base64,IMAGE_B"});expect(html).toContain("appendix-sheet landscape-pair");expect(html).toContain("ภาพประกอบแสดงอุปกรณ์");expect(html).toContain("ภาพที่ 1 อุปกรณ์หมายเลข 1");expect(html).toContain("IMAGE_B");expect(documentSchema.parse(newDraft()).appendixLayout).toBe("auto")});
+  it("adds an editable appendix title and groups at most two images on each appendix page",()=>{const base={...newDraft("external"),appendixTitle:"ภาพประกอบแสดงอุปกรณ์",appendixImages:[{id:"00000000-0000-4000-8000-000000000001",name:"landscape-a.png",mime:"image/png" as const,bytes:100,width:1600,height:900,caption:"อุปกรณ์หมายเลข 1",widthMm:165},{id:"00000000-0000-4000-8000-000000000002",name:"landscape-b.png",mime:"image/png" as const,bytes:100,width:1600,height:900,caption:"อุปกรณ์หมายเลข 2",widthMm:165}]};const html=documentHtml(base,assets,{[base.appendixImages[0].id]:"data:image/png;base64,IMAGE_A",[base.appendixImages[1].id]:"data:image/png;base64,IMAGE_B"});expect(html).toContain("appendix-sheet landscape-pair");expect(html).toContain("ภาพประกอบแสดงอุปกรณ์");expect(html).toContain("ภาพที่ ๑ อุปกรณ์หมายเลข ๑");expect(html).toContain("IMAGE_B");expect(documentSchema.parse(newDraft()).appendixLayout).toBe("auto")});
   it("validates required meeting fields independently of letters",()=>{const d=newDraft("minutes"),issues=reviewIssues(d).join(" ");expect(issues).toContain("ผู้จดรายงาน");expect(issues).toContain("สถานที่");expect(issues).not.toContain("ผู้รับหนังสือ")});
   it("escapes user content and prevents script injection",()=>{const html=documentHtml({...newDraft(),subject:'<script>alert(1)</script>',body:'<img src=x onerror="alert(1)"> & ข้อความ'},assets);expect(html).not.toContain('<script>alert(1)</script>');expect(html).not.toContain('<img src=x');expect(html).toContain('&lt;img');expect(html).toContain('&amp;')});
   it("keeps reference and attachment fields out of internal memo headings",()=>{const d={...newDraft("internal"),reference:"REFERENCE_MARKER",attachments:"ATTACHMENT_MARKER"};const html=documentHtml(d,assets);expect(html).toContain("บันทึกข้อความ");expect(html).not.toContain("REFERENCE_MARKER");expect(html).not.toContain("ATTACHMENT_MARKER")});
   it("renders distinct stamped and order structures",()=>{const stamped=documentHtml({...newDraft("stamped"),recipient:"TEST_RECIPIENT",closing:"CLOSING_MARKER"},assets);expect(stamped).toContain("ถึง");expect(stamped).toContain("TEST_RECIPIENT");expect(stamped).not.toContain("CLOSING_MARKER");expect(documentHtml(newDraft("order"),assets)).toContain("สั่ง ณ วันที่")});
 });
+
+ it('treats whitespace-only opinion comments as blank writing lines',()=>{
+  const draft={...newDraft('internal'),opinions:[{title:'ความเห็น',name:'',position:'ผู้ตรวจ',comment:' \n  ',showDate:false,lines:3}]};
+  const html=documentHtml(draft,assets);
+  expect(html.match(/class="opinion-line"/g)).toHaveLength(3);
+  expect(html).not.toContain('วันที่ ................................................</p>');
+ });
+
+ it('starts all 13 new forms with Thai numerals without changing old drafts',()=>{
+  for(const type of templates.map(t=>t.id)){
+   const draft=newDraft(type);expect(draft.numeralStyle).toBe('thai');
+   expect(documentHtml({...draft,body:'หมายเลข 1234567890'},assets)).toContain('หมายเลข ๑๒๓๔๕๖๗๘๙๐');
+   const {numeralStyle,...legacy}=draft;
+   expect(documentSchema.parse(legacy).numeralStyle).toBe('original');
+   expect(documentSchema.parse({...draft,numeralStyle:'arabic'}).numeralStyle).toBe('arabic');
+  }
+ });

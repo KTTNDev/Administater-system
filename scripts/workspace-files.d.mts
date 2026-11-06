@@ -1,0 +1,13 @@
+export type SqlReader={prepare(sql:string):{get(...args:any[]):any;all(...args:any[]):any[]}};
+export type DossierResult={folder:string;files:number;missing:{kind:string;id:string}[]};
+export function safePart(value:unknown,max?:number):string;
+export function fileHash(bytes:Uint8Array):string;
+export function inside(root:string,relative?:string):string;
+export function atomicFile(file:string,bytes:string|Uint8Array):void;
+export function fiscalFolder(date:string):string;
+export const documentFolders:Record<string,string>;
+export function documentDossier(db:SqlReader,root:string,id:string):DossierResult;
+export function saveDocumentOutput(db:SqlReader,root:string,id:string,version:number,extension:'pdf'|'docx'|'html',bytes:Uint8Array):string;
+export function mirrorWorkspaceFiles(db:SqlReader,root:string,scope?:{kind:string;id?:string}):{kind:string;id:string;folder?:string;files?:number;missing?:{kind:string;id:string}[];ok:boolean;error?:string}[];
+export function copyWorkspaceFiles(source:string,target:string,activeDatabase?:string):number;
+export function translateLegacyDocumentFolders(db:SqlReader,root:string):{folders:number;files:number};

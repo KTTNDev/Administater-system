@@ -7,6 +7,6 @@ it('preserves legacy defaults and validates optional first-page margins',()=>{
  expect(documentSchema.safeParse({...newDraft(),firstPageTop:'99'}).success).toBe(false);
 });
 it('adds the regulation subject and edition and only renders received-order authority on orders',()=>{
- const regulation=documentHtml({...newDraft('regulation'),subject:'การปฏิบัติงาน',number:'2'},assets);expect(regulation).toContain('ว่าด้วย การปฏิบัติงาน');expect(regulation).toContain('(ฉบับที่ 2)');
+ const regulation=documentHtml({...newDraft('regulation'),subject:'การปฏิบัติงาน',number:'2'},assets);expect(regulation).toContain('ว่าด้วย การปฏิบัติงาน');expect(regulation).toContain('(ฉบับที่ ๒)');
  const order={...newDraft('order'),orderReceivedBy:'นายกเทศมนตรี'};expect(documentHtml(order,assets)).toContain('รับคำสั่งนายกเทศมนตรี');expect(documentHtml({...order,type:'external'},assets)).not.toContain('รับคำสั่งนายกเทศมนตรี');
 });

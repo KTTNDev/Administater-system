@@ -20,7 +20,7 @@ test('every navigation group remains available with a consistent page layout',as
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1440);
   await page.screenshot({path:`output/system-design-${file}.png`});
  }
- await page.locator('.settings-disclosure > summary').click();
+ await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();
  await expect(page.getByRole('heading',{name:'พื้นที่จัดเก็บและซิงก์',exact:true})).toBeVisible();
  await expect(page.getByRole('region',{name:'ความพร้อมใช้งานจริง'})).toBeVisible();
  expect(errors).toEqual([]);

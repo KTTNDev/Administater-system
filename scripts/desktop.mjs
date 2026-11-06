@@ -138,7 +138,7 @@ async function stop() {
     for (let i = 0; i < 40 && alive(state.pid); i++) await delay(250);
     if (alive(state.pid)) throw new Error('Server has not stopped yet. Wait and retry.');
     fs.unlinkSync(stateFile);
-    console.log('Sarabun stopped. Your documents are saved in data/.');
+    console.log('Sarabun stopped. Your documents remain in the configured storage location.');
   });
 }
 async function serve() {

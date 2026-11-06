@@ -1,4 +1,5 @@
 "use server";
+import {duplicateDraftWithSources} from "@/lib/document-sources";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -22,7 +23,7 @@ export async function saveDocument(input: unknown, id?: string, version?: number
 }
 export async function getDocuments() { await requireUser(); return listDrafts(); }
 export async function deleteDocument(id: string, version: number) { try { await requireUser(); removeDraft(uuid.parse(id),versionSchema.parse(version)); revalidatePath("/"); return {ok:true as const}; } catch(e) { return {ok:false as const,error:e instanceof Error?e.message:"ลบไม่สำเร็จ"}; } }
-export async function duplicateDocument(id: string) { await requireUser(); const d=readDraft(uuid.parse(id)); return writeDraft({...d,subject:d.subject+" (สำเนาร่าง)",number:"",status:"draft"}); }
+export async function duplicateDocument(id: string) { await requireUser(); return duplicateDraftWithSources(uuid.parse(id)); }
 export async function getHistory(id: string) { await requireUser(); return auditHistory(uuid.parse(id)); }
 export async function uploadDocument(id: string, version: number, allowUnnumberedDraft = false) { try { await requireUser(); const result = await syncToDrive(uuid.parse(id),versionSchema.parse(version),z.boolean().parse(allowUnnumberedDraft)); revalidatePath("/"); return {ok:true as const,...result}; } catch(e) { return {ok:false as const,error:e instanceof Error ? e.message : "อัปโหลดไม่สำเร็จ"}; } }
 export async function saveOrganization(value: unknown) {

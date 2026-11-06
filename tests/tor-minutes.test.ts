@@ -1,3 +1,4 @@
+import {numerals} from '../src/lib/document';
 import {describe,it,expect} from 'vitest';
 import {bodySections,documentSchema,newDraft,reviewIssues} from '../src/lib/document';
 import {minutesPresetPatch} from '../src/lib/minutes-presets';
@@ -37,7 +38,7 @@ describe('editable TOR meeting reports',()=>{
   d.minutesTor.appointmentNumber='123/2569';d.minutesTor.appointmentDate='2026-10-26';d.minutesTor.sections=[{title:'สเปกที่กำหนดเอง',body:'**ข้อกำหนด** <script>\n| รายการ | จำนวน |\n| --- | --- |\n| กล้อง | 2 |'}];
   d.meetingAgenda[3].speeches=[{speaker:'ผู้เสนอ <ชื่อ>',role:'กรรมการ',text:'คำถามและคำชี้แจง'}];d.meetingAgenda[3].resolution='ให้แก้ไขร่างก่อนเสนออีกครั้ง';
   const html=documentHtml(d,assets);
-  for(const value of ['ลายมือชื่อ','หมายเหตุหนึ่ง','กรรมการไม่มา','ติดราชการ','123/2569','26 ตุลาคม 2569','สเปกที่กำหนดเอง','คำถามและคำชี้แจง','ให้แก้ไขร่างก่อนเสนออีกครั้ง','ผู้จดตัวอย่าง','ประธานกรรมการ','&lt;script&gt;','&lt;กล้อง&gt;'])expect(html).toContain(value);
+  for(const value of ['ลายมือชื่อ','หมายเหตุหนึ่ง','กรรมการไม่มา','ติดราชการ','123/2569','26 ตุลาคม 2569','สเปกที่กำหนดเอง','คำถามและคำชี้แจง','ให้แก้ไขร่างก่อนเสนออีกครั้ง','ผู้จดตัวอย่าง','ประธานกรรมการ','&lt;script&gt;','&lt;กล้อง&gt;'])expect(html).toContain(numerals(value,d.numeralStyle));
   expect(html).not.toContain('ผู้เสนอ <ชื่อ>');expect(html.match(/class="signature minutes-signature"/g)).toHaveLength(2);
   const sections=bodySections(d);expect(sections.findIndex(s=>s.title.includes('สเปกที่กำหนดเอง'))).toBeGreaterThan(sections.findIndex(s=>s.title.includes('ระเบียบวาระที่ 4')));
  });

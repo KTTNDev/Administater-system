@@ -15,11 +15,11 @@ import {renderWord} from '../src/lib/word';
 import {renderPdf} from '../src/lib/pdf';
 import {MissingOverlayPageError} from '../src/lib/export-validation';
 // Text may span styled runs and explicit no-break groups; assert logical paragraphs, not ZIP serialization boundaries.
-const paragraphTexts=(xml:string)=>Array.from(xml.matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g),p=>Array.from(p[1].matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g),m=>m[1]).join('').replaceAll('\u2060',''));
+const paragraphTexts=(xml:string)=>Array.from(xml.replace(/<w:drawing>[\s\S]*?<\/w:drawing>/g,'').matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g),p=>Array.from(p[1].matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g),m=>m[1]).join('').replaceAll('\u2060',''));
 const folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-word-'));
 beforeAll(()=>{process.env.DATABASE_PATH=path.join(folder,'data.sqlite');setSetting('storage:local',folder);fs.mkdirSync('output/word-check',{recursive:true});});
 afterAll(()=>db().close());
-const base={subject:'การตรวจสอบอุปกรณ์สำนักงาน',organization:'เทศบาลตัวอย่าง',department:'สำนักปลัดเทศบาล',address:'อำเภอเมือง จังหวัดตัวอย่าง 10000',phone:'0 2000 0000',number:'ทส 0000/123',recipient:'ผู้อำนวยการกองคลัง',signer:'นายทดสอบ งานราชการ',position:'นายกเทศมนตรี',body:'ด้วยเทศบาลมีความประสงค์ตรวจสอบ **อุปกรณ์สำนักงาน** เพื่อจัดทำข้อมูลประกอบการพิจารณา\n| ลำดับ | รายการ | จำนวน |\n| --- | --- | --- |\n| 1 | โต๊ะทำงาน | 2 |\n| 2 | เก้าอี้ | 3 |\nจึงเรียนมาเพื่อโปรดพิจารณา',meetingNo:'1/2569',location:'ห้องประชุมเทศบาล',attendees:'นายทดสอบ งานราชการ',startTime:'09.00 น.',endTime:'10.00 น.',recorder:'นางสาวตัวอย่าง ผู้บันทึก'};
+const base={numeralStyle:'original' as const,subject:'การตรวจสอบอุปกรณ์สำนักงาน',organization:'เทศบาลตัวอย่าง',department:'สำนักปลัดเทศบาล',address:'อำเภอเมือง จังหวัดตัวอย่าง 10000',phone:'0 2000 0000',number:'ทส 0000/123',recipient:'ผู้อำนวยการกองคลัง',signer:'นายทดสอบ งานราชการ',position:'นายกเทศมนตรี',body:'ด้วยเทศบาลมีความประสงค์ตรวจสอบ **อุปกรณ์สำนักงาน** เพื่อจัดทำข้อมูลประกอบการพิจารณา\n| ลำดับ | รายการ | จำนวน |\n| --- | --- | --- |\n| 1 | โต๊ะทำงาน | 2 |\n| 2 | เก้าอี้ | 3 |\nจึงเรียนมาเพื่อโปรดพิจารณา',meetingNo:'1/2569',location:'ห้องประชุมเทศบาล',attendees:'นายทดสอบ งานราชการ',startTime:'09.00 น.',endTime:'10.00 น.',recorder:'นางสาวตัวอย่าง ผู้บันทึก'};
 async function inspect(name:string,draft:Draft){
  const bytes=await renderWord(draft);fs.writeFileSync(`output/word-check/${name}.docx`,bytes);
  const zip=await JSZip.loadAsync(bytes),xml=await zip.file('word/document.xml')!.async('string');
@@ -105,7 +105,27 @@ it('exports matching editable field and signature guides without duplicating hea
  const anchors=Array.from(xml.matchAll(/<wp:anchor[\s\S]*?<\/wp:anchor>/g),m=>m[0]);
  const guides=anchors.filter(a=>/<w:t[^>]*>\.+<\/w:t>/.test(a));
  expect(guides).toHaveLength(6);
- for(const guide of guides){expect(guide).toContain('w:val="32"');expect(guide).toContain('w:val="111111"');expect(guide).toContain('TH Sarabun New');expect(guide).toContain('wps:txbx');}
+ for(const guide of guides){expect(guide).toContain('w:val="32"');expect(guide).toContain('w:val="111111"');expect(guide).toContain('TH Sarabun New');expect(guide).toContain('wps:txbx');expect(guide).toContain('<wp:positionV relativeFrom="line">');}
  expect(paragraphTexts(xml).filter(t=>t.includes('DOT-GUIDE-CHECK'))).toHaveLength(1);
  expect(paragraphTexts(xml).find(t=>t.includes('DOT-GUIDE-CHECK'))).not.toContain('...');
+},30000);
+
+// Exercise Word's reflow separately from the HTML preview: guides must remain
+// in their owning text paragraph even after long headers, tables and page breaks.
+it('keeps guides with multiline headers and multiple opinion blocks',async()=>{
+ const draft:Draft={...newDraft('memorandum'),...base,
+  organization:'เทศบาลตัวอย่าง หน่วยงานเจ้าของเรื่องสำหรับตรวจสอบข้อความหลายบรรทัด '.repeat(3),
+  subject:'ตรวจสอบหัวเรื่องหลายบรรทัดและเส้นปะความเห็นโดยไม่ทับข้อความ '.repeat(4),
+  opinions:[{title:'ความเห็นหัวหน้าสำนักปลัด',name:'',position:'หัวหน้าสำนักปลัด',comment:'  \n  ',lines:3,showDate:false},
+    {title:'ความเห็นนายกเทศมนตรี',name:'ผู้อนุมัติ',position:'นายกเทศมนตรี',comment:'',lines:1,showDate:true}]
+ };
+ const {xml}=await inspect('opinion-long',draft);
+ const guides=Array.from(xml.matchAll(/<wp:anchor[\s\S]*?<\/wp:anchor>/g),m=>m[0]).filter(a=>/<w:t[^>]*>\.+<\/w:t>/.test(a));
+ expect(guides).toHaveLength(8);
+ for(const guide of guides)expect(guide).toContain('<wp:positionV relativeFrom="line">');
+ const withoutDrawings=xml.replace(/<w:drawing>[\s\S]*?<\/w:drawing>/g,'').replaceAll('\u2060','');
+ const titleParagraph=Array.from(withoutDrawings.matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g),m=>m[1]).find(p=>p.includes('ความเห็น')&&p.includes('หัวหน้าสำนักปลัด'))!;
+ expect(titleParagraph).toContain('<w:keepNext/>');
+ expect(paragraphTexts(xml).join('')).toContain(draft.subject);
+ fs.writeFileSync('output/word-check/opinion-long-preview.pdf',await renderPdf(draft));
 },30000);

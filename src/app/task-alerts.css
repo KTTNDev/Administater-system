@@ -1,0 +1,54 @@
+.task-alert-bell{position:relative;flex:0 0 auto;color:var(--ui-ink)}
+/* Lift the whole navigation stacking context above sticky workbench headers. */
+.app-shell .topbar:has(.task-alert-panel){position:relative;z-index:70}
+.task-alert-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:40px;padding:0;border:1px solid var(--ui-border);border-radius:50%;background:var(--ui-surface);color:var(--ui-ink)}
+.task-alert-trigger:hover{background:var(--ui-hover)}
+.task-alert-trigger:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+.task-alert-badge{position:absolute;top:-4px;right:-5px;min-width:18px;height:18px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--ui-danger);color:var(--ui-on-accent);font:600 10px/1 var(--ui-font);border:2px solid var(--ui-surface);pointer-events:none}
+.task-alert-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.task-alert-panel{position:fixed;top:64px;right:20px;width:420px;max-width:calc(100vw - 24px);max-height:min(75dvh,680px);overflow:auto;overscroll-behavior:contain;z-index:30;padding:0;border:1px solid var(--ui-border-strong);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-ink);box-shadow:var(--ui-overlay-shadow);font:13px/1.7 var(--ui-font)}
+.task-alert-panel>header{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;padding:12px 14px;background:var(--ui-surface);border-bottom:1px solid var(--ui-border)}
+.task-alert-panel h2{font-size:16px;margin:0;flex:1}
+.task-alert-panel>header>button{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:36px;padding:5px;color:var(--ui-muted)}
+.task-alert-panel h3{font-size:12px;margin:0;padding:10px 16px;background:var(--ui-subtle);border-block:1px solid var(--ui-border);display:flex;justify-content:space-between}
+.task-alert-panel h3>span{font-weight:400}
+.task-alert-item{padding:14px 16px;border-bottom:1px solid var(--ui-border)}
+.task-alert-item[data-read=true]>.task-alert-open strong{font-weight:400}
+.task-alert-panel .task-alert-open{display:block;width:100%;padding:0;text-align:left;background:transparent;white-space:normal;color:var(--ui-ink)}
+.task-alert-open strong{display:block;overflow-wrap:anywhere;font-size:13px}
+.task-alert-open span{display:block;color:var(--ui-muted);font-size:12px;margin-top:4px}
+.task-alert-item>p{margin:6px 0;font-size:12px;color:var(--ui-muted)}
+.task-alert-item>p.is-late{color:var(--ui-danger)}
+.task-alert-item details{font-size:12px;overflow-wrap:anywhere}
+.task-alert-item summary{cursor:pointer}
+.task-alert-item-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px}
+.task-alert-item-actions>button,.task-alert-item-actions details>button{min-height:36px;padding:6px 10px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);background:var(--ui-subtle);color:var(--ui-ink)}
+.task-alert-item-actions input{max-width:100%;min-width:0;font:12px var(--ui-font);padding:7px}
+.task-alert-empty,.task-alert-panel>footer,.task-alert-snoozed>summary{padding:16px;color:var(--ui-muted);font-size:12px;margin:0}
+.task-alert-panel>footer{border-top:1px solid var(--ui-border)}
+.task-alert-error{padding:10px 14px;color:var(--ui-danger);font:13px/1.7 var(--ui-font)}
+.task-alert-settings-dialog{width:760px;max-width:calc(100vw - 24px);max-height:88dvh;overflow:auto;box-sizing:border-box;margin:auto;padding:22px;border:1px solid var(--ui-border-strong);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-ink);font:14px/1.7 var(--ui-font)}
+.task-alert-settings-dialog::backdrop{background:var(--ui-backdrop)}
+.task-alert-settings-dialog>header,.task-alert-settings-dialog>footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.task-alert-settings-dialog h2{margin:0;font-size:20px}
+.task-alert-settings-dialog h3{font-size:15px;margin:16px 0 8px}
+.task-alert-settings-dialog fieldset,.task-reminder-editor fieldset{border:0;padding:0;margin:0;min-width:0}
+.task-alert-settings-dialog label,.task-reminder-editor label{display:flex;flex-direction:column;gap:6px;margin:12px 0;min-width:0;font-size:13px}
+.task-alert-settings-dialog :is(input:not([type=checkbox]),select,textarea),.task-reminder-editor :is(input:not([type=checkbox]),select,textarea){width:100%;min-width:0;box-sizing:border-box;padding:9px;border:1px solid var(--ui-border-strong);border-radius:var(--ui-radius-sm);background:var(--ui-surface);color:var(--ui-ink);font:13px/1.7 var(--ui-font)}
+.task-alert-settings-dialog .task-alert-check,.task-reminder-editor .task-alert-check{flex-direction:row;align-items:center;gap:8px;font-size:13px}
+.task-alert-check input[type=checkbox]{width:17px;height:17px;min-height:17px;margin:0;accent-color:var(--ui-accent)}
+.task-alert-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.task-alert-settings-dialog small,.task-reminder-editor small,.task-alert-rules>p{font-size:12px;color:var(--ui-muted)}
+.task-alert-settings-dialog button,.task-reminder-editor button{min-height:40px;font:13px var(--ui-font);padding:7px 10px;border-radius:var(--ui-radius-sm)}
+.task-alert-settings-dialog>footer{margin-top:20px;padding-top:16px;border-top:1px solid var(--ui-border)}
+.task-alert-rule{padding:14px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);margin:12px 0}
+.task-alert-settings-dialog :is(button,input,select,textarea,summary):focus-visible,.task-alert-bell :is(button,input,summary):focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+.task-alert-settings-dialog :disabled{opacity:.5;cursor:default}
+.task-reminder-editor{margin:20px 0;padding:14px;background:var(--ui-subtle);border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm)}
+.task-reminder-editor>summary{cursor:pointer;font-weight:600}
+.task-reminder-offsets{display:flex;flex-wrap:wrap;gap:12px}
+.task-reminder-dates>div{display:flex;gap:12px;align-items:center}
+.task-reminder-dates label{flex:1}
+.task-deadline-preview{font-size:13px;font-weight:600}
+@media(max-width:600px){.task-alert-grid{grid-template-columns:minmax(0,1fr)}.task-alert-settings-dialog{padding:16px}.task-alert-settings-dialog h2{font-size:17px}.task-alert-panel{right:12px}.app-shell .workspace-control-deck .breadcrumbs{gap:8px}}
+@media print{.task-alert-bell{display:none}}

@@ -28,7 +28,12 @@ function textRuns(runs: WordRun[]) {
 }
 function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
   const options: IParagraphOptions = {
-    children:textRuns(p.runs),alignment:p.align==='center'?AlignmentType.CENTER:p.align==='right'?AlignmentType.RIGHT:p.align==='justify'?AlignmentType.THAI_DISTRIBUTE:AlignmentType.LEFT,
+    children:[...textRuns(p.runs),...(p.guides||[]).map(guide=>new ShapeRun({
+      type:'rectangle',transformation:{width:guide.width+2,height:guide.height},fill:'none',line:'none',
+      children:paragraphs({...guide,x:0,guides:undefined},0,0,guide.width),
+      textOptions:{verticalAlignment:'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},
+      floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(guide.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.LINE,offset:emu(guide.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}
+    }))],alignment:p.align==='center'?AlignmentType.CENTER:p.align==='right'?AlignmentType.RIGHT:p.align==='justify'?AlignmentType.THAI_DISTRIBUTE:AlignmentType.LEFT,
     spacing:{before:twip(before),after:0,line:twip(p.border?p.height:p.line),lineRule:LineRuleType.EXACT},
     indent:{left:twip(Math.max(0,p.x-left)),right:twip(Math.max(0,width-(p.x-left)-p.width-(p.align==='center'?0:4))),firstLine:twip(p.indent)},
     tabStops:p.tabs.map(position=>({type:'left' as const,position:twip(position)})),
@@ -47,7 +52,7 @@ function paragraphs(p: WordParagraph, before = 0, left = 0, width = p.width) {
     if(text) groups.at(-1)!.push({...run,text});
   });
   }
-  return groups.map((runs,index)=>paragraph({...p,runs,keep:index<groups.length-1||p.keep},index===0?before:0,left,width));
+  return groups.map((runs,index)=>paragraph({...p,runs,guides:index===groups.length-1?p.guides:undefined,keep:index<groups.length-1||p.keep},index===0?before:0,left,width));
 }
 function image(img: WordImage) {
   return new ImageRun({type:img.source.startsWith('data:image/jpeg')?'jpg':'png',data:decode(img.source),transformation:{width:img.width,height:img.height},crop:img.crop,

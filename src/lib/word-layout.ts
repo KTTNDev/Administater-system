@@ -2,7 +2,7 @@
 // only existing images and uploaded PDF pages are raster images.
 export type WordRun = { keepGroup?:string; softBreak?:boolean; tracking?:number; text: string; bold: boolean; underline: boolean; size: number; color: string };
 export type Box = { x: number; y: number; width: number; height: number };
-export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean };
+export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean; guides?: WordParagraph[] };
 export type WordTable = Box & { kind: 'table'; rows: { header: boolean; cells: WordParagraph[] }[] };
 export type WordImage = Box & { kind: 'image'; source: string; alt: string; crop?: { left: number; right: number; top: number; bottom: number } };
 export type WordPage = { width: number; height: number; top: number; left: number; right: number; copy: boolean; blocks: (WordParagraph | WordTable)[]; overlays: (WordParagraph | WordImage)[] };
@@ -39,7 +39,24 @@ export function extractWordPages(): WordPage[] {
           text.push(...runs(child));
         });
       }
-      return { ...b, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line:el.classList.contains('opinion-line')?b.height:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2, tabs, keep:el.classList.contains('body-subheading') || el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion-sign') && !!el.nextElementSibling), border:false };
+      let line = el.classList.contains('opinion-line') ? b.height : parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2;
+      if(el.matches('.memo-field,.memo-row')) {
+        // Header labels are 20 pt while their values are 16 pt. Measuring only
+        // the parent's 16 pt compressed rows and put dots through the next label.
+        const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+        while(walker.nextNode()) {
+          if(walker.currentNode.parentElement?.closest('.document-dot-guide'))continue;
+          const range=document.createRange();range.selectNodeContents(walker.currentNode);
+          for(const rect of range.getClientRects())line=Math.max(line,rect.height);
+        }
+      }
+      // Keep each guide with its own editable paragraph. Page-fixed guides drift
+      // onto unrelated text when Word lays out tables or Thai paragraphs differently.
+      const guides: WordParagraph[] = Array.from(el.querySelectorAll<HTMLElement>('.document-dot-guide')).map(guide => {
+        const g = box(guide);
+        return {...g, y:g.y-b.y-Math.max(0,b.height-line), kind:'paragraph', runs:[{text:guide.textContent||'',bold:false,underline:false,size:16,color:'111111'}], align:'left',indent:0,line:g.height,tabs:[],keep:false,border:false};
+      });
+      return { ...b, guides, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line, tabs, keep:el.classList.contains('body-subheading') || el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion') && !!el.nextElementSibling), border:false };
     };
     const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),blocks:[],overlays:[]};
     const walk = (el: Element, floating = false) => {
@@ -73,11 +90,6 @@ export function extractWordPages(): WordPage[] {
       if(el===content) Array.from(el.children).forEach(child=>walk(child));
       else walk(el,true);
     });
-    // Decorative field guides are separate editable text overlays in Word.
-    // Keep them out of the logical header text and preserve their measured position.
-    for(const guide of page.querySelectorAll<HTMLElement>('.document-dot-guide')){
-      const b=box(guide);result.overlays.push({...b,kind:'paragraph',runs:[{text:guide.textContent||'',bold:false,underline:false,size:16,color:'111111'}],align:'left',indent:0,line:b.height,tabs:[],keep:false,border:false});
-    }
     return result;
   });
 }

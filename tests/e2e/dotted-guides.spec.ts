@@ -20,7 +20,12 @@ for(const type of ['internal','memorandum'] as const)test(type+': field guides m
  expect(paragraphs.some(p=>p.runs.map(r=>r.text).join('').includes(organization))).toBe(true);
  expect(paragraphs.filter(p=>p.runs.some(r=>r.text.includes('เทศบาลตัวอย่าง'))).every(p=>!p.runs.some(r=>r.text.includes('....')))).toBe(true);
  const dotOverlays=pages.flatMap(p=>p.overlays).filter(p=>p.kind==='paragraph'&&p.runs.some(r=>/^\.+$/.test(r.text)));
- expect(dotOverlays).toHaveLength(6);
+ expect(dotOverlays).toHaveLength(0);
+ const paragraphGuides=paragraphs.flatMap(p=>p.guides||[]);expect(paragraphGuides).toHaveLength(6);
+ const headerRows=paragraphs.filter(p=>p.guides?.length&&p.runs.length);expect(headerRows).toHaveLength(3);
+ // 20 pt labels need their measured 36 px line; the former 16 pt estimate was 25.6 px.
+ expect(headerRows.every(p=>p.line>=35&&p.guides!.every(g=>g.y>=0&&g.y<p.line))).toBe(true);
+ expect(paragraphs.filter(p=>p.guides?.length===1&&p.runs.length===0).every(p=>p.keep)).toBe(true);
  if(!long){await page.locator('.page').first().screenshot({path:'output/dotted-guides-'+type+'.png'});await page.pdf({path:'output/dotted-guides-'+type+'.pdf',preferCSSPageSize:true});}
  }
 });

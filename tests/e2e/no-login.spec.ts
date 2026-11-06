@@ -33,7 +33,7 @@ test.describe('direct single-user access',()=>{
   await page.goto(url+'/desktop#token=expired');
   await expect(page.getByRole('heading',{name:'พื้นที่ทำงาน'})).toBeVisible();
   expect((await page.request.get(url+'/api/attachments/00000000-0000-4000-8000-000000000000')).status()).toBe(404);
-  await page.goto(url+'/?view=settings');
+  await page.goto(url+'/?view=settings');await page.getByRole('tab',{name:'ความพร้อมระบบ',exact:true}).click();
   await expect(page.getByRole('region',{name:'ความพร้อมใช้งานจริง'})).toContainText('เปิดใช้งานได้ทันที ไม่ต้องล็อกอิน');
  });
 });

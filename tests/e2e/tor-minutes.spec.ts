@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';import fs from 'node:fs';
-import {documentHtml} from '../../src/lib/render-document';import {torMeetingFixture} from '../fixtures/tor-minutes';
+import {numerals} from '../../src/lib/document';import {documentHtml} from '../../src/lib/render-document';import {torMeetingFixture} from '../fixtures/tor-minutes';
 const font=(file:string)=>'data:font/ttf;base64,'+fs.readFileSync('public/fonts/'+file).toString('base64');
 const assets={regular:font('THSarabunNew.ttf'),bold:font('THSarabunNew-Bold.ttf'),garuda:'',routingStamp:'',copyMark:''};
 test('TOR attendance, long details and signer groups survive pagination',async({page})=>{
@@ -7,7 +7,7 @@ test('TOR attendance, long details and signer groups survive pagination',async({
  expect(await page.evaluate(()=>(window as unknown as {__overflow:boolean}).__overflow)).toBe(false);
  expect(await page.locator('.page').count()).toBeGreaterThan(3);
  expect(await page.locator('.minutes-attendance').count()).toBeGreaterThan(1);
- const text=await page.locator('#pages').innerText();for(let i=1;i<=40;i++)expect(text).toContain('กรรมการตัวอย่าง '+i);for(let i=1;i<=8;i++)expect(text).toContain('จบหัวข้อ TOR '+i);
+ const text=await page.locator('#pages').innerText();for(let i=1;i<=40;i++)expect(text).toContain(numerals('กรรมการตัวอย่าง '+i,'thai'));for(let i=1;i<=8;i++)expect(text).toContain(numerals('จบหัวข้อ TOR '+i,'thai'));
  expect(await page.locator('.minutes-signature').count()).toBe(3);
  const fits=await page.locator('.minutes-signature').evaluateAll(nodes=>nodes.every(n=>{const a=n.getBoundingClientRect(),b=n.closest('.content')!.getBoundingClientRect();return a.top>=b.top-1&&a.bottom<=b.bottom+1;}));expect(fits).toBe(true);
  expect(await page.locator('.content > .minutes-section-title:last-child').count()).toBe(0);

@@ -1,0 +1,12 @@
+import type {SqlReader} from './workspace-files.mjs';
+export type ReportKind='project'|'inventory-form'|'inventory-movement'|'inventory-report';
+export type ReportSource={kind:ReportKind;id:string;title:string;context:Record<string,string>;fingerprint:string;version:number};
+export type ReportMetadata={schemaVersion:1;ownerKind:string;ownerId:string;source:ReportSource;generatedAt:string;files:{id:string;kind:string;format:'pdf'|'docx'|'csv';path:string;sha256:string;bytes:number}[]};
+export function reportSourceSnapshot(db:SqlReader,kind:ReportKind,id:string):{fingerprint:string;version:number}|null;
+export function prepareReportOutput(db:SqlReader,kind:ReportKind,id:string,title:string,context?:Record<string,string>):ReportSource;
+export function saveReportOutput(db:SqlReader,root:string,source:ReportSource,extension:'pdf'|'docx'|'csv',bytes:Uint8Array):string;
+export function readReportMetadata(folder:string):ReportMetadata|null;
+export function reportPeriodOwners(root:string):{kind:string;id:string;folder:string;ok:boolean}[];
+export function reportFolderFromIndex(root:string,kind:string,id:string):string|null;
+export function reportOutputState(db:SqlReader,root:string,kind:string,id:string):{folder:string;data:ReportMetadata;current:boolean;fingerprint:string}|null;
+export const reportMetadataPath:string;
