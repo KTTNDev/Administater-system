@@ -8,7 +8,9 @@ import {suiteCodes} from '@/lib/procurement-workflow-model';
 import {reviewProcurementDocument,transitionProcurement,documentChecklist} from '@/lib/procurement-process';
 import {procurementSuiteZip,procurementPacketZip,procurementPacketPdf,procurementSuitePdf,procurementFilePdf} from '@/lib/procurement-bundle';
 import {suiteParagraphs,suiteValues,resolveSuiteText,suiteMissing} from '@/lib/procurement-suite';
-import {procurementSchema} from '@/lib/procurement';
+import {procurementSchema,procurementCodes} from '@/lib/procurement';
+import {procurementJourney} from '@/lib/procurement-journey';
+import {procurementJourneyProgress,advanceProcurementJourney,prepareProcurementJourneyDocument,attachProcurementJourneyFile,reviewProcurementJourneyDocument} from '@/lib/procurement-journey-server';
 import {compareProcurementWord} from '@/lib/procurement-roundtrip';
 import {procurementContractDates} from '@/lib/procurement-contracts';
 import {procurementBundleName,procurementDownloadHeader} from '@/lib/procurement-filenames';
@@ -33,6 +35,7 @@ export async function GET(request:NextRequest,{params}:Context){
   await guard(request);const segments=(await params).segments||[];
   if(!segments.length)return Response.json(procurementSnapshot(),{headers:noCache});
   if(segments[0]==='contracts'&&segments.length===1)return Response.json({dates:procurementContractDates(procurementSnapshot().cases)},{headers:noCache});
+  if(segments[0]==='journey'&&segments.length===2)return Response.json(await procurementJourneyProgress(segments[1]),{headers:noCache});
   if(segments[0]==='presets'&&segments.length===1)return Response.json(await procurementPreset(z.enum(['purchase','hire']).parse(request.nextUrl.searchParams.get('kind')||'purchase')),{headers:noCache});
   if(segments[0]==='live'&&segments.length===2)return Response.json(livePreviewStatus(segments[1]),{headers:noCache});
   if(segments[0]==='live'&&segments.length===3&&segments[2]==='pdf')return new Response(new Uint8Array(livePreviewPdf(segments[1])),{headers:{...noCache,'Content-Type':'application/pdf','X-Content-Type-Options':'nosniff'}});
@@ -48,6 +51,10 @@ export async function GET(request:NextRequest,{params}:Context){
 export async function POST(request:NextRequest,{params}:Context){
  try{
   await guard(request,true);const segments=(await params).segments||[];
+  if(segments[0]==='stage-file'&&segments.length===2){
+   const version=z.coerce.number().int().positive().parse(request.nextUrl.searchParams.get('version')),code=z.enum(procurementCodes).parse(request.nextUrl.searchParams.get('code')),kind=z.enum(['primary','signed']).parse(request.nextUrl.searchParams.get('kind'));
+   return Response.json(await attachProcurementJourneyFile(segments[1],version,code,kind,await limitedBody(request,20*1024*1024),decodeURIComponent(request.headers.get('x-file-name')||'')),{headers:noCache});
+  }
   if(segments[0]==='template'&&segments.length===1){const code=z.enum(suiteCodes).parse(request.nextUrl.searchParams.get('code')||'D07'),bytes=await limitedBody(request,1024*1024);installProcurementTemplate(bytes,decodeURIComponent(request.headers.get('x-file-name')||code+'.docx'),code);return Response.json({ok:true},{headers:noCache});}
   if(segments[0]==='compare'&&segments.length===2){const baseId=z.string().uuid().parse(request.nextUrl.searchParams.get('base'));return Response.json(await compareProcurementWord(segments[1],baseId,await limitedBody(request,20*1024*1024),decodeURIComponent(request.headers.get('x-file-name')||'')),{headers:noCache});}
   if(segments[0]==='attachments'&&segments.length===2){
@@ -56,6 +63,9 @@ export async function POST(request:NextRequest,{params}:Context){
    const id=await attachProcurementFile(segments[1],version,await limitedBody(request,20*1024*1024),decodeURIComponent(request.headers.get('x-file-name')||''),meta);return Response.json({id},{headers:noCache});
   }
   const input=JSON.parse((await limitedBody(request,4*1024*1024)).toString());
+  if(segments[0]==='stage-review'&&segments.length===2){const parsed=z.object({version:z.number().int().positive(),code:z.enum(procurementCodes)}).strict().parse(input);return Response.json(await reviewProcurementJourneyDocument(segments[1],parsed.version,parsed.code),{headers:noCache});}
+  if(segments[0]==='advance'&&segments.length===2){const parsed=z.object({version:z.number().int().positive(),stage:z.enum(procurementJourney.map(s=>s.id))}).strict().parse(input);return Response.json(await advanceProcurementJourney(segments[1],parsed.version,parsed.stage),{headers:noCache});}
+  if(segments[0]==='prepare-stage'&&segments.length===2){const parsed=z.object({version:z.number().int().positive(),code:z.enum(suiteCodes)}).strict().parse(input);return Response.json(await prepareProcurementJourneyDocument(segments[1],parsed.version,parsed.code),{headers:noCache});}
   if(segments[0]==='live'&&segments.length===1){const parsed=z.object({data:z.unknown(),code:z.enum(suiteCodes),client:z.string().uuid()}).strict().parse(input);return Response.json(await requestLivePreview(parsed.data,parsed.code,parsed.client),{headers:noCache});}
   if(segments[0]==='wording'&&segments.length===1){const parsed=z.object({data:z.unknown(),code:z.enum(suiteCodes)}).strict().parse(input),data=procurementSchema.parse(parsed.data),values=suiteValues(data,parsed.code),paragraphs=await suiteParagraphs(parsed.code);return Response.json({paragraphs:paragraphs.map(p=>({...p,current:resolveSuiteText(data.documents[parsed.code]?.paragraphs[String(p.p)]??p.template,values,true)})),missing:await suiteMissing(data,parsed.code)},{headers:noCache});}
   if(!segments.length){const parsed=z.object({data:z.unknown(),id:z.string().uuid().optional(),version:z.number().int().positive().optional()}).strict().parse(input);return Response.json(saveProcurement(parsed.data,parsed.id,parsed.version),{headers:noCache});}

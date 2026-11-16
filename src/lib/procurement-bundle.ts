@@ -2,17 +2,17 @@ import 'server-only';
 import JSZip from 'jszip';
 import {PDFDocument} from 'pdf-lib';
 import {readProcurement,readProcurementFile,procurementSnapshot} from './procurement-db';
-import {suiteCodes} from './procurement-workflow-model';
+import {procurementDocumentOrder} from './procurement-journey';
 import {documentContentHash} from './procurement-process';
 import {nativeD07Pdf} from './procurement-preview';
 import {createHash} from 'node:crypto';
 import {procurementFolder} from './procurement-filenames';
 export async function procurementSuiteZip(id:string){
  const data=readProcurement(id),files=procurementSnapshot().files.filter(f=>f.caseId===id),zip=new JSZip(),manifest=[];
- for(const code of suiteCodes){const config=data.documents[code];if(config?.required===false){manifest.push({code,exempt:true,reason:config.exemptionReason});continue;}
+ for(const code of procurementDocumentOrder){const config=data.documents[code];if(config?.required===false){manifest.push({code,exempt:true,reason:config.exemptionReason});continue;}
   const file=files.find(f=>f.id===config?.primaryFileId&&f.meta.code===code);if(!file)throw Error('ยังไม่ได้เลือกฉบับใช้งาน '+code);
   if(file.meta.origin==='draft'&&file.meta.contentHash!==await documentContentHash(data,code))throw Error(code+' ข้อมูลเปลี่ยนแล้ว สร้างฉบับใหม่ก่อนดาวน์โหลดทั้งชุด');
-  zip.file(String(suiteCodes.indexOf(code)+1).padStart(2,'0')+'_'+procurementFolder(code)+'/'+file.name,readProcurementFile(file.id).bytes);manifest.push({code,id:file.id,sha256:file.sha256,name:file.name,origin:file.meta.origin});
+  zip.file(String(procurementDocumentOrder.indexOf(code)+1).padStart(2,'0')+'_'+procurementFolder(code)+'/'+file.name,readProcurementFile(file.id).bytes);manifest.push({code,id:file.id,sha256:file.sha256,name:file.name,origin:file.meta.origin});
  }
  zip.file('manifest.json',JSON.stringify({caseId:id,version:data.version,at:new Date().toISOString(),files:manifest},null,2));return zip.generateAsync({type:'nodebuffer',compression:'DEFLATE'});
 }
@@ -31,6 +31,6 @@ export async function procurementPacketPdf(id:string,packetId:string){return mer
 export async function procurementFilePdf(id:string){const file=readProcurementFile(id);if(file.mime==='application/pdf')return file.bytes;if(file.mime.endsWith('wordprocessingml.document'))return (await nativeD07Pdf(file.bytes)).bytes;return mergePrintFiles(file.caseId,[{id,sha256:createHash('sha256').update(file.bytes).digest('hex'),copies:1}]);}
 export async function procurementSuitePdf(id:string,version:number){
  const data=readProcurement(id);if(data.version!==version)throw Error('ข้อมูลเปลี่ยนแล้ว เปิดฉบับล่าสุดก่อนรวม PDF');const available=procurementSnapshot().files.filter(f=>f.caseId===id),files=[];
- for(const code of suiteCodes){const config=data.documents[code];if(config?.required===false)continue;const file=available.find(f=>f.id===config?.primaryFileId&&f.meta.code===code);if(!file)throw Error('เลือกฉบับใช้งาน '+code+' ก่อนรวมชุดพิมพ์');if(file.meta.origin==='draft'&&file.meta.contentHash!==await documentContentHash(data,code))throw Error(code+' เปลี่ยนแล้ว สร้างร่างใหม่ก่อนพิมพ์');files.push({id:file.id,sha256:file.sha256,copies:config?.copies||1});}
+ for(const code of procurementDocumentOrder){const config=data.documents[code];if(config?.required===false)continue;const file=available.find(f=>f.id===config?.primaryFileId&&f.meta.code===code);if(!file)throw Error('เลือกฉบับใช้งาน '+code+' ก่อนรวมชุดพิมพ์');if(file.meta.origin==='draft'&&file.meta.contentHash!==await documentContentHash(data,code))throw Error(code+' เปลี่ยนแล้ว สร้างร่างใหม่ก่อนพิมพ์');files.push({id:file.id,sha256:file.sha256,copies:config?.copies||1});}
  const bytes=await mergePrintFiles(id,files);if(readProcurement(id).version!==version)throw Error('มีการแก้ข้อมูลระหว่างรวม PDF กรุณาสร้างจากฉบับล่าสุด');return bytes;
 }

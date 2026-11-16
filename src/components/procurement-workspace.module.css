@@ -52,3 +52,7 @@
 .contractList{max-height:430px;overflow:auto}
 
 .previewMode{display:inline-flex!important;align-items:center;gap:4px;white-space:nowrap;font-size:12px!important}.previewMode input{width:14px!important;height:14px!important;margin:0!important}
+
+.journeyPanel{border:1px solid #bed1ca!important;background:#f9fcfb!important}.journeyPanel h2{font-size:18px!important;margin:12px 0 6px}.journeyPanel p{font-size:12px!important;line-height:1.6}.journeyPanel>label{display:grid;gap:5px;margin:10px 0;font-size:12px}.journeyPanel>button,.journeyPanel>a{margin:5px 5px 5px 0}.journeyControls{display:flex;justify-content:space-between;gap:8px;margin:16px 0 8px}.journeyControls button{font-size:12px}.journeyList{padding-left:22px;margin:12px 0}.journeyList li{padding:6px 0;line-height:1.5}.journeyList li[aria-current=step]{background:#e5f1ec}.journeyList button{border:0;background:transparent;text-align:left;color:inherit;cursor:pointer;font:inherit;font-size:12px}.journeyList small{display:block;color:#6c7a73;font-size:11px}@media(max-width:600px){.journeyControls{flex-direction:column}.journeyPanel h2{font-size:16px!important}}
+
+.stageDocuments{padding:10px 0;margin:8px 0;border-top:1px solid #d5e4de;border-bottom:1px solid #d5e4de}.stageDocuments>summary{font-weight:600;font-size:13px;cursor:pointer}.stageDocuments>label{display:grid;gap:5px;margin:10px 0;font-size:12px}.stageDocuments>button,.stageDocuments>a{margin:5px 5px 5px 0}

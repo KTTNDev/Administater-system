@@ -30,7 +30,9 @@ export function saveProcurement(input:unknown,id?:string,version?:number,workflo
  const data=procurementSchema.parse(input),c=connection(),caseId=id||randomUUID(),at=new Date().toISOString();
  validateContractTasks(data);
  if(data.bill.items.length&&billTotals(data.bill).total>99999999999n)throw Error('ยอดเงินสูงเกินขอบเขตแม่แบบ 999,999,999.99 บาท');
- const oldWorkflow=id?readProcurement(id).workflow:{state:'preparing',events:[],packets:[]};
+ const existing=id?readProcurement(id):undefined;
+ if(existing&&existing.sample!==data.sample)throw Error('ไม่เปลี่ยนสถานะงานจริง/งานตัวอย่างของงานเดิม ให้สร้างงานใหม่แยกกัน');
+ const oldWorkflow=existing?.workflow||{state:'preparing',events:[],packets:[]};
  if(!workflowChange&&JSON.stringify(data.workflow)!==JSON.stringify(oldWorkflow))throw Error('เปลี่ยนขั้นตอนผ่านปุ่มดำเนินการเพื่อเก็บหลักฐานเท่านั้น');
  if(id&&!workflowChange&&oldWorkflow.state!=='preparing'&&caseContentStamp(data,oldWorkflow.state==='closed')!==caseContentStamp(readProcurement(id),oldWorkflow.state==='closed'))throw Error('เอกสารส่งคลังหรือปิดแล้ว เปิดแก้ไขพร้อมเหตุผลในส่วนส่งคลังก่อนแก้ข้อมูลบิล');
  if(!id&&version!==undefined)throw Error('เวอร์ชันงานไม่ถูกต้อง');

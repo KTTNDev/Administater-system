@@ -25,6 +25,7 @@ const text=(max:number)=>z.string().max(max).regex(/^[^\x00-\x1f\x7f]*$/,'กร
 export const procurementCommonSchema=z.object(Object.fromEntries([...templateSlots,...additionalCommonFields].map(f=>[f.key,text(f.max).default('')]))).strict();
 const isoDate=z.string().refine(v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v,'วันที่ไม่ถูกต้อง');
 export const procurementSchema=z.object({
+ sample:z.boolean().default(false),
  kind:z.enum(['purchase','hire']),title:text(160).trim().min(1,'ระบุชื่องาน'),
  profile:z.enum(['pending','general','w119','w804','invitation']),
  egpExemption:z.enum(['pending','none','w322']),
@@ -56,7 +57,7 @@ export type ProcurementFile={id:string;caseId:string;name:string;mime:string;sha
 export type ProcurementSnapshot={cases:ProcurementCase[];files:ProcurementFile[];template:{ready:boolean;name?:string;sha256?:string};templates?:Record<DraftDocumentCode,{ready:boolean;name?:string;sha256?:string}>};
 export function newProcurement(kind:ProcurementInput['kind']='purchase',department=''):ProcurementInput{
  const today=new Date(),month=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
- return {kind,title:'',profile:'pending',egpExemption:'pending',billType:'quotation',billNumber:'',contractDue:'',notes:'',
+ return {sample:false,kind,title:'',profile:'pending',egpExemption:'pending',billType:'quotation',billNumber:'',contractDue:'',notes:'',
   common:{...Object.fromEntries([...templateSlots,...additionalCommonFields].map(f=>[f.key,''])),department,day:String(today.getDate()),month:month[today.getMonth()],year:String(today.getFullYear()+543)},
   sources:Object.fromEntries(sourceCodes.map(code=>[code,code==='D07'?'draft':'external'])) as ProcurementInput['sources'],d07Overrides:{},d01:{...emptyD01(),day:String(today.getDate()),month:month[today.getMonth()],year:String(today.getFullYear()+543)},d01Overrides:{},documentTypes:{...defaultProcurementTypes},bill:billSchema.parse({}),documents:{},workflow:workflowSchema.parse({}),tasks:[],inspection:inspectionSchema.parse({})};
 }

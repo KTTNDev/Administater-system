@@ -31,7 +31,7 @@ export async function procurementPreset(kind:ProcurementInput['kind']){
    for(const field of ['organization','unit','proposer','proposerPosition','director','secretary','authority'].sort((a,b)=>(aliases[b]?.length||0)-(aliases[a]?.length||0)))if(aliases[field])data.d01[key]=data.d01[key].replaceAll(aliases[field],'{{'+field+'}}');
   }
  }
- const latest=[...snapshot.cases].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+ const latest=snapshot.cases.filter(record=>!record.sample).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
  const shared=['department','organization','organizationAddress','organizationPhone','unit','category','budgetYear','recipient','directorRecipient','secretaryRecipient','proposer','proposerPosition','director','directorPosition','secretary','secretaryPosition','secretaryActing','authority','authorityPosition','authorityActing'];
  for(const key of shared)data.common[key]=latest?.common[key]||'';
  return {data,source:latest?'หน่วยงานและรายชื่อใช้ข้อมูลจากงานล่าสุดที่บันทึกไว้ ตรวจอีกครั้งก่อนใช้':'มีข้อความแม่แบบให้แล้ว ช่องข้อมูลจริงยังว่าง ข้อความสีจางเป็นตัวอย่างเท่านั้น',ready:{D01:!!snapshot.templates?.D01.ready,D07:snapshot.template.ready}};

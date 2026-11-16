@@ -9,6 +9,7 @@ import {documentTemplates,type DraftDocumentCode} from './procurement-documents'
 import {buildLivePreview} from './procurement-live-preview';
 import {billValues} from './procurement-bill';
 import {wordContentHash} from './procurement-template';
+import {procurementJourney} from './procurement-journey';
 const inputOf=({id:_id,version:_version,updatedAt:_at,...data}:ProcurementCase)=>data;
 export async function documentContentHash(data:ProcurementInput,code:string){
  if(Object.hasOwn(documentTemplates,code))try{return wordContentHash(await buildLivePreview(data,code as DraftDocumentCode));}catch(error){if(data.sources[code as keyof typeof data.sources]!=='external'||!(error instanceof Error)||!error.message.startsWith('ยังไม่ได้ติดตั้ง'))throw error;}
@@ -24,10 +25,11 @@ export function validateContractTasks(data:ProcurementInput){
 }
 const needsSignature=(code:string)=>!['D10','E01','P01','OTHER'].includes(code);
 export async function documentChecklist(data:ProcurementInput,files:ProcurementFile[],round=1){
- const codes:ProcurementDocumentCode[]=round===2?['V01']:[...suiteCodes,'E01'];
+ const codes:ProcurementDocumentCode[]=round===2?['V01']:procurementJourney.flatMap(s=>'code'in s&&s.code!=='V01'?[s.code]:[]);
  return Promise.all(codes.map(async code=>{const config=data.documents[code]||emptyDocumentConfig(),primary=files.find(f=>f.id===config.primaryFileId&&f.meta.code===code),signed=files.find(f=>f.id===config.signedFileId&&f.meta.code===code&&f.meta.origin==='scan');let reason='';const hash=primary?await documentContentHash(data,code):'';
  if(!config.required&&code!=='V01')reason=config.exemptionReason.trim()?'':'ระบุเหตุที่ไม่ใช้เอกสารนี้';
  else if(!primary)reason='เลือกฉบับใช้งาน';
+ else if(code==='V01'&&primary.mime!=='application/pdf')reason='เลือก PDF ฎีกาจาก e-LAAS';
  else if(['E01','V01'].includes(code)&&primary.meta.origin!=='elaas')reason='เลือกไฟล์ต้นทางที่ได้จาก e-LAAS';
  else if(Object.hasOwn(data.sources,code)&&data.sources[code as keyof typeof data.sources]==='external'&&primary.meta.origin!=='egp')reason='เลือกไฟล์ต้นทางจาก e-GP ให้ตรงแหล่งที่เลือก';
  else if(Object.hasOwn(data.sources,code)&&(data.sources[code as keyof typeof data.sources]==='draft')!==(primary.meta.origin==='draft'||primary.meta.origin==='word'&&!!primary.meta.baseFileId))reason='ฉบับใช้งานไม่ตรงแหล่งเอกสารที่เลือก';

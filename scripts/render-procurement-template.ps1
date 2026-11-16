@@ -51,7 +51,8 @@ try {
     $pageTexts+=([string]$pageText).Substring(0,[Math]::Min(1000,([string]$pageText).Length))
   }
   $document.ExportAsFixedFormat($outputFile,17)
-  @{pages=$pages;pageTexts=$pageTexts} | ConvertTo-Json -Depth 4 -Compress | Set-Content -LiteralPath ($outputFile+'.layout.json') -Encoding UTF8
+  $mainText=[string]$document.Content.Text
+  @{pages=$pages;pageTexts=$pageTexts;mainText=$mainText.Substring(0,[Math]::Min(1000,$mainText.Length))} | ConvertTo-Json -Depth 4 -Compress | Set-Content -LiteralPath ($outputFile+'.layout.json') -Encoding UTF8
   'Export complete' | Add-Content -LiteralPath $renderLog
   @{pages=$pages;renderer='Microsoft Word';readonly=$true} | ConvertTo-Json -Compress
 } finally {
