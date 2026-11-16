@@ -1,4 +1,4 @@
-export const workspaceViewLabels={home:'หน้าหลัก',tasks:'งานของฉัน',projects:'โครงการประจำปี',dashboard:'เอกสารของฉัน',templates:'แบบหนังสือราชการ',reports:'ภาพรวมและรายงาน',inventory:'พัสดุและครุภัณฑ์',register:'ทะเบียนรับ–ส่งหนังสือ',office:'งานธุรการ',budget:'โอนงบประมาณ',calendar:'ปฏิทินงาน',bookings:'จองห้องประชุม',laws:'คลังกฎหมาย',guide:'คู่มือใช้งาน',settings:'ตั้งค่า',editor:'จัดทำร่างหนังสือ'} as const;
+export const workspaceViewLabels={home:'หน้าหลัก',tasks:'งานของฉัน',projects:'โครงการประจำปี',dashboard:'เอกสารของฉัน',templates:'แบบหนังสือราชการ',reports:'ภาพรวมและรายงาน',procurement:'จัดซื้อจัดจ้าง',inventory:'พัสดุและครุภัณฑ์',register:'ทะเบียนรับ–ส่งหนังสือ',office:'งานธุรการ',budget:'โอนงบประมาณ',calendar:'ปฏิทินงาน',bookings:'จองห้องประชุม',laws:'คลังกฎหมาย',guide:'คู่มือใช้งาน',settings:'ตั้งค่า',editor:'จัดทำร่างหนังสือ'} as const;
 export type WorkspaceView=keyof typeof workspaceViewLabels;
 export type WorkspaceLocation={current:WorkspaceView;past:WorkspaceView[]};
 export function visitWorkspaceView(state:WorkspaceLocation,next:WorkspaceView):WorkspaceLocation {

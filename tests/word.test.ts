@@ -48,10 +48,14 @@ it('keeps original/copy bundles, authored appendices, PDF pages, image pairs and
  expect(xml.match(/<w:sectPr>/g)?.length).toBe(8);
  expect(xml).toContain('ข้อความแก้ไขได้');expect(xml).toContain('wps:txbx');expect(xml).toContain('wp:anchor');
  expect(Object.keys(zip.files).filter(n=>n.startsWith('word/media/')).length).toBeGreaterThanOrEqual(5);
+ const memo=await inspect('internal-attachment-note',{...newDraft('internal'),...base,attachmentFiles:[file]});
+ expect(memo.xml).toContain('rIdSarabunEmptyContinuation');expect(await memo.zip.file('word/footer-sarabun-empty.xml')!.async('string')).not.toContain('ใบต่อ');
 },45000);
 it('preserves long native tables and underlined structured sections without losing rows',async()=>{
  const rows=Array.from({length:70},(_,i)=>`| R${i+1} | รายการอุปกรณ์ที่ต้องตรวจสอบ |`).join('\n');
- const {xml}=await inspect('long-internal',{...newDraft('internal'),...base,bodyMode:'structured',background:'เรื่องเดิมสำหรับตรวจสอบ',facts:'| รหัส | รายละเอียด |\n| --- | --- |\n'+rows,legalBasis:'ระเบียบที่เกี่ยวข้อง',consideration:'เห็นควรดำเนินการ',proposal:'จึงเรียนมาเพื่อโปรดพิจารณา',opinions:[{title:'ความเห็นหัวหน้าสำนักปลัด',comment:'เห็นควรดำเนินการตามเสนอ',name:'ผู้ตรวจทาน',position:'หัวหน้าสำนักปลัด',showDate:true,lines:1}]});
+ const {xml,zip}=await inspect('long-internal',{...newDraft('internal'),...base,bodyMode:'structured',background:'เรื่องเดิมสำหรับตรวจสอบ',facts:'| รหัส | รายละเอียด |\n| --- | --- |\n'+rows,legalBasis:'ระเบียบที่เกี่ยวข้อง',consideration:'เห็นควรดำเนินการ',proposal:'จึงเรียนมาเพื่อโปรดพิจารณา',opinions:[{title:'ความเห็นหัวหน้าสำนักปลัด',comment:'เห็นควรดำเนินการตามเสนอ',name:'ผู้ตรวจทาน',position:'หัวหน้าสำนักปลัด',showDate:true,lines:1}]});
+ expect(await zip.file('word/footer1.xml')!.async('string')).toContain('ใบต่อบันทึกข้อความ');
+ expect(await zip.file('word/footer1.xml')!.async('string')).toContain('&gt; 1');
  expect(xml.match(/<w:tbl>/g)!.length).toBeGreaterThan(1);
  for(let n=1;n<=70;n++)expect(xml).toContain(`>R${n}</w:t>`);
  expect(xml).toContain('w:u');expect(paragraphTexts(xml).join('')).toContain('หัวหน้าสำนักปลัด');

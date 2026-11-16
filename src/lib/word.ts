@@ -7,7 +7,8 @@ import { chromium, type Page } from 'playwright';
 import { Document, Packer, Paragraph, TextRun, Tab, Table, TableRow, TableCell, ImageRun, AlignmentType, BorderStyle, WidthType, TableLayoutType, SectionType, LineRuleType, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType, type IParagraphOptions, type ISectionOptions } from 'docx';
 import { ShapeRun } from 'docx/shapes';
 import { version as pdfjsVersion } from 'pdfjs-dist/package.json';
-import type { Draft } from './document';
+import {thaiDate,numerals,type Draft} from './document';
+import {continuationFooter} from './procurement-pagination';
 import { documentHtml } from './render-document';
 import { documentAssets } from './assets';
 import { appendixSources, validateAppendixImages } from './appendix';
@@ -58,7 +59,7 @@ function image(img: WordImage) {
   return new ImageRun({type:img.source.startsWith('data:image/jpeg')?'jpg':'png',data:decode(img.source),transformation:{width:img.width,height:img.height},crop:img.crop,
     altText:{name:img.alt,title:img.alt,description:img.alt},floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(img.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.PAGE,offset:emu(img.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}});
 }
-function section(page: WordPage): ISectionOptions {
+function section(page: WordPage,restartNumbering=false): ISectionOptions {
   const children: (Paragraph | Table)[] = [];
   const overlays=page.overlays.map(item=>item.kind==='image'?image(item):new ShapeRun({type:'rectangle',transformation:{width:item.width+2,height:Math.max(item.height,item.line)},fill:'none',line:item.outline?'555555':'none',children:paragraphs({...item,x:0},0,0,item.width),textOptions:{verticalAlignment:item.outline?'center':'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(item.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.PAGE,offset:emu(item.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}}));
   children.push(new Paragraph({children:overlays,spacing:{before:0,after:0,line:1,lineRule:LineRuleType.EXACT}}));
@@ -76,7 +77,7 @@ function section(page: WordPage): ISectionOptions {
     }
     bottom=block.y+block.height;
   }
-  return {properties:{type:SectionType.NEXT_PAGE,page:{size:{width:twip(page.width),height:twip(page.height)},margin:{top:twip(page.top),bottom:twip(20*96/25.4),left:twip(page.left),right:twip(page.right),header:0,footer:0}}},children};
+  return {properties:{type:SectionType.NEXT_PAGE,page:{...(restartNumbering?{pageNumbers:{start:1}}:{}),size:{width:twip(page.width),height:twip(page.height)},margin:{top:twip(page.top),bottom:twip(20*96/25.4),left:twip(page.left),right:twip(page.right),header:0,footer:0}}},children};
 }
 
 async function attachedPages(page: Page, draft: Draft): Promise<WordPage[]> {
@@ -114,7 +115,7 @@ async function attachedPages(page: Page, draft: Draft): Promise<WordPage[]> {
       } } finally {await loadingTask.destroy();}
       return pages;
     },{bytes});
-    for(const item of images)result.push({width:item.width,height:item.height,top:0,left:0,right:0,copy:false,blocks:[],overlays:[{...item,kind:'image',x:0,y:0,alt:`หน้าเอกสารแนบ ${attachment.showNameInDocument?attachment.description:''}`.trim()}]});
+    for(const item of images)result.push({width:item.width,height:item.height,top:0,left:0,right:0,copy:false,appendix:true,blocks:[],overlays:[{...item,kind:'image',x:0,y:0,alt:`หน้าเอกสารแนบ ${attachment.showNameInDocument?attachment.description:''}`.trim()}]});
   }
   return result;
 }
@@ -131,13 +132,15 @@ export async function renderWord(draft: Draft): Promise<Buffer> {
     const missing=await page.evaluate(()=> (window as unknown as {__missingOverlayPages:number[]}).__missingOverlayPages);
     if(missing.length)throw new MissingOverlayPageError(missing);
     if(await page.evaluate(()=> (window as unknown as {__overflow:boolean}).__overflow))throw new Error('มีเนื้อหาบางส่วนเกินหน้ากระดาษ กรุณาตรวจตัวอย่างก่อนส่งออก Word');
+    await page.locator('.continuation-note').evaluateAll(notes=>notes.forEach(note=>note.remove()));
     const pages=await page.evaluate(extractWordPages);
     const attachments=await attachedPages(page,draft);
     const ordered=[...pages.filter(p=>!p.copy),...attachments,...pages.filter(p=>p.copy),...(pages.some(p=>p.copy)?attachments:[])];
     const document=new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title:draft.subject,description:'ข้อความและตารางแก้ไขได้ใน Word; ไฟล์ PDF ที่แนบแสดงเป็นภาพแต่ละหน้า',
       styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
-      fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:ordered.map(section)});
-    return await Packer.toBuffer(document);
+      fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:ordered.map((page,index)=>section(page,page.copy&&(index===0||!ordered[index-1].copy)))});
+    const bytes=await Packer.toBuffer(document);
+    return ['internal','memorandum'].includes(draft.type)?continuationFooter(bytes,{subject:numerals(draft.subject||'[เรื่อง]',draft.numeralStyle),number:numerals(draft.number||'[เลขหนังสือ]',draft.numeralStyle),date:numerals(thaiDate(draft.date),draft.numeralStyle),memo:true},[],false,ordered.flatMap((page,index)=>page.appendix?[index]:[])):bytes;
   } finally {await browser.close();}
 }
 
@@ -154,6 +157,6 @@ export async function renderWordHtml(html:string,title:string):Promise<Buffer>{
   const pages=await page.evaluate(extractWordPages);
   return await Packer.toBuffer(new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title,
    styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
-   fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:pages.map(section)}));
+   fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:pages.map(page=>section(page))}));
  }finally{await browser.close();}
 }

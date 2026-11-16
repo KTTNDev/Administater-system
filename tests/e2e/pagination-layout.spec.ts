@@ -13,7 +13,14 @@ for(const type of ['external','internal'] as const)test(`${type}: continuation t
  await expect(page.locator('.page').first().locator('.page-number')).toHaveCount(0);await expect(page.locator('.page').nth(1).locator('.page-number')).toHaveText('- ๒ -');
  const checks=await page.locator('.page').evaluateAll(pages=>pages.slice(0,-1).map((p,i)=>{const cue=p.querySelector('.continuation-cue')!,next=pages[i+1].querySelector('.content')!,first=Array.from(next.querySelectorAll('p,b,strong')).find(n=>n.textContent?.trim())!;return {match:first.textContent!.trim().startsWith(cue.textContent!.slice(0,-3)),gap:cue.getBoundingClientRect().top-p.querySelector('.content')!.getBoundingClientRect().bottom};}));expect(checks.every(x=>x.match&&x.gap>=0)).toBe(true);
  await expect(page.locator('.page').last().locator('.continuation-cue')).toHaveCount(0);
+ if(type==='internal'){
+  await expect(page.locator('.page').first().locator('.continuation-note')).toHaveCount(0);
+  expect(await page.locator('.continuation-note').count()).toBe(await page.locator('.page').count()-1);
+  for(const note of await page.locator('.continuation-note').all())await expect(note).toContainText('ที่ ทดสอบ ๑๒๓ ลงวันที่');
+  expect(await page.locator('.continuation-note').evaluateAll(notes=>notes.every(note=>{const body=note.closest('.page')!.querySelector('.content')!.getBoundingClientRect(),box=note.getBoundingClientRect(),cue=note.closest('.page')!.querySelector('.continuation-cue')?.getBoundingClientRect();return box.top>=body.bottom&&(!cue||box.top>=cue.bottom)&&box.bottom<=note.closest('.page')!.getBoundingClientRect().bottom;}))).toBe(true);
+ }else await expect(page.locator('.continuation-note')).toHaveCount(0);
  if(type==='external'){const diff=await page.evaluate(()=>{const date=document.querySelector('.date')!.getBoundingClientRect(),g=document.querySelector('.garuda')!.getBoundingClientRect();return Math.abs(date.left-(g.left+g.width/2));});expect(diff).toBeLessThan(1);}
+ if(type==='internal')await page.pdf({path:'output/procurement-multipage/บันทึกข้อความภายใน-หลายหน้า.pdf',format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
  await page.locator('.page').first().screenshot({path:`output/pagination-${type}-page1.png`});await page.locator('.page').nth(1).screenshot({path:`output/pagination-${type}-page2.png`});
 });
 

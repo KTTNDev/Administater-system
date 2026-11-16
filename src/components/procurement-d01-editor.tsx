@@ -1,0 +1,15 @@
+'use client';
+import {d01Missing,d01Values,type ProcurementInput} from '@/lib/procurement';
+import {d01Slots,d01OwnKeys} from '@/lib/procurement-documents';
+import {ProcurementTemplateText} from './procurement-template-text';
+import styles from './procurement-workspace.module.css';
+export function ProcurementD01Editor({data,onChange,part='all'}:{part?:'all'|'header'|'body'|'signing';data:ProcurementInput;onChange:(value:Partial<ProcurementInput>)=>void}){
+ const values=d01Values(data),missing=d01Missing(data);
+ const reset=(key:string)=>{const next={...data.d01Overrides};delete next[key];onChange({d01Overrides:next});};
+ return <section className={styles.panel}><h2>D01 · {part==='header'?'ส่วนหัวหนังสือ':part==='body'?'เนื้อหาหนังสือ':'บันทึกขออนุมัติจัดซื้อจัดจ้าง'}</h2>{part==='header'?<p>เลขหนังสือ วันที่ และเรื่องของ D01 ใช้แยกจาก D07</p>:<><p>ข้อความจากแม่แบบผูกกับข้อมูลบิลแล้ว ดูเนื้อหาที่ตัวอย่างด้านขวา หรือเปิดแก้เฉพาะจุดด้านล่าง</p><p className={styles.notice}>ข้อความตั้งต้นชุดนี้อิงวิธีเฉพาะเจาะจงจากตัวอย่างหลัก การเลือกแนวทางอื่นยังไม่สลับข้อระเบียบและข้อเสนอให้อัตโนมัติ โปรดตรวจและปรับให้ตรงกรณี</p></>}
+  {(part==='all'||part==='header')&&<div className={styles.grid}>{d01Slots.filter(slot=>d01OwnKeys.includes(slot.key as typeof d01OwnKeys[number])&&slot.group==='หัวหนังสือ').map(slot=><label key={slot.key}>{slot.label}<input name={'d01-'+slot.key} aria-label={slot.label} value={data.d01[slot.key]} maxLength={slot.max} onChange={e=>onChange({d01:{...data.d01,[slot.key]:e.target.value}})}/><small>D01 · {slot.key==='number'?'เลขหนังสือแยกจาก D07':slot.key==='subject'?'บรรทัดเรื่องของ D01':'วันที่ของ D01 แยกจาก D07'}</small></label>)}</div>}
+  {(part==='all'||part==='body')&&<details><summary>แก้ข้อความประจำและข้อระเบียบเฉพาะ D01</summary>{d01Slots.filter(slot=>slot.group==='เนื้อหา D01').map(slot=><ProcurementTemplateText key={slot.key} label={slot.label} value={values[slot.key]} override={data.d01Overrides[slot.key]} max={slot.max} usage={'D01 · '+slot.label+' ในบันทึก'} onChange={value=>onChange({d01Overrides:{...data.d01Overrides,[slot.key]:value}})} onReset={()=>reset(slot.key)}/>)}</details>}
+  {(part==='all'||part==='signing')&&<details><summary>ปรับข้อมูลผู้ลงนามเฉพาะ D01</summary><div className={styles.grid}>{d01Slots.filter(slot=>!d01OwnKeys.includes(slot.key as typeof d01OwnKeys[number])).map(slot=><div key={slot.key}><label className={styles.override}><input type="checkbox" checked={data.d01Overrides[slot.key]!==undefined} onChange={e=>{if(e.target.checked)onChange({d01Overrides:{...data.d01Overrides,[slot.key]:values[slot.key]}});else reset(slot.key);}}/>{slot.label}</label>{data.d01Overrides[slot.key]!==undefined&&<input aria-label={'D01 เฉพาะฉบับ '+slot.label} value={data.d01Overrides[slot.key]} maxLength={slot.max} onChange={e=>onChange({d01Overrides:{...data.d01Overrides,[slot.key]:e.target.value}})}/>}</div>)}</div></details>}
+  {missing.length>0&&<p className={styles.notice}>ยังต้องกรอกก่อนสร้างฉบับส่งออก: {missing.join(', ')} · ดูตัวอย่างขณะกรอกได้ทันที</p>}
+ </section>;
+}

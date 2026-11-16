@@ -5,7 +5,7 @@ export type Box = { x: number; y: number; width: number; height: number };
 export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean; guides?: WordParagraph[] };
 export type WordTable = Box & { kind: 'table'; rows: { header: boolean; cells: WordParagraph[] }[] };
 export type WordImage = Box & { kind: 'image'; source: string; alt: string; crop?: { left: number; right: number; top: number; bottom: number } };
-export type WordPage = { width: number; height: number; top: number; left: number; right: number; copy: boolean; blocks: (WordParagraph | WordTable)[]; overlays: (WordParagraph | WordImage)[] };
+export type WordPage = { width: number; height: number; top: number; left: number; right: number; copy: boolean; appendix?:boolean; blocks: (WordParagraph | WordTable)[]; overlays: (WordParagraph | WordImage)[] };
 
 // This function runs inside the isolated export browser, not in the editor.
 export function extractWordPages(): WordPage[] {
@@ -58,7 +58,7 @@ export function extractWordPages(): WordPage[] {
       });
       return { ...b, guides, kind:'paragraph', runs:text, align:css.textAlign, indent:parseFloat(css.textIndent)||0, line, tabs, keep:el.classList.contains('body-subheading') || el.classList.contains('minutes-section-title') || (!!el.closest('.signature,.signoff-group,.opinion') && !!el.nextElementSibling), border:false };
     };
-    const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),blocks:[],overlays:[]};
+    const result: WordPage = {width:pageBox.width,height:pageBox.height,top:contentBox.top-pageBox.top,left:contentBox.left-pageBox.left,right:pageBox.right-contentBox.right,copy:page.classList.contains('counterpart-page'),appendix:!!content.querySelector('.appendix-page-start,.appendix-sheet,.appendix-text'),blocks:[],overlays:[]};
     const walk = (el: Element, floating = false) => {
       if(!visible(el)) return;
       if(el.classList.contains('garuda')) {

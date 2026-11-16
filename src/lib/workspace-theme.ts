@@ -3,7 +3,7 @@
 export const workspaceCategories = {
   home: "home", dashboard: "documents", templates: "documents", editor: "documents",
   register: "documents", tasks: "tasks", office: "tasks", projects: "projects",
-  inventory: "inventory", reports: "reports", budget: "reports",
+  procurement: "inventory", inventory: "inventory", reports: "reports", budget: "reports",
   calendar: "calendar", bookings: "calendar", laws: "reference",
   guide: "reference", settings: "reference",
 } as const;

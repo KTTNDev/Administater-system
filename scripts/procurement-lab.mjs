@@ -1,0 +1,11 @@
+import fs from "node:fs";
+import path from "node:path";
+import {spawn} from "node:child_process";
+import {randomBytes} from "node:crypto";
+const root=path.resolve("output/procurement-lab");fs.mkdirSync(root,{recursive:true});
+const marker=path.join(root,"SAFETY-TEST-ONLY");
+if(fs.existsSync(marker)&&fs.readFileSync(marker,"utf8").trim()!=="SARABUN_PROCUREMENT_LAB_V1")throw Error("Safety marker mismatch");
+fs.writeFileSync(marker,"SARABUN_PROCUREMENT_LAB_V1\n");
+const child=spawn(process.execPath,["node_modules/next/dist/bin/next","dev","--hostname","127.0.0.1","--port","3107"],{stdio:"inherit",env:{...process.env,SARABUN_BUILD:"procurement-lab",SARABUN_PROCUREMENT_LAB:"true",SARABUN_PROCUREMENT_LAB_ROOT:root,SARABUN_REQUIRE_LOGIN:"false",DATABASE_PATH:path.join(root,"business-test-only.sqlite"),DATABASE_REQUIRE_EXISTING:"false",SARABUN_SOURCE_DIR:root,SESSION_SECRET:randomBytes(32).toString("hex"),GOOGLE_CLIENT_ID:"",GOOGLE_CLIENT_SECRET:"",SARABUN_AUTO_BACKUP:"false"}});
+child.on("exit",code=>{process.exitCode=code||0;});
+for(const signal of ["SIGINT","SIGTERM"])process.on(signal,()=>child.kill(signal));

@@ -1,4 +1,7 @@
 import 'server-only';
+import {procurementSql,procurementSchema,procurementFileSchema} from './procurement';
+import {D07_REFERENCE_SHA256} from './procurement-template';
+import {documentTemplates,type DraftDocumentCode} from './procurement-documents';
 import {documentSourcesSql,wordImportAnalysisSchema,WORD_IMPORT_LIMIT,DOCX_MIME} from './word-import-model';
 import {thaiTermSchema,thaiDictionarySql} from './thai-dictionary';
 import fs from 'node:fs';
@@ -24,6 +27,7 @@ import {homeLayoutSchema,homeLayoutSql} from './home-layout';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ ...procurementSql,
  document_sources:documentSourcesSql,
  task_alerts:taskAlertsSql,
  home_layout:homeLayoutSql,
@@ -68,13 +72,32 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
-  const models={thai_dictionary:thaiTermSchema,inventory_form_drafts:inventoryFormSchema,inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
+  const models={procurement_cases:procurementSchema,procurement_revisions:procurementSchema,thai_dictionary:thaiTermSchema,inventory_form_drafts:inventoryFormSchema,inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   if(data.home_layout.length>1)throw Error('ชุดสำรองมีค่าหน้าหลักซ้ำ');
   for(const row of data.home_layout){if(row.id!=='home'||!Number.isSafeInteger(row.version)||Number(row.version)<1)throw Error('ข้อมูลหน้าหลักในชุดสำรองไม่ถูกต้อง');homeLayoutSchema.parse(JSON.parse(String(row.data)));}
   for(const row of data.task_alerts){
    const value=taskAlertRecordSchema.parse(JSON.parse(String(row.data)));
    if(!Number.isSafeInteger(row.version)||Number(row.version)<1||value.kind==='settings'&&row.id!=='settings'||value.kind==='notice'&&!/^notice:[a-f0-9]{64}$/.test(String(row.id)))throw Error('ข้อมูลแจ้งเตือนในชุดสำรองไม่ถูกต้อง');
+  }
+  const procurementIds=new Set(data.procurement_cases.map(row=>String(row.id)));
+  for(const row of data.procurement_cases)if(!Number.isSafeInteger(row.version)||Number(row.version)<1)throw Error('เวอร์ชันงานจัดซื้อจัดจ้างไม่ถูกต้อง');
+  for(const row of data.procurement_revisions)if(!procurementIds.has(String(row.case_id))||!Number.isSafeInteger(row.version)||Number(row.version)<1)throw Error('ประวัติงานจัดซื้อจัดจ้างไม่ครบ');
+  for(const row of [...data.procurement_templates,...data.procurement_files]){
+   if(!(row.file instanceof Uint8Array)||!row.file.byteLength||row.file.byteLength>20*1024*1024||createHash('sha256').update(row.file).digest('hex')!==row.sha256||/[\\/\x00-\x1f]/.test(String(row.name)))throw Error('ไฟล์งานจัดซื้อจัดจ้างไม่สมบูรณ์');
+  }
+  for(const row of data.procurement_templates)if(!Object.hasOwn(documentTemplates,String(row.id))||row.sha256!==documentTemplates[row.id as DraftDocumentCode].sha256)throw Error('แม่แบบไม่ตรงต้นฉบับที่ตรวจไว้');
+  for(const row of data.procurement_files){const meta=procurementFileSchema.parse(JSON.parse(String(row.data))),template=documentTemplates[meta.code as DraftDocumentCode];if(!procurementIds.has(String(row.case_id))||!['application/pdf','image/png','image/jpeg','application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(String(row.mime))||meta.origin==='draft'&&(!meta.caseVersion||!meta.values||!template||meta.templateHash!==template.sha256))throw Error('ไฟล์อ้างอิงงานจัดซื้อจัดจ้างไม่ครบ');}
+  const procurementFiles=new Map(data.procurement_files.map(row=>[String(row.id),row]));
+  for(const row of data.procurement_files){const meta=procurementFileSchema.parse(JSON.parse(String(row.data)));if(meta.baseFileId){const base=procurementFiles.get(meta.baseFileId);if(!base||base.case_id!==row.case_id||procurementFileSchema.parse(JSON.parse(String(base.data))).code!==meta.code)throw Error('Word ต้นทางในสำรองอ้างอิงไม่ครบ');}}
+  for(const row of data.procurement_cases){
+   const value=procurementSchema.parse(JSON.parse(String(row.data))),flow=value.workflow;
+   const file=(id:string,code?:string)=>{const item=procurementFiles.get(id);if(!item||item.case_id!==row.id||code&&procurementFileSchema.parse(JSON.parse(String(item.data))).code!==code)throw Error('หลักฐานกระบวนงานจัดซื้อจัดจ้างอ้างอิงไม่ครบ');return item;};
+   for(const [code,config] of Object.entries(value.documents)){if(config?.primaryFileId)file(config.primaryFileId,code);if(config?.signedFileId)file(config.signedFileId,code);}
+   for(const packet of flow.packets)for(const entry of packet.files)if(file(entry.id,entry.code).sha256!==entry.sha256)throw Error('ไฟล์ไม่ตรงชุดส่งคลังที่ตรึงไว้');
+   let state='preparing',previousDate='';const eventIds=new Set<string>();
+   for(const event of flow.events){if(eventIds.has(event.id)||event.from!==state||event.date<previousDate)throw Error('ลำดับเหตุการณ์ส่งคลังในสำรองไม่สมบูรณ์');eventIds.add(event.id);state=event.to;previousDate=event.date;for(const id of event.evidence)file(id);if(event.packetId&&!flow.packets.some(p=>p.id===event.packetId))throw Error('ไม่พบชุดส่งที่เหตุการณ์คลังอ้างถึง');}
+   if(state!==flow.state)throw Error('สถานะงานไม่ตรงประวัติคลัง');
   }
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
@@ -136,7 +159,7 @@ export function activateBackupRestore(token:string,confirmation:string){
    for(const input of data[table]){
     const row={...input};
     // Keep stale editor tabs from matching a restored record's old version (ABA).
-    if(table!=='audit'&&typeof row.version==='number')row.version=Math.max(row.version,floor[table])+1;
+    if(table!=='audit'&&table!=='procurement_revisions'&&typeof row.version==='number')row.version=Math.max(row.version,floor[table])+1;
     if(table==='inventory_files')row.drive_id='';
     if(table==='documents'){row.drive_file_id=null;row.synced_version=null;}
     if(table==='budget_transfers')row.generated_version=null;

@@ -154,6 +154,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   .floating-item.overlay-selected{outline:1px dashed #176fa8}.overlay-resize{display:none;position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;padding:0;border:2px solid white;background:#176fa8;box-shadow:0 0 0 1px #176fa8;cursor:nwse-resize;touch-action:none}.overlay-selected .overlay-resize{display:block}.placing-overlay .page,.placing-overlay .page *{cursor:crosshair!important}@media print{.overlay-resize{display:none!important}.floating-item.overlay-selected{outline:0!important}}
   #source{display:none}.thai-keep{white-space:nowrap;word-break:keep-all;overflow-wrap:normal}@media print{@page{size:A4;margin:0}body{background:white}.page{margin:0;box-shadow:none}}
   .security-control{position:absolute;bottom:13mm;left:30mm;right:20mm;font-size:12pt;line-height:1;display:flex;justify-content:space-between;gap:5mm}.security-control span:first-child{max-width:100mm;overflow-wrap:anywhere}
+  .continuation-note{position:absolute;left:30mm;right:20mm;bottom:6mm;font-size:12pt;line-height:1.05}.continuation-note p{margin:0;text-indent:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
   .minutes-speech{display:flow-root;padding-left:40mm;text-indent:0;text-align:justify;white-space:normal}.minutes-speaker-person{float:left;width:36mm;margin-left:-40mm;font-weight:700;text-align:left;overflow-wrap:anywhere}
 </style></head><body class="${d.type==="external"?"external-document correspondence ":["internal","memorandum"].includes(d.type)?"correspondence ":""}${d.layout==='budget-reference'?'budget-document':''}"><div id="security-owner" hidden>${e(d.organization)}</div><div id="source">${blocks.join("")}</div><main id="pages"></main>
   <script>
@@ -210,6 +211,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
   ${d.confidentiality!=="ปกติ"?`Array.from(root.children).forEach((page,index)=>{const c=document.createElement('div');c.className='security-control';const owner=document.createElement('span');owner.textContent=document.getElementById('security-owner').textContent;const info=document.createElement('span');info.textContent='ชุดที่ ${d.secretSetNumber}/${d.secretSetTotal} · หน้า '+(index+1)+'/'+count;if(${JSON.stringify(d.numeralStyle)}==='thai')info.textContent=info.textContent.replace(/[0-9]/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)]);c.append(owner,info);page.append(c);if(c.getBoundingClientRect().top<page.querySelector('.content').getBoundingClientRect().bottom)overflow=true})`:""}
   document.getElementById('security-owner').remove();
   const pageList=Array.from(root.children);
+  ${compact?`for(const page of pageList){if(Number(page.dataset.overlayPage)<=1)continue;const content=page.querySelector('.content');if(content.firstElementChild?.matches('.appendix-sheet,.appendix-page-start'))continue;const note=document.createElement('div');note.className='continuation-note';for(const text of ${JSON.stringify(['ใบต่อบันทึกข้อความ เรื่อง '+(d.subject||'[เรื่อง]'),'ที่ '+(d.number||'[เลขหนังสือ]')+' ลงวันที่ '+date].map(text=>numerals(text,d.numeralStyle)))}){const line=document.createElement('p');line.textContent=text;note.append(line)}page.append(note);}`:''}
   for(let i=0;i<pageList.length-1;i++){
     if(!pageList[i].dataset.copyCounterpart&&pageList[i+1].dataset.copyCounterpart)continue;
     const following=pageList[i+1].querySelector('.content');
@@ -217,7 +219,7 @@ export function documentHtml(d: Draft, assets: DocumentAssets, appendixImages:Re
     const first=Array.from(following.querySelectorAll('p,b,strong')).find(n=>n.textContent.trim());
     const text=(first?first.textContent:following.textContent).trim();
     const segments=Array.from(new Intl.Segmenter('th',{granularity:'word'}).segment(text)).filter(s=>s.isWordLike);
-    if(text){const end=segments[Math.min(2,segments.length-1)];const cue=document.createElement('div');cue.className='continuation-cue';cue.textContent=text.slice(0,end?end.index+end.segment.length:24).trim()+'...';pageList[i].append(cue);
+    if(text){const end=segments[Math.min(2,segments.length-1)];const cue=document.createElement('div');cue.className='continuation-cue';cue.textContent=text.slice(0,end?end.index+end.segment.length:24).trim()+'...';pageList[i].append(cue);const note=pageList[i].querySelector('.continuation-note');if(note)cue.style.bottom=Math.max(20,6+note.getBoundingClientRect().height/(96/25.4)+2)+'mm';
     while(cue.scrollWidth>cue.clientWidth+1&&cue.textContent.length>4){const chars=Array.from(cue.textContent.slice(0,-3));chars.pop();cue.textContent=chars.join('')+'...';}}
   }
   const production=root.querySelector('.production');if(production){const parentBox=production.parentElement.getBoundingClientRect(),box=production.getBoundingClientRect();const gap=parentBox.bottom-box.bottom;if(gap>0)production.style.marginTop=(parseFloat(getComputedStyle(production).marginTop)+gap)+'px'}

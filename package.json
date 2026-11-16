@@ -1,9 +1,11 @@
 {
   "name": "sarabun-workspace",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "dev:procurement": "node scripts/procurement-lab.mjs",
+    "dev:procurement-main": "node scripts/procurement-main-demo.mjs",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3000",
     "typecheck": "tsc --noEmit",
