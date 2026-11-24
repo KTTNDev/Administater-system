@@ -29,4 +29,4 @@ export const templateSlots:TemplateSlot[]=[
   {key:"authorityActing",label:"ตำแหน่งผู้มีอำนาจ (บรรทัดถัดไป)",group:"ผู้ลงนาม",max:70,targets:[one(58),one(67)]},
 ];
 export type TemplateValues=Record<string,string>;
-export const templateOutputVersion="D07-black-v2";
+export const templateOutputVersion="D07-it9-layout-v3";

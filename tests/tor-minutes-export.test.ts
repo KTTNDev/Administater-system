@@ -1,3 +1,4 @@
+// Browser PDF exports include cold font loading; allow slow Windows hosts without relaxing assertions.
 import {numerals} from '../src/lib/document';
 import {beforeAll,afterAll,it,expect} from 'vitest';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
@@ -17,4 +18,4 @@ it('persists a TOR report and exports native editable Word tables and all conten
  expect(xml).toContain('<w:tbl>');expect(xml).not.toContain('w:altChunk');expect(xml).toContain('w:keepNext');
  const pdf=await renderPdf(loaded);expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(1);
  fs.writeFileSync('output/tor-check/tor-meeting-example.docx',word);fs.writeFileSync('output/tor-check/tor-meeting-example.pdf',pdf);
-},60000);
+},180000);

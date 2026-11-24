@@ -1,0 +1,26 @@
+import {test,expect} from '@playwright/test';
+import {randomUUID} from 'node:crypto';import fs from 'node:fs';import JSZip from 'jszip';import {PDFDocument} from 'pdf-lib';
+import {sampleCase} from '../../src/lib/procurement/workspace/samples';
+test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Use isolated procurement data only');
+test('edited Core body, manual text box and attached voucher are the procurement preview and PDF/Word source',async({page,context})=>{
+ test.setTimeout(300000);await page.goto('/?view=procurement');
+ const record=sampleCase(1520),tag=randomUUID();record.caseInput.projectTitleShort='[ตัวอย่าง] ฉบับจริงจาก Core '+tag;
+ record.agency.codes.internalMemoPrefix='ทดสอบ '+tag;record.agency.codes.externalLetterPrefix='ทดสอบ '+tag;record.agency.codes.poPrefix='ทดสอบ '+tag;record.caseInput.docs.doc6_2_inspectorOrder.runningNo=String(Date.now());
+ const headers={Origin:new URL(page.url()).origin};expect((await page.request.post('/api/procurement/workspace',{headers,data:{action:'save',payload:record}})).ok()).toBe(true);
+ await page.goto('/?view=procurement&coreCase='+record.caseInput.id);await page.getByRole('button',{name:'สร้าง/อัปเดตชุดร่างเอกสาร',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'เชื่อมร่างครบ 15 ฉบับแล้ว'})).toBeVisible({timeout:60000});
+ await page.getByRole('button',{name:'เอกสาร 13 ขออนุมัติเบิกจ่ายพร้อมฎีกา LAAS',exact:true}).click();await expect(page.getByRole('heading',{name:'แก้ไขร่างหนังสือ',exact:true})).toBeVisible();
+ let body='ข้อความฉบับจริงที่แก้จาก Core '+tag;const box='ผู้ลงนามผ่าน Text Box '+tag,thai=(text:string)=>text.replace(/[0-9]/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)]);
+ await page.locator('#document-body').fill(body);await page.locator('.floating-editor summary').click();await page.getByRole('button',{name:'เพิ่มกล่องข้อความ',exact:true}).click();await page.locator('.floating-card textarea').fill(box);
+ await page.getByRole('button',{name:'จัดแนวกับวันที่ (ข)',exact:true}).click();
+ await page.getByText('ไฟล์ที่ส่งไปพร้อมหนังสือ',{exact:true}).click();const attached=await PDFDocument.create();attached.addPage();
+ await page.getByLabel('เพิ่ม PDF หรือรูปภาพ (เลือกหลายไฟล์ได้)',{exact:true}).setInputFiles({name:'voucher-test.pdf',mimeType:'application/pdf',buffer:Buffer.from(await attached.save())});
+ await expect(page.getByRole('link',{name:'ดาวน์โหลดต้นฉบับ',exact:true})).toBeVisible();await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(page.locator('.toast[role=status]').filter({hasText:'บันทึกร่างเรียบร้อยแล้ว'})).toBeVisible();
+ await page.goto('/?view=procurement&coreCase='+record.caseInput.id);await page.getByRole('button',{name:'ดูตัวอย่างเอกสาร 13',exact:true}).click();
+ const frame=page.frameLocator('iframe[title="ตัวอย่างเอกสาร 13"]');await expect(frame.locator('#pages')).toContainText(thai(body),{timeout:30000});await expect(frame.locator('#pages .floating-item')).toContainText(box);await expect(frame.locator('#pages .signature')).toHaveCount(1);await expect(frame.locator('#pages .opinion')).toHaveCount(0);
+ const editor=await context.newPage();await editor.goto('/?view=procurement&coreCase='+record.caseInput.id);await editor.getByRole('button',{name:'เอกสาร 13 ขออนุมัติเบิกจ่ายพร้อมฎีกา LAAS',exact:true}).click();await expect(editor.getByRole('heading',{name:'แก้ไขร่างหนังสือ',exact:true})).toBeVisible();body='บันทึกฉบับล่าสุดจากอีกแท็บ '+tag;await editor.locator('#document-body').fill(body);await editor.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(editor.locator('.toast[role=status]').filter({hasText:'บันทึกร่างเรียบร้อยแล้ว'})).toBeVisible();await page.bringToFront();await expect(frame.locator('#pages')).toContainText(thai(body),{timeout:30000});await editor.close();
+ await expect(page.getByRole('heading',{name:/voucher-test/})).toBeVisible();
+ const coverPages=await frame.locator('#pages .page').count();
+ const pdfDownload=page.waitForEvent('download',{timeout:180000});await page.getByRole('button',{name:'โหลดฉบับนี้ PDF',exact:true}).click();const pdfFile=(await (await pdfDownload).path())!;expect((await PDFDocument.load(fs.readFileSync(pdfFile))).getPageCount()).toBe(coverPages+1);
+ const wordDownload=page.waitForEvent('download',{timeout:180000});await page.getByRole('button',{name:'โหลดฉบับนี้ Word',exact:true}).click();const wordFile=(await (await wordDownload).path())!,zip=await JSZip.loadAsync(fs.readFileSync(wordFile)),xml=await zip.file('word/document.xml')!.async('string');expect(xml).toContain(thai(body));expect(xml).toContain(box);
+ fs.mkdirSync('output/core-authority',{recursive:true});fs.copyFileSync(pdfFile,'output/core-authority/edited-core-voucher.pdf');fs.copyFileSync(wordFile,'output/core-authority/edited-core-voucher.docx');await page.screenshot({path:'output/core-authority/procurement-saved-core.png',fullPage:true});
+});

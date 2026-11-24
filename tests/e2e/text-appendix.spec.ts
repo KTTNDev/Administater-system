@@ -4,7 +4,7 @@ import {PDFDocument} from 'pdf-lib';
 import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 const image=(name:string)=>`data:image/png;base64,${fs.readFileSync('public/'+name).toString('base64')}`;
-const assets={regular:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunNew.ttf').toString('base64')}`,bold:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunNew-Bold.ttf').toString('base64')}`,garuda:image('assets/garuda.png'),routingStamp:image('assets/approval-routing-stamp.png'),copyMark:image('assets/copy-counterpart.png')};
+const assets={regular:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunIT9.ttf').toString('base64')}`,bold:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunIT9-Bold.ttf').toString('base64')}`,garuda:image('assets/garuda.png'),routingStamp:image('assets/approval-routing-stamp.png'),copyMark:image('assets/copy-counterpart.png')};
 
 test('text appendix begins on a fresh A4 sheet and renders bold text and a table',async({page})=>{
  const draft={...newDraft('internal'),subject:'ตัวอย่างบันทึกพร้อมแนบท้าย',body:'ข้อความหนังสือ',appendixPages:[
@@ -18,7 +18,7 @@ test('text appendix begins on a fresh A4 sheet and renders bold text and a table
  await expect(sheets.nth(1).locator('.appendix-page-start')).toHaveText('รายละเอียดประกอบ');
  await expect(sheets.nth(1).locator('.appendix-text strong')).toHaveText('สำคัญ');
  await expect(sheets.nth(1).locator('.document-table')).toContainText('อุปกรณ์');
- await expect(sheets.nth(2).locator('.appendix-page-start')).toHaveText('รายละเอียดหน้า 2');
+ await expect(sheets.nth(2).locator('.appendix-page-start')).toHaveText('รายละเอียดหน้า ๒');
 });
 
 test('an internal memo can author two appendix sheets, save, reopen, and export them',async({page})=>{
@@ -79,7 +79,7 @@ test('bold text remains bold when one appendix paragraph flows onto another shee
  expect(await page.evaluate(()=>(window as unknown as {__overflow:boolean}).__overflow)).toBe(false);
  expect(await page.locator('.page').count()).toBeGreaterThan(2);
  expect(await page.locator('.page .appendix-text strong').count()).toBe(260);
- await expect(page.locator('.page').last()).toContainText('คำสำคัญ259');
+ await expect(page.locator('.page').last()).toContainText('คำสำคัญ๒๕๙');
 });
 
 

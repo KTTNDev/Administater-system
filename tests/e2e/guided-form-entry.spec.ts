@@ -36,7 +36,7 @@ test('switching steps and modes retains input, live preview, and the chosen mode
  await nav.getByRole('button',{name:'เนื้อหา',exact:true}).click();
  await page.locator('#document-body').fill('เนื้อหาต้องคงอยู่เมื่อเปลี่ยนส่วน');
  const paper=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
- await expect(paper.locator('.body-text').filter({hasText:'เนื้อหาต้องคงอยู่'})).toBeVisible();
+ await expect(paper.locator('#pages .body-text').filter({hasText:'เนื้อหาต้องคงอยู่'})).toBeVisible();
  await page.locator('.form-step-controls').getByRole('button',{name:'ถัดไป',exact:true}).click();
  await expect(page.locator('#form-signing')).toBeVisible();
  await page.locator('.form-step-controls').getByRole('button',{name:'ย้อนกลับ',exact:true}).click();
@@ -49,7 +49,9 @@ test('switching steps and modes retains input, live preview, and the chosen mode
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  await expect(page.locator('.form-step-controls')).toBeVisible();
  await page.screenshot({path:'output/guided-form-mobile.png'});
- await page.goto('/?view=templates');
+ await page.getByRole('button',{name:'เปิดเมนู',exact:true}).click();
+ page.once('dialog',dialog=>dialog.accept());
+ await page.getByRole('button',{name:'แบบหนังสือราชการ',exact:true}).click();
  await page.locator('.template-feature').nth(1).click();
  await expect(page.locator('.form-pane')).toHaveAttribute('data-form-mode','steps');
  await expect(page.locator('#form-header')).toBeVisible();

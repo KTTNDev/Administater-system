@@ -12,6 +12,8 @@ import {caseContentStamp,validateContractTasks} from './procurement-process';
 import {billTotals} from './procurement-bill';
 import {suiteCodes,emptyDocumentConfig} from './procurement-workflow-model';
 import {procurementFilename} from './procurement-filenames';
+import {validateReservations,reservationKey,arabicDigits,applyReservation} from './procurement-register';
+import {assertProcurementDocumentEditable} from './procurement-editing';
 
 const digest=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 export class ProcurementConflict extends Error{}
@@ -23,22 +25,37 @@ export function procurementSnapshot():ProcurementSnapshot{
  const c=connection(),template=c.prepare('SELECT name,sha256 FROM procurement_templates WHERE id=?').get('D07');
  const cases=c.prepare('SELECT * FROM procurement_cases ORDER BY updated_at DESC,id').all().map(caseRow).sort((a,b)=>(a.contractDue||'9999').localeCompare(b.contractDue||'9999'));
  const files=c.prepare('SELECT id,case_id,name,mime,sha256,data,created_at,length(file) bytes FROM procurement_files ORDER BY created_at DESC,id').all().map(row=>({id:String(row.id),caseId:String(row.case_id),name:String(row.name),mime:String(row.mime),sha256:String(row.sha256),bytes:Number(row.bytes),createdAt:String(row.created_at),meta:procurementFileSchema.parse(JSON.parse(String(row.data)))}));
- const templates=Object.fromEntries(Object.keys(documentTemplates).map(code=>{const row=c.prepare('SELECT name,sha256 FROM procurement_templates WHERE id=?').get(code);return [code,row?{ready:true,name:String(row.name),sha256:String(row.sha256)}:{ready:false}];})) as NonNullable<ProcurementSnapshot['templates']>;
- return {cases,files,template:template?{ready:true,name:String(template.name),sha256:String(template.sha256)}:{ready:false},templates};
+ const templates=Object.fromEntries(Object.keys(documentTemplates).map(code=>{const row=c.prepare('SELECT name,sha256 FROM procurement_templates WHERE id=?').get(code);return [code,row?{ready:row.sha256===documentTemplates[code as DraftDocumentCode].sha256,name:String(row.name),sha256:String(row.sha256)}:{ready:false}];})) as NonNullable<ProcurementSnapshot['templates']>;
+ return {cases,files,template:template?{ready:template.sha256===documentTemplates.D07.sha256,name:String(template.name),sha256:String(template.sha256)}:{ready:false},templates};
 }
 export function saveProcurement(input:unknown,id?:string,version?:number,workflowChange=false){
- const data=procurementSchema.parse(input),c=connection(),caseId=id||randomUUID(),at=new Date().toISOString();
+ let data=procurementSchema.parse(input);const c=connection(),caseId=id||randomUUID(),at=new Date().toISOString();
  validateContractTasks(data);
  if(data.bill.items.length&&billTotals(data.bill).total>99999999999n)throw Error('ยอดเงินสูงเกินขอบเขตแม่แบบ 999,999,999.99 บาท');
  const existing=id?readProcurement(id):undefined;
+ for(const entry of data.register.entries){const old=existing?.register.entries.find(e=>e.id===entry.id),changed=!old||entry.number!==old.number||entry.plannedDate!==old.plannedDate||entry.confirmedDate!==old.confirmedDate||entry.status!==old.status;if(entry.status!=='cancelled'||changed)data=applyReservation(data,entry,changed);}
  if(existing&&existing.sample!==data.sample)throw Error('ไม่เปลี่ยนสถานะงานจริง/งานตัวอย่างของงานเดิม ให้สร้างงานใหม่แยกกัน');
  const oldWorkflow=existing?.workflow||{state:'preparing',events:[],packets:[]};
  if(!workflowChange&&JSON.stringify(data.workflow)!==JSON.stringify(oldWorkflow))throw Error('เปลี่ยนขั้นตอนผ่านปุ่มดำเนินการเพื่อเก็บหลักฐานเท่านั้น');
- if(id&&!workflowChange&&oldWorkflow.state!=='preparing'&&caseContentStamp(data,oldWorkflow.state==='closed')!==caseContentStamp(readProcurement(id),oldWorkflow.state==='closed'))throw Error('เอกสารส่งคลังหรือปิดแล้ว เปิดแก้ไขพร้อมเหตุผลในส่วนส่งคลังก่อนแก้ข้อมูลบิล');
+ const roundTwo=oldWorkflow.state==='returned_for_voucher';
+ if(existing&&!workflowChange&&oldWorkflow.state!=='preparing'&&caseContentStamp(data,!roundTwo,!roundTwo)!==caseContentStamp(existing,!roundTwo,!roundTwo))throw Error('ชุดตั้งหนี้ตรึงไว้แล้ว แก้ได้เฉพาะบันทึกขอเบิกและฎีกาหลังคลังคืนเอกสาร หากแก้ข้อมูลบิลให้เปิดแก้ไขพร้อมเหตุผล');
  if(!id&&version!==undefined)throw Error('เวอร์ชันงานไม่ถูกต้อง');
  c.transaction(()=>{
   const old=c.prepare('SELECT version FROM procurement_cases WHERE id=?').get(caseId);
   if(id&&(!old||old.version!==version))throw new ProcurementConflict('งานนี้เปลี่ยนจากอีกหน้าต่างแล้ว กรุณาเปิดฉบับล่าสุดก่อนบันทึก');
+  validateReservations(data,existing);
+  const otherCases=c.prepare('SELECT id,data FROM procurement_cases WHERE id<>?').all(caseId).map(row=>({id:String(row.id),data:procurementSchema.parse(JSON.parse(String(row.data)))}));
+  for(const entry of data.register.entries){
+   if(!entry.number)continue;
+   const collision=otherCases.find(other=>other.data.sample===data.sample&&other.data.register.entries.some(otherEntry=>otherEntry.number&&reservationKey(otherEntry)===reservationKey(entry)));
+   if(collision)throw Error('เลขนี้มีในลายแทงงานอื่นแล้ว (รวมเลขที่ยกเลิก) ตรวจทะเบียน '+entry.number);
+   // Normal letters share the physical internal/external register only when issuer and series match.
+   if(!data.sample&&['internal','external'].includes(entry.register)){
+    const normal=c.prepare('SELECT data FROM documents').all().some(row=>{const doc=JSON.parse(String(row.data));return doc.type===entry.register&&Number(String(doc.date).slice(0,4))+543===entry.year&&String(doc.organization||'').trim()===entry.owner.trim()&&arabicDigits(String(doc.number||'')).replace(/\s/g,'').replace(/\/0+(?=\d+$)/,'/')===arabicDigits(entry.prefix+'/'+entry.number).replace(/\s/g,'').replace(/\/0+(?=\d+$)/,'/');});
+    if(normal)throw Error('เลขนี้ใช้ในหนังสือสารบรรณแล้ว ตรวจเลขจากสมุดคุม');
+   }
+   if(!existing?.register.entries.find(e=>e.id===entry.id)?.recordedAt)entry.recordedAt=at;
+  }
   const next=Number(old?.version||0)+1,json=JSON.stringify(data);
   if(old)c.prepare('UPDATE procurement_cases SET data=?,version=?,updated_at=? WHERE id=?').run(json,next,at,caseId);
   else c.prepare('INSERT INTO procurement_cases VALUES(?,?,?,?)').run(caseId,json,next,at);
@@ -49,7 +66,7 @@ export function saveProcurement(input:unknown,id?:string,version?:number,workflo
 export function procurementHistory(id:string){readProcurement(id);return connection().prepare('SELECT version,updated_at FROM procurement_revisions WHERE case_id=? ORDER BY version DESC').all(id).map(row=>({version:Number(row.version),at:String(row.updated_at)}));}
 export function installProcurementTemplate(bytes:Buffer,name:string,code:DraftDocumentCode='D07'){
  if(digest(bytes)!==documentTemplates[code].sha256)throw Error('ไฟล์นี้ไม่ตรงต้นฉบับ '+code+' ที่ตรวจไว้ กรุณาเลือกฉบับเดิม');
- const c=connection();c.transaction(()=>{c.prepare('INSERT OR IGNORE INTO procurement_templates VALUES(?,?,?,?,?)').run(code,safeName(name),documentTemplates[code].sha256,bytes,new Date().toISOString());audit(code,'procurement_template_install',null);})();
+ const c=connection();c.transaction(()=>{c.prepare('INSERT INTO procurement_templates VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,sha256=excluded.sha256,file=excluded.file,created_at=excluded.created_at').run(code,safeName(name),documentTemplates[code].sha256,bytes,new Date().toISOString());audit(code,'procurement_template_install',null);})();
 }
 export function procurementTemplateBytes(code:DraftDocumentCode){const row=connection().prepare('SELECT file,sha256 FROM procurement_templates WHERE id=?').get(code);if(!row||row.sha256!==documentTemplates[code].sha256)throw Error('ยังไม่ได้ติดตั้งแม่แบบ '+code);return Buffer.from(row.file as Uint8Array);}
 const DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -73,7 +90,7 @@ export async function attachProcurementFile(id:string,version:number,bytes:Buffe
  const mime=await validateProcurementUpload(bytes,name),meta=procurementFileSchema.parse(input);
  if(meta.origin==='draft'||meta.caseVersion!==null||meta.values||meta.outputVersion||meta.templateHash||meta.contentHash)throw Error('ไฟล์นำเข้าให้เก็บเป็นหลักฐานต้นฉบับ ไม่ใช่ฉบับร่างที่ระบบสร้าง');
  if(meta.baseFileId){const base=connection().prepare('SELECT case_id,data FROM procurement_files WHERE id=?').get(meta.baseFileId);if(meta.origin!=='word'||!base||base.case_id!==id||procurementFileSchema.parse(JSON.parse(String(base.data))).code!==meta.code)throw Error('Word ต้นทางไม่อยู่ในฉบับและงานเดียวกัน');}
- let fileId='';connection().transaction(()=>{const current=readProcurement(id);if(current.version!==version)throw new ProcurementConflict('งานเปลี่ยนแล้ว กรุณาเปิดฉบับล่าสุดก่อนแนบไฟล์');fileId=insertFile(id,bytes,name,mime,{...meta,documentType:current.documentTypes[meta.code]});audit(id,'procurement_attach',version);})();return fileId;
+ let fileId='';connection().transaction(()=>{const current=readProcurement(id);if(current.version!==version)throw new ProcurementConflict('งานเปลี่ยนแล้ว กรุณาเปิดฉบับล่าสุดก่อนแนบไฟล์');if(meta.simulation&&!current.sample)throw Error('หลักฐานจำลองใช้ได้เฉพาะงานตัวอย่าง');fileId=insertFile(id,bytes,name,mime,{...meta,documentType:current.documentTypes[meta.code]});audit(id,'procurement_attach',version);})();return fileId;
 }
 async function buildDocument(current:ProcurementCase,code:DraftDocumentCode){
  if(Object.hasOwn(current.sources,code)&&current.sources[code as keyof typeof current.sources]!=='draft')throw Error('เลือกใช้ฉบับร่างเองสำหรับ '+code+' ก่อนสร้าง Word');
@@ -83,10 +100,11 @@ async function buildDocument(current:ProcurementCase,code:DraftDocumentCode){
  const built=await finishSuiteDocument(base.bytes,current,code);
  // The content key follows source data; page-specific footer fields are derived decoration.
  const contentHash=await wordContentHash(built.bytes),final=await (await import('./procurement-preview')).finalizeProcurementWord(built.bytes);
- return {bytes:final.word,meta:{code,origin:'draft' as const,caseVersion:current.version,documentType:current.documentTypes[code],templateHash:built.sourceHash,values:{...built.values,...values},contentHash,outputVersion:documentTemplates[code].outputVersion}};
+ return {bytes:final.word,meta:{simulation:current.sample,code,origin:'draft' as const,caseVersion:current.version,documentType:current.documentTypes[code],templateHash:built.sourceHash,values:{...built.values,...values},contentHash,outputVersion:documentTemplates[code].outputVersion}};
 }
 export async function generateProcurementDocument(id:string,version:number,code:DraftDocumentCode='D07'){
  const current=readProcurement(id);if(current.version!==version)throw new ProcurementConflict('ข้อมูลเปลี่ยนแล้ว กรุณาเปิดฉบับล่าสุดก่อนสร้างเอกสาร');
+ assertProcurementDocumentEditable(current,code);
  const built=await buildDocument(current,code);
  let fileId='';connection().transaction(()=>{
   if(readProcurement(id).version!==version)throw new ProcurementConflict('มีการแก้ข้อมูลระหว่างสร้างเอกสาร กรุณาสร้างจากฉบับล่าสุด');
@@ -113,7 +131,7 @@ export async function previewProcurementD07(fileId:string){
  const row=connection().prepare('SELECT data FROM procurement_files WHERE id=?').get(fileId);if(!row)throw Error('ไม่พบเอกสาร');
  const meta=procurementFileSchema.parse(JSON.parse(String(row.data))),file=readProcurementFile(fileId);
  const template=documentTemplates[meta.code as DraftDocumentCode];
- if(file.mime!==DOCX||!template||meta.origin!=='draft'||meta.templateHash!==template.sha256||!meta.values)throw Error('สร้างตัวอย่างได้เฉพาะ Word ที่ระบบสร้างจากแม่แบบที่ตรวจไว้');
+ if(file.mime!==DOCX||!template||meta.origin!=='draft'||!meta.values)throw Error('สร้างตัวอย่างได้เฉพาะ Word ที่ระบบสร้างจากแม่แบบที่ตรวจไว้');
  const preview=await nativeD07Pdf(file.bytes);
  // Native Word retains source pagination. Multi-page files remain drafts for human review.
  let id='';connection().transaction(()=>{readProcurement(file.caseId);id=insertFile(file.caseId,preview.bytes,file.name.replace(/\.docx$/i,'.pdf'),'application/pdf',meta);audit(file.caseId,'procurement_preview_d07',meta.caseVersion);})();return {id,pages:preview.pages};

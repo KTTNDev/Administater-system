@@ -37,7 +37,7 @@ it('keeps W322 separate from the method and warns at 5,000 exactly and for hirin
  const input={...sample('hire'),profile:'w804' as const,egpExemption:'w322' as const,common:{...sample().common,agreed:'5,000.00'}};
  expect(procurementWarnings(input).join(' ')).toContain('ตั้งแต่ 5,000');expect(procurementWarnings(input).join(' ')).toContain('งานซื้อไม่เกิน');
 });
-const reference=path.resolve('output/procurement-lab/template-d07/reference.docx');
+const reference=path.resolve('output/procurement-reference-17/templates/D07.docx');
 describe.skipIf(!fs.existsSync(reference))('main database with the retained private D07 reference',()=>{
  it('exports an immutable case snapshot and never uses the lab latest session',async()=>{
   const source=fs.readFileSync(reference);installProcurementTemplate(source,'7.รายงานพิจารณาผล.docx');const record=saveProcurement(sample());

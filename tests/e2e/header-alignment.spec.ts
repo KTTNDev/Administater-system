@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';import {documentHtml} from '../../src/lib/render-document';import {newDraft} from '../../src/lib/document';import {templates} from '../../src/lib/templates';
 const data=(f:string,m:string)=>'data:'+m+';base64,'+fs.readFileSync('public/'+f).toString('base64');
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:''};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:''};
 test('every form uses the paper center for centered headings and preserves left-aligned memo emblems',async({page})=>{
  for(const t of templates)for(const populated of [false,true]){
   const d={...newDraft(t.id),subject:populated?'การตรวจสอบและดำเนินการเกี่ยวกับทรัพย์สินของหน่วยงานตามแผนการดำเนินงานประจำปีงบประมาณเพื่อปรับปรุงการให้บริการประชาชน':'ร่างหนังสือใหม่',organization:populated?'เทศบาลทดสอบตำแหน่งหัวหนังสือ':'',number:populated?'123/2569':'',body:'ข้อความสำหรับตรวจสอบตำแหน่งบนกระดาษ'};

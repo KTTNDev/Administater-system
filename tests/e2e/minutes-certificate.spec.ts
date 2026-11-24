@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {newDraft} from '../../src/lib/document';
 import {documentHtml} from '../../src/lib/render-document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 test('agenda form reorders items and preserves both modes',async({page})=>{
  page.on('dialog',dialog=>dialog.accept());
  await page.goto('/');await page.getByRole('button',{name:'แบบหนังสือราชการ',exact:true}).click();
@@ -16,7 +16,7 @@ test('agenda form reorders items and preserves both modes',async({page})=>{
  await page.getByRole('button',{name:'เลื่อนวาระ 2 ขึ้น',exact:true}).click();await expect(page.getByLabel('หัวข้อวาระ',{exact:true}).first()).toHaveValue('เรื่องแจ้ง');
  await page.getByLabel('รูปแบบเนื้อหารายงาน').selectOption('free');await page.getByLabel('รูปแบบเนื้อหารายงาน').selectOption('agenda');
  await expect(page.getByLabel('หัวข้อวาระ',{exact:true}).first()).toHaveValue('เรื่องแจ้ง');
- await expect(page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]').locator('#pages')).toContainText('ระเบียบวาระที่ 1  เรื่องแจ้ง');
+ await expect(page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]').locator('#pages')).toContainText('ระเบียบวาระที่ ๑  เรื่องแจ้ง');
  await page.screenshot({path:'output/minutes-editor-ui.png',fullPage:false});
 });
 test('long agendas retain all text and resolutions across A4 pages',async({page})=>{

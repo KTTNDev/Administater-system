@@ -30,3 +30,4 @@ references/inventory/
 
 # Temporary PDF rendering and visual checks
 tmp/pdfs/
+scripts/__pycache__/

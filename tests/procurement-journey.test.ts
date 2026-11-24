@@ -11,10 +11,10 @@ import {reviewProcurementDocument,transitionProcurement} from '../src/lib/procur
 import {randomUUID} from 'node:crypto';
 import {procurementContractDates} from '../src/lib/procurement-contracts';
 vi.mock('../src/lib/procurement-preview',()=>({finalizeProcurementWord:async(word:Buffer)=>({word})}));
-const allChecks=():JourneyCheck[]=>([...suiteCodes,'E01','V01'] as const).map(code=>({code,ready:true,reason:'',exempt:false}));
+const allChecks=():JourneyCheck[]=>([...suiteCodes,'E01','L01','L02','P01','V01'] as const).map(code=>({code,ready:true,reason:'',exempt:false}));
 it('orders TOR before its report and keeps the original document identifiers',()=>{
  expect(procurementDocumentOrder.slice(0,5)).toEqual(['D01','D02','D04','D03','D05']);expect(new Set(procurementDocumentOrder)).toEqual(new Set(suiteCodes));
- expect(procurementJourney.at(-4)!.id).toBe('D14');expect(procurementJourney.at(-2)!.id).toBe('V01');
+ expect(procurementJourney.at(-3)!.id).toBe('D14');expect(procurementJourney.at(-2)!.id).toBe('V01');
 });
 it('uses a contiguous completed prefix, so future drafts do not permit jumping earlier approvals',()=>{
  const data=newProcurement(),checks=allChecks();data.contractDue='2026-11-20';data.inspection={result:'complete',penalty:'none',notes:''};checks[0].ready=false;checks[0].reason='รอสแกน';
@@ -28,11 +28,11 @@ it('keeps frozen received packets complete without rewriting legacy data or rege
  data.workflow.state='closed';data.workflow.packets=[1,2].map(round=>({id:'packet-'+round,round,caseVersion:1,createdAt:'2026-11-16',files:[]}));
  expect(journeyProgress(data,[]).done).toBe(procurementJourney.length);expect(journeyProgress(data,[]).current).toBe('voucher');
 });
-describe.skipIf(!suiteCodes.every(code=>fs.existsSync('output/procurement-suite/templates/'+code+'.docx')))('journey server in isolated database',()=>{
+describe.skipIf(!suiteCodes.every(code=>fs.existsSync('output/procurement-reference-17/templates/'+code+'.docx')))('journey server in isolated database',()=>{
  let folder:string;
- beforeEach(()=>{folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-journey-'));vi.stubEnv('DATABASE_PATH',path.join(folder,'test.sqlite'));vi.stubEnv('SARABUN_SOURCE_DIR',folder);vi.stubEnv('DATABASE_REQUIRE_EXISTING','false');for(const code of suiteCodes)installProcurementTemplate(fs.readFileSync('output/procurement-suite/templates/'+code+'.docx'),code+'.docx',code);});
+ beforeEach(()=>{folder=fs.mkdtempSync(path.join(os.tmpdir(),'sarabun-journey-'));vi.stubEnv('DATABASE_PATH',path.join(folder,'test.sqlite'));vi.stubEnv('SARABUN_SOURCE_DIR',folder);vi.stubEnv('DATABASE_REQUIRE_EXISTING','false');for(const code of suiteCodes)installProcurementTemplate(fs.readFileSync('output/procurement-reference-17/templates/'+code+'.docx'),code+'.docx',code);});
  afterEach(()=>{db().close();(globalThis as unknown as {sarabunDb?:unknown}).sarabunDb=undefined;vi.unstubAllEnvs();});
- async function sample(){const {data}=await procurementPreset('purchase');data.title='JOURNEY SYNTHETIC TEST ONLY';data.profile='general';data.egpExemption='none';data.contractDue='2026-11-20';for(const key of Object.keys(data.common))if(!data.common[key])data.common[key]='ทดสอบ';Object.assign(data.common,{vendor:'ร้านจำลอง',item:'วัสดุทดสอบ',agreed:'200.00',offered:'200.00',referencePrice:'200.00',allocatedBudget:'30000.00',remainingBudget:'29800.00',budgetYear:'2570',number:'ทดสอบ/07',day:'16',month:'พฤศจิกายน',year:'2569',deliveryDays:'3',orderDate:'2026-11-16',appointmentDate:'2026-11-16',inspectionDate:'2026-11-16',deliveryDate:'2026-11-16'});data.d01.number='ทดสอบ/01';data.bill={items:[{id:'item-1',description:'วัสดุทดสอบ',quantity:'2',unit:'ชิ้น',unitPrice:'100.00'}],summary:'วัสดุทดสอบ',vatMode:'none',vatRate:'7',referencePriceFromOffer:true};data.tasks=[];data.inspection={result:'complete',penalty:'none',notes:'ข้อมูลจำลองเท่านั้น'};for(const code of suiteCodes){data.documents[code]={...emptyDocumentConfig(),number:'ทดสอบ/'+code,date:'2026-11-16'};if(Object.hasOwn(data.sources,code))data.sources[code as keyof typeof data.sources]='draft';}return procurementSchema.parse(data);}
+ async function sample(){const {data}=await procurementPreset('purchase');data.title='JOURNEY SYNTHETIC TEST ONLY';data.profile='general';data.egpExemption='none';data.contractDue='2026-11-20';for(const key of Object.keys(data.common))if(!data.common[key])data.common[key]='ทดสอบ';Object.assign(data.common,{budgetSpent:'200.00',budgetTransfers:'0',vendor:'ร้านจำลอง',item:'วัสดุทดสอบ',agreed:'200.00',offered:'200.00',referencePrice:'200.00',allocatedBudget:'30000.00',remainingBudget:'29800.00',budgetYear:'2570',number:'ทดสอบ/07',day:'16',month:'พฤศจิกายน',year:'2569',deliveryDays:'3',orderDate:'2026-11-16',appointmentDate:'2026-11-16',inspectionDate:'2026-11-16',deliveryDate:'2026-11-16'});data.d01.number='ทดสอบ/01';data.bill={items:[{id:'item-1',description:'วัสดุทดสอบ',quantity:'2',unit:'ชิ้น',unitPrice:'100.00'}],summary:'วัสดุทดสอบ',vatMode:'none',vatRate:'7',referencePriceFromOffer:true};data.tasks=[];data.inspection={result:'complete',penalty:'none',notes:'ข้อมูลจำลองเท่านั้น'};for(const code of suiteCodes){data.documents[code]={...emptyDocumentConfig(),number:'ทดสอบ/'+code,date:'2026-11-16'};if(Object.hasOwn(data.sources,code))data.sources[code as keyof typeof data.sources]='draft';}return procurementSchema.parse(data);}
  const inputOf=({id:_id,version:_v,updatedAt:_at,...input}:ReturnType<typeof readProcurement>)=>input;
  it('keeps sample data out of real defaults and contract calendars without relabeling old cases',async()=>{
   const realData=await sample();realData.common.proposer='เจ้าของงานจริง';const real=saveProcurement(realData),fake=saveProcurement({...realData,sample:true,title:'ตัวอย่างทดสอบเท่านั้น',common:{...realData.common,proposer:'ชื่อสมมุติ'}});
@@ -51,8 +51,8 @@ describe.skipIf(!suiteCodes.every(code=>fs.existsSync('output/procurement-suite/
  it('walks all stages through returned debt documents, PDF voucher upload and the second receipt',async()=>{
   let current=saveProcurement(await sample());current=(await generateProcurementSuite(current.id,current.version)).record;
   const pdf=Buffer.from('%PDF-1.7\nSYNTHETIC TEST ONLY');
-  for(const code of procurementJourney.flatMap(s=>'code'in s&&s.code!=='V01'?[s.code]:[])){
-   if(code==='E01')current=(await attachProcurementJourneyFile(current.id,current.version,code,'primary',pdf,'E01-test.pdf')).record;
+  for(const code of procurementJourney.flatMap(s=>'code'in s&&!['D14','V01'].includes(s.code)?[s.code]:[])){
+   if(['E01','L01','L02','P01'].includes(code))current=(await attachProcurementJourneyFile(current.id,current.version,code,'primary',pdf,'E01-test.pdf')).record;
    else if(code!=='D10'){current=(await attachProcurementJourneyFile(current.id,current.version,code,'signed',pdf,code+'-test-scan.pdf')).record;current=saveProcurement({...inputOf(current),documents:{...current.documents,[code]:{...current.documents[code]!,signatureChecked:true}}},current.id,current.version);}
    current=await reviewProcurementJourneyDocument(current.id,current.version,code);
    const next=await advanceProcurementJourney(current.id,current.version,code);expect(next.progress.stages.find(s=>s.id===code)!.ready).toBe(true);
@@ -61,13 +61,20 @@ describe.skipIf(!suiteCodes.every(code=>fs.existsSync('output/procurement-suite/
   const event=(action:string,evidence:string[])=>({action,date:'2026-11-16',actor:'ผู้ทดสอบจำลอง',note:'ไม่ใช่เหตุการณ์จริง',receiptNumber:'TEST',evidence,requestId:randomUUID()});
   current=await transitionProcurement(current.id,current.version,event('send_debt',[vendor,egp]));current=await transitionProcurement(current.id,current.version,event('receive_debt',[vendor]));
   await expect(advanceProcurementJourney(current.id,current.version,'V01')).rejects.toThrow(/ก่อน/);
-  current=await transitionProcurement(current.id,current.version,event('return_for_voucher',[vendor]));expect((await procurementJourneyProgress(current.id)).current).toBe('V01');
+  current=await transitionProcurement(current.id,current.version,event('return_for_voucher',[vendor]));expect((await procurementJourneyProgress(current.id)).current).toBe('D14');
+  const frozen=JSON.stringify(current.workflow.packets[0]);
+  current=(await prepareProcurementJourneyDocument(current.id,current.version,'D14')).record;
+  current=(await attachProcurementJourneyFile(current.id,current.version,'D14','signed',pdf,'D14-signed.pdf')).record;
+  current=saveProcurement({...inputOf(current),documents:{...current.documents,D14:{...current.documents.D14!,signatureChecked:true}}},current.id,current.version);
+  current=await reviewProcurementJourneyDocument(current.id,current.version,'D14');
+  expect(JSON.stringify(current.workflow.packets[0])).toBe(frozen);
+  expect(()=>saveProcurement({...inputOf(current),common:{...current.common,vendor:'เปลี่ยนร้านโดยไม่เปิดแก้ไข'}},current.id,current.version)).toThrow(/ตรึง/);
   await expect(attachProcurementJourneyFile(current.id,current.version,'V01','primary',Buffer.from('image'),'voucher.png')).rejects.toThrow(/PDF/);
   current=(await attachProcurementJourneyFile(current.id,current.version,'V01','primary',pdf,'voucher-test.pdf')).record;current=(await attachProcurementJourneyFile(current.id,current.version,'V01','signed',pdf,'voucher-signed-test.pdf')).record;
   current=saveProcurement({...inputOf(current),documents:{...current.documents,V01:{...current.documents.V01!,signatureChecked:true}}},current.id,current.version);current=await reviewProcurementJourneyDocument(current.id,current.version,'V01');
   expect((await advanceProcurementJourney(current.id,current.version,'V01')).next).toBe('voucher');
   current=await transitionProcurement(current.id,current.version,event('send_voucher',[current.documents.V01!.signedFileId]));expect((await procurementJourneyProgress(current.id)).current).toBe('voucher');
-  current=await transitionProcurement(current.id,current.version,event('receive_voucher',[vendor]));expect((await procurementJourneyProgress(current.id)).done).toBe(18);
+  current=await transitionProcurement(current.id,current.version,event('receive_voucher',[vendor]));expect((await procurementJourneyProgress(current.id)).done).toBe(procurementJourney.length);
   expect(procurementSnapshot().cases).toHaveLength(1);
  },60000);
 });

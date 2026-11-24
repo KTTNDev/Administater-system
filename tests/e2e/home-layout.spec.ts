@@ -15,7 +15,7 @@ test('adds, orders, hides and renames menu cards, persists options and navigates
  await panel.getByRole('button',{name:'บันทึกหน้าหลัก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('บันทึกหน้าหลักแล้ว');
  await page.goto('/home');await expect(page.locator('#wd-home-title')).toHaveText('สวัสดิการสังคม');const cards=page.getByRole('group',{name:'เลือกงานในระบบ',exact:true});await expect(cards.locator('button')).toHaveCount(3);await expect(cards.locator('button').first()).toHaveText('คลังวัสดุของกอง');await expect(cards.locator('button',{hasText:'งานของฉัน'})).toHaveCount(0);
  await expect(page.locator('.wd-hero-date')).toHaveCount(0);await expect(page.locator('.wd-summary-strip')).toHaveCount(0);await expect(page.locator('.wd-home-grid>.wd-panel')).not.toBeVisible();await expect(page.locator('.wd-home-aside')).not.toBeVisible();await expect(cards).toHaveAttribute('data-card-size','compact');
- await page.reload();await expect(cards.locator('button').first()).toHaveText('คลังวัสดุของกอง');await cards.getByRole('button',{name:'คลังวัสดุของกอง',exact:true}).click();await expect(page.locator('.breadcrumbs strong')).toHaveText('พัสดุและครุภัณฑ์');
+ await page.reload();await expect(cards.locator('button').first()).toHaveText('คลังวัสดุของกอง');await cards.getByRole('button',{name:'คลังวัสดุของกอง',exact:true}).click();await expect(page.locator('.workspace-page-context > strong')).toHaveText('พัสดุและครุภัณฑ์');
 });
 
 test('uploads, displays and removes local card and hero backgrounds',async({page})=>{

@@ -1,5 +1,5 @@
 import {templates,type DocumentType} from './templates';
-export type SearchDestination='home'|'tasks'|'projects'|'inventory'|'register'|'budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
+export type SearchDestination='home'|'tasks'|'projects'|'procurement'|'inventory'|'register'|'budget'|'dashboard'|'templates'|'settings'|'guide'|'office'|'bookings'|'calendar'|'laws'|'reports';
 export type WorkAction={id:string;title:string;description:string;view:SearchDestination;documentType?:DocumentType;terms:string[]};
 export const workActions:WorkAction[]=[
  {id:'daily-desk',title:'โต๊ะทำงานวันนี้',description:'งานวันนี้ นาฬิกา และภาพรวมโครงการ',view:'home',terms:['home','หน้าแรก','โต๊ะทำงาน']},
@@ -21,6 +21,7 @@ export const workActions:WorkAction[]=[
  {id:'templates',title:'เลือกแบบหนังสือราชการ',description:'ดูแบบหนังสือทุกประเภทก่อนเริ่มร่าง',view:'templates',terms:['ทำหนังสือ','สร้างหนังสือ','ร่างหนังสือ','แบบฟอร์ม','เทมเพลต','หนังสือราชการ']},
  ...templates.map(t=>({id:'create-'+t.id,title:'ร่าง'+t.name,description:t.description,view:'templates' as const,documentType:t.id,terms:[t.name,...(t.id==='internal'?['บันทึกข้อความ','หนังสือภายใน']:t.id==='external'?['หนังสือภายนอก','หนังสือเชิญ']:t.id==='minutes'?['รายงานการประชุม','บันทึกมติ','ประชุม']:[])]})),
  {id:'guide',title:'คู่มือและแหล่งอ้างอิง',description:'ดูคำแนะนำรูปแบบเอกสารและขอบเขตการใช้งาน',view:'guide',terms:['คู่มือ','วิธีใช้','ใช้งานยังไง','ช่วยเหลือ','รูปแบบเอกสาร']},
+ {id:'procurement',title:'จัดซื้อจัดจ้าง · กรอกครั้งเดียว',description:'กรอกข้อมูลบิล ดูเอกสาร A4 และส่งออกแฟ้ม PDF / Word',view:'procurement',terms:['จัดซื้อ','จัดจ้าง','ใบเสนอราคา','บิลสินค้า','แฟ้มจัดซื้อ']},
 ];
 const normalize=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}]/gu,'');
 export function searchWorkActions(query:string){

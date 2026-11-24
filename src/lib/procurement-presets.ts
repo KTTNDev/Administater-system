@@ -7,7 +7,8 @@ import {d01OwnKeys} from './procurement-documents';
 /** Wording is retained from the approved source, while bill-specific data is cleared. */
 export async function procurementPreset(kind:ProcurementInput['kind']){
  const data=newProcurement(kind),snapshot=procurementSnapshot();
- data.common.category='วัสดุสำนักงาน';
+ data.wordingMode=Object.values(snapshot.templates||{}).length>=15&&Object.values(snapshot.templates||{}).every(t=>t.ready)?'reference':'guided';
+ data.common.category='วัสดุสำนักงาน';data.common.signingDays='3';
  if(snapshot.template.ready){
   const {values}=await templateInitial(procurementTemplateBytes('D07'));
   for(const key of ['department','recipient','directorRecipient','secretaryRecipient','proposer','proposerPosition','director','directorPosition','secretary','secretaryPosition','secretaryActing','authority','authorityPosition','authorityActing'])data.common[key]=values[key];
@@ -19,10 +20,10 @@ export async function procurementPreset(kind:ProcurementInput['kind']){
   data.common.proposal=values.proposal.replaceAll('สั่งซื้อสั่งจ้าง',kind==='purchase'?'สั่งซื้อ':'สั่งจ้าง');
  }
  if(snapshot.templates?.D01.ready){
-  const values=await d01Initial(procurementTemplateBytes('D01'));
+  const values=await d01Initial(procurementTemplateBytes('D01'));if(data.wordingMode==='reference')data.d01Overrides.proposerPosition=values.proposerPosition;
   for(const key of d01OwnKeys)if(!['number','day','month','year'].includes(key))data.d01[key]=values[key];
   const unit=(text:string)=>data.common.unit?text.replaceAll(data.common.unit,'{{unit}}'):text;
-  data.d01.background=unit(values.background.replace('๒๕68','{{budgetYear}}').replace('30,๐๐๐.-','{{allocatedBudget}}').replace('สามหมื่นบาทถ้วน','{{allocatedBudgetWords}}'));
+  data.d01.background=unit(values.background.replace(/๒๕70|2570|๒๕68|2568/g,'{{budgetYear}}').replace(/30,[๐0]{3}\.-/g,'{{allocatedBudget}}').replace('สามหมื่นบาทถ้วน','{{allocatedBudgetWords}}'));
   data.d01.facts=unit(values.facts).replace('จัดซื้อวัสดุสำนักงาน จำนวน 4 รายการ','{{action}}{{item}}');
   data.d01.subject=data.d01.subject.replaceAll('วัสดุสำนักงาน','{{item}}');
   const aliases={...data.common,...Object.fromEntries(['proposer','proposerPosition','director','directorPosition','secretary','secretaryPosition','secretaryActing','authority','authorityPosition','authorityActing'].map(key=>[key,values[key]]))};

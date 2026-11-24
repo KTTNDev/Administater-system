@@ -1,10 +1,13 @@
 import { z } from "zod";
 import {torDetailSections} from "./minutes-presets";
 import { templates, type DocumentType } from "./templates";
+import {CORE_DOC_IDS} from './procurement/core/document-ids';
 const text = z.string().max(2000).default("");
 export const documentSchema = z.object({
   type: z.enum(templates.map(t => t.id) as [DocumentType, ...DocumentType[]]),
   subject: z.string().trim().min(1, "กรุณาระบุเรื่อง").max(300),
+  headerSubtitle: z.string().max(1000).default(""),
+  procurementSource:z.object({caseId:z.string().min(1).max(200),docId:z.enum(CORE_DOC_IDS)}).optional(),
   number: text, date: z.string().refine(v => {
     if (v === "") return true; // Keep older in-progress drafts readable; review still requires a valid date.
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
@@ -18,18 +21,25 @@ export const documentSchema = z.object({
   appendixTitle: z.string().trim().max(200).default(""),
   appendixLayout: z.enum(["auto","stack","columns"]).default("auto"),
   appendixPages: z.array(z.object({id:z.string().uuid(),title:z.string().max(200).default(''),body:z.string().max(20000).default('')})).max(20).default([]),
-  appendixImages: z.array(z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000),caption:z.string().max(500).default(""),widthMm:z.number().min(30).max(180).default(150)})).max(20).default([]),
+  appendixImages: z.array(z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000),caption:z.string().max(500).default(""),widthMm:z.number().min(20).max(195).default(150),page:z.number().int().min(1).max(100).optional(),xMm:z.number().min(0).max(195).optional(),yMm:z.number().min(0).max(285).optional()})).max(20).default([]),
   floatingItems: z.array(z.discriminatedUnion("kind",[
     z.object({kind:z.literal("text"),id:z.string().uuid(),page:z.number().int().min(1).max(100),xMm:z.number().min(0).max(195),yMm:z.number().min(0).max(285),widthMm:z.number().min(10).max(190),fontPt:z.number().min(8).max(48),bold:z.boolean().default(false),text:z.string().max(4000)}),
     z.object({kind:z.literal("image"),purpose:z.literal("signature").optional(),id:z.string().uuid(),page:z.number().int().min(1).max(100),xMm:z.number().min(0).max(195),yMm:z.number().min(0).max(285),widthMm:z.number().min(10).max(180),image:z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000)})}),
   ])).max(30).default([]),
   body: z.string().max(40000).default(""), closing: z.string().max(200).default("ขอแสดงความนับถือ"),
-  layout:z.enum(['standard','budget-reference']).default('standard'),
+  layout:z.enum(['standard','budget-reference','procurement-tor','procurement-po','procurement-inspection','procurement-photos']).default('standard'),
+  procurementForm:z.object({
+    headingLines:z.array(z.string().max(500)).max(10).default([]),
+    metadataColumns:z.array(z.array(z.string().max(2000)).max(12)).max(2).default([]),
+    signatureDates:z.array(z.string().max(200)).max(6).default([]),
+  }).optional(),
   firstPageTop:z.enum(['15','25']).default('15'),
   memoEmblem:z.boolean().default(false),
   orderReceivedBy:z.string().max(200).default(''),
   certificatePhotoArea:z.boolean().default(false),
   certificateRecipient:text,
+  // Opt-in for the four specialized procurement documents mapped to Core's editable "other" type.
+  otherShowSignatures:z.boolean().default(false),
   minutesMode:z.enum(['free','agenda']).default('free'),
   minutesPreset:z.enum(['general','tor-purchase','tor-service']).default('general'),
   minutesTitle:z.string().max(300).default(''),
@@ -101,12 +111,12 @@ export function documentChecks(d:Draft):DocumentCheck[]{
  check('header','ระบุวันที่หนังสือก่อนตรวจทานและส่งออก',d.date);
  check(d.type==='stamped'?'signing':'header','ระบุส่วนราชการเจ้าของหนังสือ',d.organization.trim());
  check('body','ระบุเนื้อหาหนังสือ',bodySections(d).some(s=>s.text.trim()));
- if(d.proposers.length)check('signing','ระบุชื่อและตำแหน่งผู้เสนอเพิ่มเติมให้ครบ',d.proposers.every(p=>p.name.trim()&&p.position.trim()));
- if(d.opinions.length)check('signing','ระบุหัวข้อความเห็นทุกส่วน',d.opinions.every(p=>p.title.trim()));
+ if(!d.procurementSource&&d.proposers.length)check('signing','ระบุชื่อและตำแหน่งผู้เสนอเพิ่มเติมให้ครบ',d.proposers.every(p=>p.name.trim()&&p.position.trim()));
+ if(!d.procurementSource&&d.opinions.length)check('signing','ระบุหัวข้อความเห็นทุกส่วน',d.opinions.every(p=>p.title.trim()));
  if(d.confidentiality!=='ปกติ')check('header','เลขที่ชุดต้องไม่เกินจำนวนชุดทั้งหมด',d.secretSetNumber<=d.secretSetTotal);
  if(['external','internal','stamped','memorandum'].includes(d.type))check('header','ระบุผู้รับหนังสือ',d.recipient.trim());
  if(['external','internal','stamped','order','certificate'].includes(d.type))check('header',NUMBER_REQUIRED_ISSUE,d.number.trim());
- if(!['stamped','news','statement','minutes','other'].includes(d.type)){
+ if((!d.procurementSource||['internal','memorandum','external','order','announcement'].includes(d.type)||d.layout==='procurement-inspection'||d.layout==='procurement-photos')&&(!['stamped','news','statement','minutes','other'].includes(d.type)||d.type==='other'&&d.otherShowSignatures)){
   check('signing','ระบุชื่อผู้ลงนาม',d.signer.trim());check('signing','ระบุตำแหน่งผู้ลงนาม',d.position.trim());
  }
  if(d.type==='external'){

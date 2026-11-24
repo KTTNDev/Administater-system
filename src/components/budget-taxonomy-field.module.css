@@ -1,0 +1,144 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  margin: 0 !important;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.budgetField {
+  margin: 9px 0;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #425b51;
+}
+
+.budgetField .fieldLabel {
+  font-weight: 400;
+}
+
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 30px !important;
+}
+
+.toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 28px;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 5px 5px 0 !important;
+  background: transparent !important;
+  color: #4f6b64 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  background: #edf5f1 !important;
+  color: #087c68 !important;
+}
+
+.chevron {
+  transition: transform 0.14s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: #fff;
+  border: 1px solid #c5d6d0;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 45, 38, 0.16);
+  max-height: 270px;
+  overflow-y: auto;
+  padding: 4px 0 6px;
+}
+
+.menuHeader {
+  padding: 5px 10px 6px;
+  font-size: 11px;
+  color: #5b726c;
+  border-bottom: 1px solid #edf2f0;
+  background: #f8fbfa;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.groupLabel {
+  padding: 6px 10px 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0c6353;
+  background: #f3f8f6;
+  border-top: 1px solid #ebf1ef;
+}
+
+.option {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px !important;
+  padding: 6px 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #213733 !important;
+  text-align: left;
+  font-size: 12.5px !important;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.option:hover,
+.optionActive {
+  background: #eaf5f1 !important;
+  color: #075948 !important;
+}
+
+.optionSelected {
+  font-weight: 600;
+  color: #075948 !important;
+}
+
+.check {
+  flex: none;
+  color: #087c68;
+}
+
+.empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #637872;
+}

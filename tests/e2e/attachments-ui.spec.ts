@@ -12,7 +12,7 @@ test('upload, preview, save and export a cover with its attachments',async({page
  await expect(page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]').locator('.body-text')).toContainText('ตามเอกสารที่แนบมาพร้อมนี้');
  await page.locator('.attachment-preview').scrollIntoViewIfNeeded();await expect(page.locator('.attachment-preview canvas[data-rendered="true"]').first()).toBeVisible();
  await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(page.locator('.toast[role="status"]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
- const download=page.waitForEvent('download');await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();const file=await download;const savedPath=await file.path();const merged=await PDFDocument.load(fs.readFileSync(savedPath!));expect(merged.getPageCount()).toBe(3);expect(merged.getPages().slice(-2).map(p=>p.getWidth())).toEqual([400,500]);
+ const download=page.waitForEvent('download',{timeout:60000});await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();const file=await download;const savedPath=await file.path();const merged=await PDFDocument.load(fs.readFileSync(savedPath!));expect(merged.getPageCount()).toBe(3);expect(merged.getPages().slice(-2).map(p=>p.getWidth())).toEqual([400,500]);
  await file.saveAs('output/attachment-demo.pdf');await page.screenshot({path:'output/attachment-workspace.png',fullPage:true});
  await page.getByRole('button',{name:'เอาออกจากร่าง'}).click();await expect(page.locator('.attachment-preview')).toHaveCount(0);await expect(page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]').locator('.content')).not.toContainText('ตามเอกสารที่แนบมาพร้อมนี้');
  // Return to the saved demo; removing a file from the draft does not delete stored attachments.
@@ -38,7 +38,7 @@ test('selecting two PDF attachments at once preserves both and their chosen orde
  await expect(cards.nth(0)).toContainText('เอกสาร-ข.pdf');
  await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();
  await expect(page.locator('.toast[role="status"]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
- const download=page.waitForEvent('download');await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();
+ const download=page.waitForEvent('download',{timeout:60000});await page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true}).click();
  const file=await download,location=await file.path(),pdf=await PDFDocument.load(fs.readFileSync(location!));
  expect(pdf.getPageCount()).toBe(3);
  expect(pdf.getPages().slice(-2).map(item=>item.getWidth())).toEqual([500,400]);

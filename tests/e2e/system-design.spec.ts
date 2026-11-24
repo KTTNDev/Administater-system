@@ -22,6 +22,7 @@ test('every navigation group remains available with a consistent page layout',as
  }
  await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();
  await expect(page.getByRole('heading',{name:'พื้นที่จัดเก็บและซิงก์',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'ความพร้อมระบบ',exact:true}).click();
  await expect(page.getByRole('region',{name:'ความพร้อมใช้งานจริง'})).toBeVisible();
  expect(errors).toEqual([]);
 });

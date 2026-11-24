@@ -37,7 +37,7 @@ test('Gemini only sends reviewed context, previews editable text, and forgets th
  await page.screenshot({path:'output/ai-writing-dialog.png'});
  expect(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).not.toContain('fake-session-only-key');
  await dialog.getByRole('button',{name:'ปิดผู้ช่วย AI'}).click();
- const paper=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');await expect(paper.locator('.body-text').filter({hasText:'คำตอบที่ตรวจแล้ว'})).toBeVisible();
+ const paper=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');await expect(paper.locator('#pages .body-text').filter({hasText:'คำตอบที่ตรวจแล้ว'})).toBeVisible();
  await page.getByRole('button',{name:'ช่วยเขียนด้วย AI',exact:true}).first().click();await expect(dialog.getByLabel('Gemini API key',{exact:true})).toHaveValue('');await expect(dialog.getByLabel('คำตอบ · แก้ไขก่อนนำเข้าเอกสาร',{exact:true})).toHaveValue('');await dialog.getByRole('button',{name:'ปิดผู้ช่วย AI'}).click();
 });
 test('a pending request can be cancelled and cannot fill a reopened assistant',async({page})=>{

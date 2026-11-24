@@ -10,38 +10,42 @@ import {buildLivePreview} from './procurement-live-preview';
 import {billValues} from './procurement-bill';
 import {wordContentHash} from './procurement-template';
 import {procurementJourney} from './procurement-journey';
+import {assertProcurementDocumentEditable} from './procurement-editing';
 const inputOf=({id:_id,version:_version,updatedAt:_at,...data}:ProcurementCase)=>data;
 export async function documentContentHash(data:ProcurementInput,code:string){
  if(Object.hasOwn(documentTemplates,code))try{return wordContentHash(await buildLivePreview(data,code as DraftDocumentCode));}catch(error){if(data.sources[code as keyof typeof data.sources]!=='external'||!(error instanceof Error)||!error.message.startsWith('ยังไม่ได้ติดตั้ง'))throw error;}
  const common=billValues(data),values=Object.fromEntries(['vendor','vendorTaxId','vendorAddress','item','agreed','offered','orderNumber','orderDate','egpNumber','organization'].map(key=>[key,common[key]||'']));
- return createHash('sha256').update(JSON.stringify({kind:data.kind,bill:data.bill,contractDue:data.contractDue,values})).digest('hex');
+ return createHash('sha256').update(JSON.stringify({wordingMode:data.wordingMode,kind:data.kind,bill:data.bill,contractDue:data.contractDue,values})).digest('hex');
 }
-export function caseContentStamp(data:ProcurementInput,includeVoucher=true){return JSON.stringify({kind:data.kind,profile:data.profile,common:data.common,bill:data.bill,contractDue:data.contractDue,inspection:data.inspection,d01:data.d01,d01Overrides:data.d01Overrides,d07Overrides:data.d07Overrides,documents:procurementCodes.filter(code=>includeVoucher||code!=='V01').map(code=>({code,number:data.documents[code]?.number||'',date:data.documents[code]?.date||'',subject:data.documents[code]?.subject||'',paragraphs:data.documents[code]?.paragraphs||{}}))});}
+export function caseContentStamp(data:ProcurementInput,includeVoucher=true,includePayment=true){return JSON.stringify({kind:data.kind,title:data.title,profile:data.profile,egpExemption:data.egpExemption,billType:data.billType,billNumber:data.billNumber,common:data.common,bill:data.bill,contractDue:data.contractDue,inspection:data.inspection,tasks:data.tasks,d01:data.d01,d01Overrides:data.d01Overrides,d07Overrides:data.d07Overrides,sources:data.sources,register:{...data.register,entries:data.register.entries.filter(e=>includePayment||e.code!=='D14').filter(e=>includeVoucher||e.code!=='V01')},documents:procurementCodes.filter(code=>includeVoucher||code!=='V01').filter(code=>includePayment||code!=='D14').map(code=>({code,config:data.documents[code]||emptyDocumentConfig(),type:data.documentTypes[code]}))});}
 export function validateContractTasks(data:ProcurementInput){
  const ids=new Set(data.tasks.map(t=>t.id));if(ids.size!==data.tasks.length)throw Error('รหัสงานสัญญาซ้ำ');
  const seen=new Set<string>(),visiting=new Set<string>();
  const visit=(id:string)=>{if(visiting.has(id))throw Error('งานก่อนหน้าวนกลับมาหากัน');if(seen.has(id))return;visiting.add(id);const task=data.tasks.find(t=>t.id===id)!;for(const previous of task.dependsOn){if(!ids.has(previous))throw Error('ไม่พบงานที่ต้องทำก่อน');visit(previous);if(task.done&&!data.tasks.find(t=>t.id===previous)!.done)throw Error('ยังมีงานก่อนหน้าที่ทำไม่เสร็จ');}visiting.delete(id);seen.add(id);};
  for(const id of ids)visit(id);
 }
-const needsSignature=(code:string)=>!['D10','E01','P01','OTHER'].includes(code);
+const needsSignature=(code:string)=>!['D10','E01','L01','L02','P01','OTHER'].includes(code);
 export async function documentChecklist(data:ProcurementInput,files:ProcurementFile[],round=1){
- const codes:ProcurementDocumentCode[]=round===2?['V01']:procurementJourney.flatMap(s=>'code'in s&&s.code!=='V01'?[s.code]:[]);
+ const codes:ProcurementDocumentCode[]=round===2?['D14','V01']:procurementJourney.flatMap(s=>'code'in s&&!['D14','V01'].includes(s.code)?[s.code]:[]);
  return Promise.all(codes.map(async code=>{const config=data.documents[code]||emptyDocumentConfig(),primary=files.find(f=>f.id===config.primaryFileId&&f.meta.code===code),signed=files.find(f=>f.id===config.signedFileId&&f.meta.code===code&&f.meta.origin==='scan');let reason='';const hash=primary?await documentContentHash(data,code):'';
- if(!config.required&&code!=='V01')reason=config.exemptionReason.trim()?'':'ระบุเหตุที่ไม่ใช้เอกสารนี้';
+ if(!config.required&&!['D14','V01'].includes(code))reason=config.exemptionReason.trim()?'':'ระบุเหตุที่ไม่ใช้เอกสารนี้';
  else if(!primary)reason='เลือกฉบับใช้งาน';
+ else if(data.register.entries.some(e=>e.code===code&&e.status==='reserved'&&!!e.number))reason='ยืนยันใช้เลขและวันที่เอกสารจริงในลายแทง';
  else if(code==='V01'&&primary.mime!=='application/pdf')reason='เลือก PDF ฎีกาจาก e-LAAS';
- else if(['E01','V01'].includes(code)&&primary.meta.origin!=='elaas')reason='เลือกไฟล์ต้นทางที่ได้จาก e-LAAS';
+ else if(['E01','V01','L01','L02'].includes(code)&&primary.meta.origin!=='elaas')reason='เลือกไฟล์ต้นทางที่ได้จาก e-LAAS';
  else if(Object.hasOwn(data.sources,code)&&data.sources[code as keyof typeof data.sources]==='external'&&primary.meta.origin!=='egp')reason='เลือกไฟล์ต้นทางจาก e-GP ให้ตรงแหล่งที่เลือก';
  else if(Object.hasOwn(data.sources,code)&&(data.sources[code as keyof typeof data.sources]==='draft')!==(primary.meta.origin==='draft'||primary.meta.origin==='word'&&!!primary.meta.baseFileId))reason='ฉบับใช้งานไม่ตรงแหล่งเอกสารที่เลือก';
  else if(primary.meta.origin==='draft'&&primary.meta.contentHash!==hash)reason='ข้อมูลกลางเปลี่ยน ต้องสร้างฉบับใหม่';
  else if(config.reviewedHash!==hash)reason=primary.meta.origin==='word'?'Word ภายนอกไม่ปรับตามข้อมูลกลาง ต้องเทียบและตรวจฉบับนี้ใหม่':'ตรวจทานฉบับปัจจุบัน';
  else if(needsSignature(code)&&(!signed||!config.signatureChecked))reason='แนบสแกนและยืนยันตรวจลายเซ็น';
- return {code,name:procurementDocumentNames[code],ready:!reason,reason,exempt:!config.required&&code!=='V01',file:needsSignature(code)?signed:primary,primary,copies:config.copies};}));
+ return {code,name:procurementDocumentNames[code],ready:!reason,reason,exempt:!config.required&&!['D14','V01'].includes(code),file:needsSignature(code)?signed:primary,primary,copies:config.copies};}));
 }
 export async function reviewProcurementDocument(id:string,version:number,input:unknown){
- const {code}=z.object({code:z.enum([...suiteCodes,'E01','V01','P01','OTHER'])}).strict().parse(input),current=readProcurement(id);if(current.version!==version)throw new ProcurementConflict('งานเปลี่ยนแล้ว เปิดฉบับล่าสุดก่อนตรวจทาน');
+ const {code}=z.object({code:z.enum([...suiteCodes,'E01','L01','L02','V01','P01','OTHER'])}).strict().parse(input),current=readProcurement(id);if(current.version!==version)throw new ProcurementConflict('งานเปลี่ยนแล้ว เปิดฉบับล่าสุดก่อนตรวจทาน');
+ assertProcurementDocumentEditable(current,code);
+ if(['D14','V01'].includes(code)&&current.workflow.state!=='returned_for_voucher')throw Error('รอคลังคืนเอกสารก่อนยืนยันบันทึกขอเบิกและฎีกา');
  const config=current.documents[code]||emptyDocumentConfig(),files=procurementSnapshot().files.filter(f=>f.caseId===id),primary=files.find(f=>f.id===config.primaryFileId&&f.meta.code===code);
- if(!config.required&&code!=='V01'){if(!config.exemptionReason.trim())throw Error('ระบุเหตุผลที่ไม่ใช้เอกสารนี้ก่อน');return current;}
+ if(!config.required&&!['D14','V01'].includes(code)){if(!config.exemptionReason.trim())throw Error('ระบุเหตุผลที่ไม่ใช้เอกสารนี้ก่อน');return current;}
  if(config.required&&!primary)throw Error('เลือกไฟล์ฉบับใช้งานก่อนตรวจทาน');
  const hash=await documentContentHash(current,code);
  if(primary?.meta.origin==='draft'&&primary.meta.contentHash!==hash)throw Error('ข้อมูลกลางเปลี่ยนแล้ว สร้างเอกสารใหม่ก่อนตรวจทาน');
@@ -51,8 +55,9 @@ export async function transitionProcurement(id:string,version:number,input:unkno
  const action=processActionSchema.parse(input),current=readProcurement(id);
  if(current.workflow.events.some(event=>event.id===action.requestId))return current;
  if(current.version!==version)throw new ProcurementConflict('งานเปลี่ยนแล้ว เปิดฉบับล่าสุดก่อนบันทึกขั้นตอน');
+ if(action.simulation&&!current.sample)throw Error('ใช้เหตุการณ์จำลองได้เฉพาะงานตัวอย่างที่แยกจากงานจริง');
  const when=new Date(action.date+'T12:00:00+07:00');if(Number.isNaN(when.getTime())||when.toISOString().slice(0,10)!==action.date)throw Error('วันที่ไม่ถูกต้อง');
- if(action.date>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok'}).format(new Date()))throw Error('บันทึกการรับส่งจริงล่วงหน้าไม่ได้ ใช้งานสัญญาสำหรับวางแผน');
+ if(!action.simulation&&action.date>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok'}).format(new Date()))throw Error('บันทึกการรับส่งจริงล่วงหน้าไม่ได้ ใช้งานสัญญาสำหรับวางแผน');
  const last=current.workflow.events.at(-1);if(last&&action.date<last.date)throw Error('วันเหตุการณ์ต้องไม่ก่อนขั้นตอนก่อนหน้า');
  const files=procurementSnapshot().files.filter(f=>f.caseId===id),state=current.workflow.state;
  for(const fileId of action.evidence)if(!files.some(file=>file.id===fileId))throw Error('หลักฐานไม่อยู่ในงานนี้');
@@ -76,6 +81,6 @@ export async function transitionProcurement(id:string,version:number,input:unkno
   const round=action.action==='receive_debt'?1:2,packet=[...packets].reverse().find(p=>p.round===round);if(!packet)throw Error('ไม่พบชุดส่งที่คลังลงรับ');packetId=packet.id;to=round===1?'debt_received':'closed';
  }else if(action.action==='return_for_voucher')to='returned_for_voucher';
  else {packetId=[...packets].reverse().find(p=>p.round===(state==='voucher_sent'?2:1))?.id||'';to=state==='voucher_sent'?'returned_for_voucher':'preparing';}
- const event={id:action.requestId,action:action.action,date:action.date,actor:action.actor,note:action.note,receiptNumber:action.receiptNumber,evidence:action.evidence,packetId,from:state,to,at:new Date().toISOString()};
+ const event={id:action.requestId,action:action.action,simulation:action.simulation,date:action.date,actor:action.actor,note:action.note,receiptNumber:action.receiptNumber,evidence:action.evidence,packetId,from:state,to,at:new Date().toISOString()};
  return saveProcurement({...inputOf(current),workflow:{state:to,events:[...current.workflow.events,event],packets}},id,version,true);
 }

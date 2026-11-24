@@ -23,6 +23,6 @@ export function documentSample(draft: Draft): Draft {
  return {...draft,organization:draft.organization||org.name,department:draft.department||org.department,address:draft.address||org.address,phone:draft.phone||org.phone,
   number:draft.number,recipient:'หัวหน้าส่วนราชการที่เกี่ยวข้อง (ตัวอย่าง)',signer:'ชื่อ นามสกุล (ตัวอย่าง)',position:'นายกเทศมนตรี (ตัวอย่าง)',
   bodyMode:'free',background:'',facts:'',legalBasis:'',consideration:'',proposal:'',contentBlocks:[],layout:'standard',
-  minutesMode:'free',minutesIntroduction:'',meetingAgenda:[],effectiveDate:'',
+  minutesMode:'free',minutesIntroduction:'',meetingAgenda:[],effectiveDate:'',headerSubtitle:'',
   ...examples[draft.type],status:'draft'};
 }

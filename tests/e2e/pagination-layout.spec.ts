@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { documentHtml } from '../../src/lib/render-document';
 import { newDraft } from '../../src/lib/document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 for(const type of ['external','internal'] as const)test(`${type}: continuation text matches next page with no lost paragraphs`,async({page})=>{
  const body='การทดสอบเอกสารต่อเนื่อง 123 เพื่อให้ข้อความทุกคำปรากฏครบถ้วนในการแบ่งหน้า '.repeat(130);
  await page.setContent(documentHtml({...newDraft(type),organization:'เทศบาลตัวอย่าง',number:'ทดสอบ 123',body,numeralStyle:'thai',signer:'ผู้ลงนามตัวอย่าง',position:'เจ้าหน้าที่'},assets));

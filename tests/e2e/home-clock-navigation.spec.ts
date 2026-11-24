@@ -26,7 +26,8 @@ test('restored Home puts full-size cards first and the control deck operates the
  expect((await cards.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
  expect((await cards.locator('[data-home-card]').first().boundingBox())!.height).toBeGreaterThanOrEqual(110);
  await expect(page.locator('.home-menu-zone')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'อยากทำอะไร?',exact:true})).toHaveCount(0);
+ // Command search belongs to the shared control deck; the Home search/menu zone stays removed.
+ await expect(page.locator('.workspace-control-deck').getByRole('button',{name:'อยากทำอะไร?',exact:true})).toBeVisible();
  const menu=page.getByRole('navigation',{name:'นำทางระหว่างหน้า'}).getByRole('button',{name:'เปิดเมนู',exact:true});
  await menu.click();await expect(page.locator('.app-shell')).toHaveClass(/sidebar-collapsed/);
  await menu.click();await expect(page.locator('.app-shell')).not.toHaveClass(/sidebar-collapsed/);

@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';import fs from 'node:fs';
 import {numerals} from '../../src/lib/document';import {documentHtml} from '../../src/lib/render-document';import {torMeetingFixture} from '../fixtures/tor-minutes';
 const font=(file:string)=>'data:font/ttf;base64,'+fs.readFileSync('public/fonts/'+file).toString('base64');
-const assets={regular:font('THSarabunNew.ttf'),bold:font('THSarabunNew-Bold.ttf'),garuda:'',routingStamp:'',copyMark:''};
+const assets={regular:font('THSarabunIT9.ttf'),bold:font('THSarabunIT9-Bold.ttf'),garuda:'',routingStamp:'',copyMark:''};
 test('TOR attendance, long details and signer groups survive pagination',async({page})=>{
  await page.setContent(documentHtml(torMeetingFixture(true),assets));await page.waitForFunction(()=>!!(window as unknown as {__paginationDone:boolean}).__paginationDone);
  expect(await page.evaluate(()=>(window as unknown as {__overflow:boolean}).__overflow)).toBe(false);

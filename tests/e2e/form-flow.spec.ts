@@ -14,7 +14,8 @@ test.beforeEach(async({page})=>{
 });
 
 async function create(page:Page,title:string){
-  await page.goto('/');
+  // Reuse in-app navigation between templates; full navigation races the unsaved beforeunload dialog.
+  if(page.url()==='about:blank')await page.goto('/');
   await page.getByRole('button',{name:'สร้างหนังสือใหม่',exact:true}).click();
   await page.locator('.template-card').filter({has:page.getByRole('heading',{name:title,exact:true})}).click();
   await expect(page.locator('#form-body')).toBeVisible();

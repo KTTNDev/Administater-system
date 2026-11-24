@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {numerals} from '../../src/lib/document';
 
 test('switching drafts and refreshing the preview keeps the correct text',async({page})=>{
  test.skip(!process.env.SARABUN_E2E_DATA_ROOT,'Use disposable data only.');
@@ -18,18 +19,18 @@ test('switching drafts and refreshing the preview keeps the correct text',async(
  for(const item of [records[0],records[1],records[0],records[1]]){
   await page.getByLabel('ค้นหาเอกสารทุกข้อมูล').fill(item.subject);
   await page.getByRole('button',{name:new RegExp('^'+item.subject)}).first().click();
-  await expect(preview.locator('#pages .body-text')).toContainText(item.body);
+  await expect(preview.locator('#pages .body-text')).toContainText(numerals(item.body,'thai'));
   await page.getByRole('button',{name:'กลับรายการ'}).click();
  }
  await page.getByLabel('ค้นหาเอกสารทุกข้อมูล').fill(records[1].subject);
  await page.getByRole('button',{name:new RegExp('^'+records[1].subject)}).first().click();
- await expect(preview.locator('#pages .body-text')).toContainText(records[1].body);
+ await expect(preview.locator('#pages .body-text')).toContainText(numerals(records[1].body,'thai'));
  const frame=page.locator('iframe[title="ตัวอย่างหนังสือ A4"]');
  await frame.evaluate(element=>element.setAttribute('data-test-frame','before'));
  await page.getByRole('button',{name:'โหลดตัวอย่างใหม่'}).click();
  await expect(frame).not.toHaveAttribute('data-test-frame','before');
  await expect(page.locator('#document-body')).toHaveValue(records[1].body);
- await expect(preview.locator('#pages .body-text')).toContainText(records[1].body);
+ await expect(preview.locator('#pages .body-text')).toContainText(numerals(records[1].body,'thai'));
  await page.getByRole('button',{name:'รีเฟรชระบบ'}).click();
  await expect(page.getByRole('heading',{name:'พื้นที่ทำงาน'})).toBeVisible();
 });

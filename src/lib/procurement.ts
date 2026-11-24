@@ -5,6 +5,7 @@ import {templates} from './templates';
 import {defaultProcurementTypes} from './procurement-document-types';
 import {billSchema,billValues,moneyWords,monetaryWordSources} from './procurement-bill';
 import {documentConfigSchema,workflowSchema,contractTaskSchema,inspectionSchema} from './procurement-workflow-model';
+import {registerSchema} from './procurement-register';
 const documentTypeSchema=z.enum(templates.map(item=>item.id));
 
 export const procurementProfiles={
@@ -13,7 +14,7 @@ export const procurementProfiles={
  w804:'ว804 — งานซื้อไม่เกิน 50,000 บาทตามเงื่อนไข',
  invitation:'ประกาศเชิญชวนทั่วไป / แนวทางอื่น',
 } as const;
-export const procurementCodes=['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','P01','E01','V01','OTHER'] as const;
+export const procurementCodes=['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','N01','L01','L02','P01','E01','V01','OTHER'] as const;
 export const sourceCodes=['D05','D06','D07','D08','D09','D10','D11'] as const;
 export const procurementSql={
  procurement_cases:'id TEXT PRIMARY KEY,data TEXT NOT NULL,version INTEGER NOT NULL,updated_at TEXT NOT NULL',
@@ -25,6 +26,8 @@ const text=(max:number)=>z.string().max(max).regex(/^[^\x00-\x1f\x7f]*$/,'กร
 export const procurementCommonSchema=z.object(Object.fromEntries([...templateSlots,...additionalCommonFields].map(f=>[f.key,text(f.max).default('')]))).strict();
 const isoDate=z.string().refine(v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v,'วันที่ไม่ถูกต้อง');
 export const procurementSchema=z.object({
+ wordingMode:z.enum(['guided','reference']).default('guided'),
+ register:registerSchema,
  sample:z.boolean().default(false),
  kind:z.enum(['purchase','hire']),title:text(160).trim().min(1,'ระบุชื่องาน'),
  profile:z.enum(['pending','general','w119','w804','invitation']),
@@ -45,6 +48,7 @@ export const procurementSchema=z.object({
 export type ProcurementInput=z.infer<typeof procurementSchema>;
 export type ProcurementCase=ProcurementInput&{id:string;version:number;updatedAt:string};
 export const procurementFileSchema=z.object({
+ simulation:z.boolean().default(false),
  code:z.enum(procurementCodes),origin:z.enum(['vendor','egp','elaas','scan','word','draft']),
  caseVersion:z.number().int().positive().nullable(),
  templateHash:z.string().regex(/^[a-f0-9]{64}$/).optional(),
@@ -57,9 +61,9 @@ export type ProcurementFile={id:string;caseId:string;name:string;mime:string;sha
 export type ProcurementSnapshot={cases:ProcurementCase[];files:ProcurementFile[];template:{ready:boolean;name?:string;sha256?:string};templates?:Record<DraftDocumentCode,{ready:boolean;name?:string;sha256?:string}>};
 export function newProcurement(kind:ProcurementInput['kind']='purchase',department=''):ProcurementInput{
  const today=new Date(),month=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
- return {sample:false,kind,title:'',profile:'pending',egpExemption:'pending',billType:'quotation',billNumber:'',contractDue:'',notes:'',
+ return {wordingMode:'guided',register:registerSchema.parse({}),sample:false,kind,title:'',profile:'pending',egpExemption:'pending',billType:'quotation',billNumber:'',contractDue:'',notes:'',
   common:{...Object.fromEntries([...templateSlots,...additionalCommonFields].map(f=>[f.key,''])),department,day:String(today.getDate()),month:month[today.getMonth()],year:String(today.getFullYear()+543)},
-  sources:Object.fromEntries(sourceCodes.map(code=>[code,code==='D07'?'draft':'external'])) as ProcurementInput['sources'],d07Overrides:{},d01:{...emptyD01(),day:String(today.getDate()),month:month[today.getMonth()],year:String(today.getFullYear()+543)},d01Overrides:{},documentTypes:{...defaultProcurementTypes},bill:billSchema.parse({}),documents:{},workflow:workflowSchema.parse({}),tasks:[],inspection:inspectionSchema.parse({})};
+  sources:Object.fromEntries(sourceCodes.map(code=>[code,code==='D07'?'draft':'external'])) as ProcurementInput['sources'],d07Overrides:{},d01:{...emptyD01(),day:String(today.getDate()),month:month[today.getMonth()],year:String(today.getFullYear()+543)},d01Overrides:{},documentTypes:{...defaultProcurementTypes},bill:{...billSchema.parse({}),tableMode:'summary'},documents:{D11:{...documentConfigSchema.parse({}),copies:2},E01:{...documentConfigSchema.parse({}),required:false,exemptionReason:'ใช้รายงานสัญญาจาก e-LAAS หากต้องแนบภาพหน้าจอแยกให้เปิดใช้ขั้นนี้'}},workflow:workflowSchema.parse({}),tasks:[],inspection:inspectionSchema.parse({})};
 }
 export const procurementBindings={vendor:'ชื่อร้านค้า',item:'รายการ',offered:'ราคาที่เสนอ',agreed:'ราคาที่ตกลง',number:'เลขหนังสือ',subject:'เรื่อง',organization:'ชื่อหน่วยงาน',unit:'ชื่อกอง',action:'จัดซื้อ / จัดจ้าง',budgetYear:'ปีงบประมาณ',allocatedBudget:'วงเงินงบประมาณตั้งไว้',allocatedBudgetWords:'วงเงินงบประมาณเป็นตัวอักษร',...Object.fromEntries(additionalCommonFields.map(f=>[f.key,f.label])),amountWords:'จำนวนเงินเป็นตัวอักษร',agreedWords:'ยอดตกลงเป็นตัวอักษร',offeredWords:'ยอดเสนอเป็นตัวอักษร',referencePriceWords:'ราคาอ้างอิงเป็นตัวอักษร',remainingBudgetWords:'งบคงเหลือเป็นตัวอักษร',net:'ยอดก่อนภาษี',vat:'ภาษีมูลค่าเพิ่ม'} as const;
 function bindText(text:string,values:TemplateValues){return text.replace(/\{\{([a-zA-Z]+)\}\}/g,(token,name)=>Object.hasOwn(values,name)?values[name]||token:token);}

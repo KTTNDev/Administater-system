@@ -15,7 +15,7 @@ export function ProcurementLivePreview({data,code,onCode,available,activeFile,lo
  function refresh(){setManual({stamp,code});setAttempt(n=>n+1);}
  function updateMode(value:boolean){setAutomatic(value);setManual(null);try{localStorage.setItem('sarabun.procurement.preview-mode',value?'auto':'manual');}catch{}}
  const [inspectDraft,setInspectDraft]=useState(false);useEffect(()=>setInspectDraft(false),[code,activeFile?.id]);
- const fileSelected=!!activeFile&&(activeFile.meta.origin==='word'||Object.hasOwn(data.sources,code)&&data.sources[code as keyof typeof data.sources]==='external'),showFile=fileSelected&&!inspectDraft,activeUrl=activeFile?'/api/procurement/file-preview/'+activeFile.id:'';
+ const fileSelected=!!activeFile&&(data.workflow.state!=='preparing'&&!(data.workflow.state==='returned_for_voucher'&&['D14','V01'].includes(code))||activeFile.meta.origin==='word'||Object.hasOwn(data.sources,code)&&data.sources[code as keyof typeof data.sources]==='external'),showFile=fileSelected&&!inspectDraft,activeUrl=activeFile?'/api/procurement/file-preview/'+activeFile.id:'';
  const previous=results[code],current=previous?.stamp===stamp,displayUrl=showFile?activeUrl:previous?.url;
  useEffect(()=>{const element=paper.current;if(!element)return;const resize=new ResizeObserver(([entry])=>element.style.setProperty('--fit-width',Math.max(160,(entry.contentRect.height-70)*.707)+'px'));resize.observe(element);return()=>resize.disconnect();},[]);
  useEffect(()=>{

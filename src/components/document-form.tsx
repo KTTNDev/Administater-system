@@ -140,27 +140,33 @@ type Props={
   sources:Record<string,string>;
   onSources:(sources:Record<string,string>)=>void;
   pages:number;
+  memoAnchorMm?:number;
   onPlaceSignature:(id:string)=>void;
 };
 
-export function DocumentForm({draft:d,organization,directory,onManageOrganizations,onChange:change,onBusy,sources,onSources,pages,onPlaceSignature}:Props){
+export function DocumentForm({draft:d,organization,directory,onManageOrganizations,onChange:change,onBusy,sources,onSources,pages,onPlaceSignature,memoAnchorMm}:Props){
   const external=d.type==="external",memo=["internal","memorandum"].includes(d.type),minutes=d.type==="minutes";
   const correspondence=external||memo,directed=correspondence||d.type==="stamped";
   const issued=["order","regulation","rule","announcement","statement","news","certificate","stamped"].includes(d.type);
-  const signed=!["minutes","stamped","other","news","statement"].includes(d.type);
+  const signed=(!d.procurementSource||["internal","memorandum","external","order","announcement"].includes(d.type)||d.layout==='procurement-inspection'||d.layout==='procurement-photos')&&(!["minutes","stamped","other","news","statement"].includes(d.type)||d.type==='other'&&d.otherShowSignatures);
   const field=(key:keyof Draft,label:string,options:{wide?:boolean;required?:boolean;textarea?:boolean;type?:string;placeholder?:string}={})=><label className={options.wide?"wide":undefined} key={key}>{label}{options.required&&<span className="required"> *</span>}{options.textarea?<textarea rows={3} required={options.required} value={String(d[key])} maxLength={key==="attendees"||key==="absentees"||key==="participants"?10000:2000} placeholder={options.placeholder} onChange={e=>change({[key]:e.target.value})}/>:<input type={options.type||"text"} value={String(d[key])} required={options.required} maxLength={key==="subject"?300:2000} placeholder={options.placeholder} onChange={e=>change({[key]:options.type==="number"?Number(e.target.value):e.target.value})}/>}</label>;
   const date=field("date",minutes?"วันที่ประชุม":"วันที่หนังสือ",{type:"date"});
   const subject=field("subject",minutes?"ชื่อการประชุม":"เรื่อง / ชื่อร่าง",{required:true,wide:true,placeholder:"ระบุเรื่องของหนังสือ"});
   const agency=field("organization","ส่วนราชการเจ้าของหนังสือ",{required:true,wide:!external&&d.type!=="certificate"});
+  const procurementFields=d.procurementForm&&<>
+    {d.layout!=='procurement-photos'&&<label className="wide">ข้อความใต้หัวแบบฟอร์ม<textarea rows={2} value={d.procurementForm.headingLines.join('\n')} onChange={e=>change({procurementForm:{...d.procurementForm!,headingLines:e.target.value.split('\n')}})}/></label>}
+    {d.procurementForm.metadataColumns.map((column,index)=><label key={index}>{index===0?'ข้อมูลผู้ขาย / ผู้รับจ้าง':'ข้อมูลใบสั่งซื้อ / ส่วนราชการ'}<textarea rows={5} value={column.join('\n')} onChange={e=>change({procurementForm:{...d.procurementForm!,metadataColumns:d.procurementForm!.metadataColumns.map((old,i)=>i===index?e.target.value.split('\n'):old)}})}/></label>)}
+    {!d.procurementSource&&d.procurementForm.signatureDates.map((value,index)=>value||d.layout==='procurement-po'?<label key={`sign-date-${index}`}>วันที่ใต้ผู้ลงนาม {index+1}<input value={value} maxLength={200} onChange={e=>change({procurementForm:{...d.procurementForm!,signatureDates:d.procurementForm!.signatureDates.map((old,i)=>i===index?e.target.value:old)}})}/></label>:null)}
+  </>;
   const contact=<>{field("department","หน่วยงานเจ้าของเรื่อง")}{field("phone","โทรศัพท์")}{external&&field("email","อีเมลติดต่อ",{wide:true})}</>;
   const attachmentCount=d.attachmentFiles.length+d.appendixPages.length+d.appendixImages.length;
   const attachments=<section id="form-attachments" className="form-section document-section tone-amber attachment-group" aria-label={external?"สิ่งที่ส่งมาด้วย":"เอกสารแนบท้าย"}>
     <h3 className="section-heading"><span className="section-icon"><Paperclip size={19}/></span>{external?"สิ่งที่ส่งมาด้วย":"เอกสารแนบท้าย"}<span className="section-count">{attachmentCount?`${attachmentCount} รายการ`:"ถ้ามี"}</span></h3>
     {external&&<div className="field-grid"><label className="wide">สิ่งที่ส่งมาด้วยเพิ่มเติม (ถ้ามี)<textarea rows={2} maxLength={2000} value={d.additionalEnclosures} onChange={e=>change({additionalEnclosures:e.target.value})} placeholder="รายการที่ส่งแยก เช่น แบบแปลน จำนวน 1 ชุด"/></label><p className="compact-hint wide">เอกสารและรูปที่เพิ่มด้านล่างจะปรากฏในสิ่งที่ส่งมาด้วยให้อัตโนมัติ</p></div>}
     <div className="attachment-options">
-      {(correspondence||minutes)&&<AppendixPagesEditor pages={d.appendixPages} onChange={appendixPages=>change({appendixPages})}/>}
-      <AppendixEditor title={d.appendixTitle} layout={d.appendixLayout} images={d.appendixImages} sources={sources} onTitle={appendixTitle=>change({appendixTitle})} onLayout={appendixLayout=>change({appendixLayout})} onImages={appendixImages=>change({appendixImages})} onSources={onSources} onBusy={onBusy}/>
-      {(correspondence||minutes)&&<AttachmentEditor draft={d} onChange={attachmentFiles=>change({attachmentFiles})} onBusy={onBusy} onPhrase={attachmentPhrase=>change({attachmentPhrase})}/>}
+      {(correspondence||minutes||d.procurementSource)&&<AppendixPagesEditor pages={d.appendixPages} onChange={appendixPages=>change({appendixPages})}/>}
+      <AppendixEditor title={d.appendixTitle} layout={d.appendixLayout} images={d.appendixImages} pages={pages} sources={sources} onTitle={appendixTitle=>change({appendixTitle})} onLayout={appendixLayout=>change({appendixLayout})} onImages={appendixImages=>change({appendixImages})} onSources={onSources} onBusy={onBusy} onPlaceImage={onPlaceSignature}/>
+      {(correspondence||minutes||d.procurementSource)&&<AttachmentEditor draft={d} onChange={attachmentFiles=>change({attachmentFiles})} onBusy={onBusy} onPhrase={attachmentPhrase=>change({attachmentPhrase})}/>}
     </div>
   </section>;
 
@@ -173,6 +179,7 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
         {d.type!=="stamped"&&agency}
         {!["news","other","announcement"].includes(d.type)&&field("number",["regulation","rule","statement"].includes(d.type)?"ฉบับที่ (ถ้ามี)":"เลขที่หนังสือ")}
         {d.type!=="stamped"&&subject}
+        {["order","regulation","rule","announcement","statement","news"].includes(d.type)&&<label className="wide">ข้อความต่อจากเรื่อง (เหนือเส้นคั่น)<textarea rows={2} maxLength={1000} value={d.headerSubtitle} placeholder="เช่น สำหรับการจัดซื้อ... / ของส่วนราชการ... (ขึ้นบรรทัดใหม่ได้)" onChange={e=>change({headerSubtitle:e.target.value})}/></label>}
         {(["regulation","rule","other"].includes(d.type))&&date}
       </>}
       {directed&&<>{correspondence&&<label>คำขึ้นต้น<select value={d.salutation} onChange={e=>change({salutation:e.target.value})}><option>เรียน</option><option>กราบเรียน</option><option>นมัสการ</option></select></label>}{field("recipient",d.type==="stamped"?"ถึง":"ผู้รับหนังสือ",{required:true,wide:!correspondence})}{external&&field("reference","อ้างถึง (ถ้ามี)",{textarea:true,wide:true,placeholder:"ชื่อหนังสือ เลขที่ และวันที่"})}</>}
@@ -180,6 +187,7 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
     {external&&attachments}
     {minutes&&<Section id="attendees" title="ผู้เข้าประชุม" icon={<Users size={19}/>}>{<MinutesMembersEditor draft={d} onChange={change}/>}{field("attendees",d.minutesAttendanceMode==="table"?"รายชื่อผู้มาประชุมเพิ่มเติม (ข้อความ)":"ผู้มาประชุม",{textarea:true,wide:true,required:d.minutesAttendanceMode==="text"})}{field("absentees","ผู้ไม่มาประชุม พร้อมเหตุผล",{textarea:true,wide:true})}{field("participants","ผู้เข้าร่วมประชุม",{textarea:true,wide:true})}{field("startTime","เริ่มประชุมเวลา",{type:"time",required:true})}</Section>}
     <Section id="body" title={minutes?"เนื้อหาการประชุม":"เนื้อหาหนังสือ"} icon={<FileText size={19}/>} tone="blue">
+      {procurementFields}
       {minutes&&<MinutesEditor draft={d} onChange={change}/>}
       {!(minutes&&d.minutesMode==="agenda")&&<><StructuredBody draft={d} onChange={change}/>{d.bodyMode==="free"&&<div className="wide"><label htmlFor="document-body">{minutes?"ระเบียบวาระ ความคิดเห็น และมติที่ประชุม":"ข้อความ"}<span className="required"> *</span></label><BodyEditor id="document-body" value={d.body} required onChange={body=>change({body})}/><ConclusionPicker draft={d} onChange={change}/></div>}</>}
       {["order","regulation","rule"].includes(d.type)&&field("effectiveDate","ข้อกำหนดวันมีผลใช้บังคับ",{wide:true,textarea:true,placeholder:"เช่น ทั้งนี้ ตั้งแต่วันที่ … เป็นต้นไป"})}
@@ -194,17 +202,17 @@ export function DocumentForm({draft:d,organization,directory,onManageOrganizatio
         {signed&&<>{field("signer","ชื่อ–นามสกุลผู้ลงนาม",{required:true,wide:true})}{field("position","ตำแหน่ง",{textarea:true,required:true,wide:true})}</>}
         {(external||d.type==="stamped")&&<><div className="field-divider wide">ส่วนราชการเจ้าของเรื่อง</div>{contact}{external&&field("copies","สำเนาส่ง (ถ้ามี)",{wide:true,textarea:true})}</>}
         {d.type==="certificate"&&<><label className="check-label wide"><input type="checkbox" checked={d.certificatePhotoArea} onChange={e=>change({certificatePhotoArea:e.target.checked})}/>เพิ่มพื้นที่รูปถ่ายและผู้ได้รับการรับรอง</label>{d.certificatePhotoArea&&field("certificateRecipient","ชื่อผู้ได้รับการรับรอง",{wide:true})}</>}
-        {d.type==="other"&&<p className="compact-hint wide">แบบนี้ไม่มีส่วนลงนามตายตัว เพิ่มข้อความที่ต้องการไว้ในเนื้อหาได้</p>}
+        {d.type==="other"&&!d.otherShowSignatures&&<p className="compact-hint wide">แบบนี้ไม่มีส่วนลงนามตายตัว เพิ่มข้อความที่ต้องการไว้ในเนื้อหาได้</p>}
         {(signed||d.type==="stamped")&&<div className="wide"><FormHelp>{d.type==="stamped"?"ตรวจว่ารายการนี้เข้าเงื่อนไขหนังสือประทับตรา และต้องประทับตราชื่อส่วนราชการด้วยหมึกแดง พร้อมผู้รับผิดชอบลงชื่อย่อกำกับ":"การกรอกชื่อยังไม่ใช่การลงลายมือชื่อ ต้องตรวจอำนาจผู้ลงนามก่อนออกหนังสือ"}</FormHelp></div>}
       </>}
       <SignatureEditor items={d.floatingItems} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems})} onSources={onSources} onBusy={onBusy} onPlace={onPlaceSignature}/>
     </Section>
-    <ReviewChain draft={d} onChange={change}/>
+    {!d.procurementSource?<ReviewChain draft={d} onChange={change}/>:<p className="field-note">เอกสารจัดซื้อจัดจ้างเติมผู้เสนอของบันทึกข้อความ ผู้มีอำนาจลงนามของคำสั่ง/ประกาศ และผู้ตรวจรับของใบตรวจรับอัตโนมัติ ผู้ลงนามอื่นจัดวางด้วย Text Box ในเครื่องมือเพิ่มเติม</p>}
     {!external&&attachments}
     <section id="form-options" className="form-options" aria-label="เครื่องมือเพิ่มเติม">
       <h3 className="section-heading"><Settings2 size={19}/>เครื่องมือเพิ่มเติม</h3>
       <DocumentTools draft={d} onChange={change}/>
-      <FloatingItemsEditor maxItems={30-d.floatingItems.filter(isSignature).length} items={d.floatingItems.filter(item=>!isSignature(item))} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems:[...d.floatingItems.filter(isSignature),...floatingItems]})} onSources={onSources} onBusy={onBusy}/>
+      <FloatingItemsEditor memoAnchorMm={memoAnchorMm} maxItems={30-d.floatingItems.filter(isSignature).length} items={d.floatingItems.filter(item=>!isSignature(item))} pages={d.copyMark==="สำเนาคู่ฉบับ"?Math.max(1,Math.floor(pages/2)):pages} sources={sources} onChange={floatingItems=>change({floatingItems:[...d.floatingItems.filter(isSignature),...floatingItems]})} onSources={onSources} onBusy={onBusy} onPlace={onPlaceSignature}/>
       <LegalLibrary draft={d} onChange={change}/>
     </section>
   </>;

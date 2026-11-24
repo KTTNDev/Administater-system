@@ -1,6 +1,8 @@
 import {mirrorLocalOwner} from "./local-dossiers";
 import "server-only";
 import {documentSourcesSql} from "./word-import-model";
+import {formatDocumentNumbers,MEMO_TRACK} from './procurement/numbering';
+import {StoredCaseSchema} from './procurement/workspace/model';
 import { resolveDatabaseFile } from "../../scripts/data-location.mjs";
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
@@ -55,22 +57,45 @@ export function listDrafts(): SavedDraft[] { return (db().prepare("SELECT d.*, (
 export function readDraft(id: string) { const row = db().prepare("SELECT d.*, (SELECT COUNT(*) FROM signed_scans s WHERE s.document_id=d.id) signed_scan_count FROM documents d WHERE d.id = ? AND d.deleted_at IS NULL").get(id) as Row | undefined; if (!row) throw new Error("ไม่พบร่างหนังสือ หรืออยู่ในถังขยะ"); return decode(row); }
 export const normalizeNumber=(value:string)=>value.normalize('NFKC').replace(/[๐-๙]/g,digit=>String('๐๑๒๓๔๕๖๗๘๙'.indexOf(digit))).replace(/\s+/g,'').replace(/\/0+(?=\d+$)/,'/').toLocaleLowerCase('th-TH');
 // Call inside the same write transaction as the insert/update.
-export function checkNumber(input:Draft,id:string){
+export function checkNumber(input:Draft,id:string,reservationOwner?:{caseId:string;docId:string}){
   const number=normalizeNumber(input.number),year=Number(input.date.slice(0,4));
   if(!number)return;
+  const c=db();
+  const exists=(table:string)=>!!c.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
+  const link=exists('procurement_core_drafts')?c.prepare('SELECT case_id,doc_id FROM procurement_core_drafts WHERE draft_id=?').get(id):undefined;
+  const owner=reservationOwner??(link?{caseId:String(link.case_id),docId:String(link.doc_id)}:undefined);
+  if(exists('procurement_domain_cases'))for(const row of c.prepare('SELECT data FROM procurement_domain_cases').all()){
+    const record=StoredCaseSchema.parse(JSON.parse(String(row.data))),inputCase=record.caseInput,numbers=formatDocumentNumbers(inputCase.docs,record.agency);
+    const ids=['1','2','3','6.1','7','11.1','12','13'];
+    const entries=[...MEMO_TRACK.map((key,index)=>({docId:ids[index],number:numbers[key],date:inputCase.docs[key].date})),{docId:'6.2',number:numbers.doc6_2_inspectorOrder,date:inputCase.docs.doc6_2_inspectorOrder.date},{docId:'9',number:numbers.doc9_contractNotice,date:inputCase.docs.doc9_contractNotice.date},{docId:'10',number:numbers.doc10_purchaseOrder,date:inputCase.docs.doc10_purchaseOrder.date}];
+    for(const entry of entries){
+      if(owner?.caseId===inputCase.id&&owner.docId===entry.docId)continue;
+      if(entry.number&&normalizeNumber(entry.number)===number&&(entry.docId==='10'||entry.date&&Number(entry.date.slice(0,4))===year))throw Error('เลขที่หนังสือซ้ำ: ถูกจองในงานจัดซื้อจัดจ้างชุดใหม่แล้ว');
+    }
+  }
+  if(db().prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='procurement_cases'").get())for(const row of db().prepare('SELECT data FROM procurement_cases').all()){
+    const other=JSON.parse(String(row.data));if(other.sample)continue;
+    if(other.register?.entries?.some((entry:{register:string;owner:string;year:number;prefix:string;number:string})=>['internal','external'].includes(entry.register)&&entry.register===input.type&&entry.owner.trim()===input.organization.trim()&&entry.year===year+543&&entry.number&&normalizeNumber(entry.prefix+'/'+entry.number)===number))throw new Error('เลขที่หนังสือนี้อยู่ในลายแทงจัดซื้อจัดจ้างแล้ว (รวมเลขยกเลิก)');
+  }
   const reservation=db().prepare('SELECT document_id FROM document_numbers WHERE year=? AND number=?').get(year,number);
   if(reservation&&reservation.document_id!==id)throw new Error('เลขที่หนังสือนี้ถูกจองแล้วในปีเดียวกัน');
   for(const row of db().prepare('SELECT id,data FROM documents WHERE id<>?').all(id)){
     const other=JSON.parse(String(row.data));
-    if(Number(String(other.date).slice(0,4))===year&&normalizeNumber(other.number||'')===number)throw new Error('เลขที่หนังสือซ้ำในปีเดียวกัน (รวมเอกสารในถังขยะ) กรุณาตรวจทะเบียน');
+    const fiscalOrder=input.layout==='procurement-po'||input.procurementSource?.docId==='10'||other.layout==='procurement-po'||other.procurementSource?.docId==='10';
+    if((fiscalOrder||Number(String(other.date).slice(0,4))===year)&&normalizeNumber(other.number||'')===number)throw new Error('เลขที่หนังสือซ้ำในปีเดียวกัน (รวมเอกสารในถังขยะ) กรุณาตรวจทะเบียน');
   }
 }
-export function writeDraft(input: Draft, id?: string, version?: number) {
-  const data = JSON.stringify(documentSchema.parse(input)); const now = new Date().toISOString();
+export type DraftWrite = {input:Draft;id?:string;version?:number;reservationOwner?:{caseId:string;docId:string}};
+/** All document writes and relationship changes commit together; mirrors run only after commit. */
+export function writeDraftBatch(writes:readonly DraftWrite[], onSaved?:(saved:SavedDraft[])=>void) {
+  const parsed=writes.map(write=>({...write,input:documentSchema.parse(write.input)}));
+  const now = new Date().toISOString();
   const saved = db().transaction(() => {
+    const results=parsed.map(({input,id,version,reservationOwner})=>{
+    const data=JSON.stringify(input);
     const key = id || randomUUID();
     const previous=id?readDraft(id):null;
-    if(!previous||normalizeNumber(previous.number)!==normalizeNumber(input.number)||previous.date.slice(0,4)!==input.date.slice(0,4))checkNumber(input,key);
+    if(!previous||normalizeNumber(previous.number)!==normalizeNumber(input.number)||previous.date.slice(0,4)!==input.date.slice(0,4))checkNumber(input,key,reservationOwner);
     if (id) {
       const result = db().prepare("UPDATE documents SET data=?, version=version+1, updated_at=? WHERE id=? AND version=? AND deleted_at IS NULL").run(data, now, id, version ?? -1);
       if (!result.changes) throw new Error("ร่างนี้ถูกแก้ไขหรือลบจากหน้าต่างอื่นแล้ว กรุณาเปิดร่างล่าสุดก่อนบันทึก");
@@ -78,9 +103,14 @@ export function writeDraft(input: Draft, id?: string, version?: number) {
     const saved = readDraft(key);
     db().prepare("INSERT INTO audit(document_id,action,version,at) VALUES(?,?,?,?)").run(key, id ? "update" : "create", saved.version, now);
     return saved;
+    });
+    onSaved?.(results);
+    return results;
   })();
-  const localFileWarning=mirrorLocalOwner('document',saved.id);
-  return {...saved,localFileWarning};
+  return saved.map(draft=>({...draft,localFileWarning:mirrorLocalOwner('document',draft.id)}));
+}
+export function writeDraft(input: Draft, id?: string, version?: number) {
+  return writeDraftBatch([{input,id,version}])[0];
 }
 export function removeDraft(id: string, version: number) {
   db().transaction(() => {
@@ -108,6 +138,20 @@ export function reserveDraftNumber(id:string,version:number,prefix:string,start:
   const year=Number(draft.date.slice(0,4)),normalized=normalizeNumber(clean)+'/';
   let serial=start;
   const numbers=db().prepare('SELECT number FROM document_numbers WHERE year=?').all(year).map(row=>String(row.number));
+  if(db().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='procurement_domain_cases'").get())for(const row of db().prepare('SELECT data FROM procurement_domain_cases').all()){
+    const record=StoredCaseSchema.parse(JSON.parse(String(row.data))),entries=formatDocumentNumbers(record.caseInput.docs,record.agency);
+    for(const key of MEMO_TRACK)if(record.caseInput.docs[key].date?.startsWith(String(year)))numbers.push(normalizeNumber(entries[key]));
+    if(record.caseInput.docs.doc9_contractNotice.date?.startsWith(String(year)))numbers.push(normalizeNumber(entries.doc9_contractNotice));
+    if(record.caseInput.docs.doc6_2_inspectorOrder.date?.startsWith(String(year)))numbers.push(normalizeNumber(entries.doc6_2_inspectorOrder));
+  }
+  if(db().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='procurement_domain_registry'").get()){
+    const track=draft.type==='internal'?'INTERNAL_MEMO':draft.type==='external'?'EXTERNAL_LETTER':draft.type==='order'?'MUNICIPAL_ORDER':null;
+    if(track)for(const row of db().prepare('SELECT running_no FROM procurement_domain_registry WHERE track=? AND year_be=?').all(track,year+543)){const last=Number(row.running_no);if(Number.isSafeInteger(last))numbers.push(normalized+last);}
+  }
+  if(db().prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='procurement_cases'").get())for(const row of db().prepare('SELECT data FROM procurement_cases').all()){
+    const other=JSON.parse(String(row.data));if(other.sample)continue;
+    for(const entry of other.register?.entries||[])if(['internal','external'].includes(entry.register)&&entry.year===year+543&&entry.number)numbers.push(normalizeNumber(entry.prefix+'/'+entry.number));
+  }
   for(const row of db().prepare('SELECT data FROM documents').all()){const doc=JSON.parse(String(row.data));if(Number(String(doc.date).slice(0,4))===year)numbers.push(normalizeNumber(doc.number||''));}
   for(const number of numbers)if(number.startsWith(normalized)&&/^\d+$/.test(number.slice(normalized.length)))serial=Math.max(serial,Number(number.slice(normalized.length))+1);
   if(serial>9999999)throw new Error('เลขทะเบียนเกินช่วงที่รองรับ');

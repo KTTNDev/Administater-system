@@ -15,7 +15,8 @@ test('local-only storage and complete backup activation preserve settings and cr
  await page.getByRole('tab',{name:'ที่เก็บและสำรองข้อมูล',exact:true}).click();
  const storage=page.locator('section').filter({has:page.getByRole('heading',{name:'พื้นที่จัดเก็บและซิงก์',exact:true})}).first();
  await expect(storage).toContainText(path.join(root!,'data','sarabun.sqlite'));
- await storage.getByLabel('โฟลเดอร์เก็บสำเนา PDF และข้อมูลส่งออก').fill(path.join(root!,'output','storage'));
+ await expect(storage.getByLabel('โฟลเดอร์เก็บสำเนา PDF และข้อมูลส่งออก')).toHaveValue(path.join(root!,'output','storage'));
+ await expect(storage.getByLabel('โฟลเดอร์เก็บสำเนา PDF และข้อมูลส่งออก')).toHaveAttribute('readonly','');
  await storage.getByLabel('โฟลเดอร์ Drive สำหรับหนังสือและคลังระเบียบ',{exact:true}).fill('');
  await storage.getByLabel('โฟลเดอร์ Drive ส่วนตัวสำหรับสำรองข้อมูลระบบ').fill('');
  await storage.getByRole('button',{name:'บันทึกตำแหน่ง',exact:true}).click();

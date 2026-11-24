@@ -3,7 +3,7 @@ const navigation=(page:Page)=>page.getByRole('navigation',{name:'นำทาง
 const sidebar=(page:Page)=>page.getByRole('complementary',{name:'เมนูหลัก',exact:true});
 test('Back visits actual prior menu pages and Home has an explicit shortcut',async({page})=>{
  await page.goto('/home');await expect(navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true})).toBeDisabled();await sidebar(page).getByRole('button',{name:'งานของฉัน',exact:true}).click();await sidebar(page).getByRole('button',{name:'ตั้งค่าหน่วยงานและ Drive',exact:true}).click();
- await navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true}).click();await expect(page.locator('.breadcrumbs strong')).toHaveText('งานของฉัน');await navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true}).click();await expect(page.locator('#wd-home-title')).toBeVisible();await expect(navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true})).toBeDisabled();
+ await navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true}).click();await expect(page.locator('.workspace-page-context > strong')).toHaveText('งานของฉัน');await navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true}).click();await expect(page.locator('#wd-home-title')).toBeVisible();await expect(navigation(page).getByRole('button',{name:'ย้อนกลับหน้าก่อนหน้า',exact:true})).toBeDisabled();
  await sidebar(page).getByRole('button',{name:'คลังกฎหมายและระเบียบ',exact:true}).click();await navigation(page).getByRole('button',{name:'ไปหน้าหลัก',exact:true}).click();await expect(page.locator('#wd-home-title')).toBeVisible();
 });
 test('a direct page falls back to Home rather than navigating outside the application',async({page})=>{

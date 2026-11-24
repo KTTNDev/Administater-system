@@ -20,7 +20,7 @@ async function buildUncachedPreview(data:ProcurementInput,code:DraftDocumentCode
  if(code==='D07'){
   const valid=/^\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?$/.test(values.agreed||'');let net='—',vat='—';
   if(valid){const [a,b='']=values.agreed.replaceAll(',','').split('.'),gross=BigInt(a)*100n+BigInt(b.padEnd(2,'0')),base=(gross*100n+53n)/107n;const money=(value:bigint)=>{const s=value.toString().padStart(3,'0');return s.slice(0,-2).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+s.slice(-2);};net=money(base);vat=money(gross-base);}
-  changes.push({p:16,nodes:undefined,text:net},{p:18,nodes:undefined,text:vat});
+  changes.push({p:15,nodes:undefined,text:net},{p:17,nodes:undefined,text:vat});
  }
  const built=await replaceTemplateText(reference,changes);
  // A partial preview may span pages; never show the unrelated footer retained in the old sample.
@@ -29,7 +29,7 @@ async function buildUncachedPreview(data:ProcurementInput,code:DraftDocumentCode
 const wordCache=new Map<string,Promise<Buffer>>();
 export async function buildLivePreview(data:ProcurementInput,code:DraftDocumentCode){
  const references=Object.entries(data.documents).filter(([,v])=>v&&(v.number||v.date||v.subject||Object.keys(v.paragraphs).length)).map(([key,v])=>[key,{number:v?.number,date:v?.date,subject:v?.subject,paragraphs:v?.paragraphs}]);
- const key=createHash('sha256').update(procurementTemplateBytes(code)).update(code+documentTemplates[code].outputVersion).update(JSON.stringify({common:data.common,bill:data.bill,kind:data.kind,d01:data.d01,d01Overrides:data.d01Overrides,d07Overrides:data.d07Overrides,inspection:data.inspection,contractDue:data.contractDue,references})).digest('hex');
+ const key=createHash('sha256').update(procurementTemplateBytes(code)).update(code+documentTemplates[code].outputVersion).update(JSON.stringify({wordingMode:data.wordingMode,common:data.common,bill:data.bill,kind:data.kind,d01:data.d01,d01Overrides:data.d01Overrides,d07Overrides:data.d07Overrides,inspection:data.inspection,contractDue:data.contractDue,references})).digest('hex');
  let result=wordCache.get(key);if(!result){if(wordCache.size>=50)wordCache.delete(wordCache.keys().next().value!);result=buildUncachedPreview(data,code);wordCache.set(key,result);result.catch(()=>wordCache.delete(key));}return result;
 }
 const result=(job:Preview)=>({id:job.id,state:job.state,code:job.code,pages:job.pages,error:job.error,url:job.state==='ready'?'/api/procurement/live/'+job.id+'/pdf':undefined});

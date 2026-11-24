@@ -17,7 +17,7 @@ test('register receives, stamps, searches, edits with history, and exports real 
  await form.getByLabel('เรื่อง',{exact:true}).fill(subject);await form.getByLabel('ที่',{exact:true}).fill('ภก 123/๗๘');await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้รับ ทดสอบ');
  await form.getByText('เอกสารประกอบและเรื่องที่เกี่ยวข้อง',{exact:true}).click();
  const attachment=await PDFDocument.create();attachment.addPage();await form.getByLabel('แนบหนังสือ / หลักฐานการรับส่ง (PDF หรือรูปภาพ)').setInputFiles({name:'หลักฐานรับหนังสือ.pdf',mimeType:'application/pdf',buffer:Buffer.from(await attachment.save())});await expect(form.getByRole('link',{name:'หลักฐานรับหนังสือ.pdf',exact:true})).toBeVisible();
- await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
+ await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('region',{name:'ทะเบียนรับ–ส่งหนังสือ',exact:true}).getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
  const stamp=await request.get((await form.getByRole('link',{name:'พิมพ์ตรารับ',exact:true}).getAttribute('href'))!);expect(stamp.status()).toBe(200);fs.writeFileSync('output/register-stamp.pdf',await stamp.body());
  await form.getByLabel('สถานะการดำเนินการ').selectOption('working');await form.getByLabel('ผู้รับผิดชอบเรื่อง').fill('ผู้ดำเนินการ คนใหม่');await form.getByLabel('ผู้ดำเนินการครั้งนี้').fill('ผู้ส่งต่อ ทดสอบ');await form.getByLabel('เหตุผล / รายละเอียดการแก้ไข').fill('ส่งต่อให้กองช่างตรวจสอบ');await form.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
  await expect(form.getByRole('heading',{name:'ประวัติรายการ (2)'})).toBeVisible();await expect(form.getByText('ผู้ลงรับ: ผู้รับ ทดสอบ',{exact:false})).toBeVisible();
@@ -31,10 +31,10 @@ test('register receives, stamps, searches, edits with history, and exports real 
  await page.getByRole('table').getByRole('button').first().click();await expect(page.getByRole('heading',{name:'ประวัติรายการ (2)'})).toBeVisible();
 });
 test('outgoing book starts independently, cancellation retains numbers, and navigation protects edits',async({page})=>{
- const form=await openNew(page,'ส่ง'),subject=token();await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);await form.getByLabel('จาก',{exact:true}).fill('กองคลัง');await form.getByLabel('ถึง',{exact:true}).fill('เทศบาล');await form.getByLabel('เรื่อง',{exact:true}).fill(subject);await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้ส่ง ทดสอบ');await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('status')).toContainText('ทะเบียนส่ง เลข 1/');
+ const form=await openNew(page,'ส่ง'),subject=token();await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);await form.getByLabel('จาก',{exact:true}).fill('กองคลัง');await form.getByLabel('ถึง',{exact:true}).fill('เทศบาล');await form.getByLabel('เรื่อง',{exact:true}).fill(subject);await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้ส่ง ทดสอบ');await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('region',{name:'ทะเบียนรับ–ส่งหนังสือ',exact:true}).getByRole('status')).toContainText('ทะเบียนส่ง เลข 1/');
  await form.getByLabel('สถานะการดำเนินการ').selectOption('cancelled');await form.getByLabel('เหตุผล / รายละเอียดการแก้ไข').fill('ยกเลิกก่อนส่งจริง');await form.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();await expect(form.getByRole('heading',{name:'ประวัติรายการ (2)'})).toBeVisible();
  await form.getByLabel('เรื่อง',{exact:true}).fill('ยังไม่บันทึก');page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'แดชบอร์ดเอกสาร',exact:true}).click();await expect(form).toBeVisible();page.once('dialog',d=>d.accept());await form.getByRole('button',{name:'ปิดรายการ'}).click();await expect(form).toHaveCount(0);
- await page.getByRole('button',{name:'ลงทะเบียนส่ง',exact:true}).click();await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);await form.getByLabel('จาก',{exact:true}).fill('กองคลัง');await form.getByLabel('ถึง',{exact:true}).fill('เทศบาล');await form.getByLabel('เรื่อง',{exact:true}).fill('ส่งใหม่');await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('status')).toContainText('ทะเบียนส่ง เลข 2/');
+ await page.getByRole('button',{name:'ลงทะเบียนส่ง',exact:true}).click();await form.getByLabel('กอง / หน่วยงานเจ้าของทะเบียน').fill(subject);await form.getByLabel('จาก',{exact:true}).fill('กองคลัง');await form.getByLabel('ถึง',{exact:true}).fill('เทศบาล');await form.getByLabel('เรื่อง',{exact:true}).fill('ส่งใหม่');await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();await expect(page.getByRole('region',{name:'ทะเบียนรับ–ส่งหนังสือ',exact:true}).getByRole('status')).toContainText('ทะเบียนส่ง เลข 2/');
 });
 for(const width of [320,375,414,768,1440])test(`register page and paper form fit ${width}px without outer horizontal overflow`,async({page})=>{
  await page.setViewportSize({width,height:900});const form=await openNew(page);
@@ -62,7 +62,7 @@ test('reopening from a stale list reads the latest version and concurrent edits 
  await form.getByLabel('เรื่อง',{exact:true}).fill(subject);
  await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้รับคนแรก');
  await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();
- await expect(page.getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
+ await expect(page.getByRole('region',{name:'ทะเบียนรับ–ส่งหนังสือ',exact:true}).getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
  const other=await context.newPage();
  try{
   await other.goto('/?view=register');
@@ -101,7 +101,7 @@ test('invalid report periods block export while saved record history remains dow
  await form.getByLabel('เรื่อง',{exact:true}).fill(subject);
  await form.getByLabel('ผู้ลงรับ / ลงส่ง').fill('ผู้ลงรับ');
  await form.getByRole('button',{name:'ประทับชื่อและลงทะเบียน'}).click();
- await expect(page.getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
+ await expect(page.getByRole('region',{name:'ทะเบียนรับ–ส่งหนังสือ',exact:true}).getByRole('status')).toContainText('บันทึกทะเบียนรับ เลข 1/');
  await page.getByRole('combobox',{name:'ช่วงเวลา',exact:true}).selectOption('custom');
  await page.getByLabel('ตั้งแต่',{exact:true}).fill('2026-10-21');
  await page.getByLabel('ถึง',{exact:true}).and(page.locator('input[type=date]')).fill('2026-10-01');

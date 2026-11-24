@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 
 test('counterpart keeps original clean and overlays the supplied stamp on the copy',async({page})=>{
  const draft={...newDraft('external'),organization:'เทศบาลตัวอย่าง',number:'ทส 0000/001',subject:'ทดสอบสำเนาคู่ฉบับ',recipient:'ผู้รับหนังสือ',closing:'จึงเรียนมาเพื่อโปรดทราบ',signer:'ผู้ลงนาม',position:'นายกเทศมนตรี',body:'ข้อความทดสอบฉบับจริงและสำเนา',copyMark:'สำเนาคู่ฉบับ' as const,productionMark:true};

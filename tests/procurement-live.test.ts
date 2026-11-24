@@ -14,7 +14,7 @@ import {nativeD07Pdf,finalizeProcurementWord} from '../src/lib/procurement-previ
 import {setStorage,exportWorkspace} from '../src/lib/storage';
 import {prepareBackupRestore,activateBackupRestore} from '../src/lib/workspace-restore';
 vi.mock('../src/lib/procurement-preview',()=>({nativeD07Pdf:vi.fn(),finalizeProcurementWord:vi.fn(async(word:Buffer)=>({word}))}));
-const d01=path.resolve('output/procurement-d01/reference.docx'),d07=path.resolve('output/procurement-lab/template-d07/reference.docx');
+const d01=path.resolve('output/procurement-reference-17/templates/D01.docx'),d07=path.resolve('output/procurement-reference-17/templates/D07.docx');
 const text=async(bytes:Buffer)=>{const zip=await JSZip.loadAsync(bytes),xml=await zip.file('word/document.xml')!.async('string');return Array.from(new DOMParser().parseFromString(xml,'application/xml').getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main','t')).map(t=>t.textContent).join('');};
 const fillShared=(data:ProcurementInput)=>Object.assign(data.common,{department:'กองทดสอบ โทร. 000-000000',organization:'หน่วยงานทดสอบ',unit:'กองทดสอบ',category:'วัสดุสำนักงาน',recipient:'นายกหน่วยงานทดสอบ',proposer:'นายผู้เสนอ ทดสอบ',proposerPosition:'เจ้าพนักงานทดสอบ',directorRecipient:'ปลัดหน่วยงานทดสอบ',director:'นางผู้อำนวยการ ทดสอบ',directorPosition:'ผู้อำนวยการกองทดสอบ',secretaryRecipient:'นายกหน่วยงานทดสอบ',secretary:'นายปลัด ทดสอบ',secretaryPosition:'ปลัดหน่วยงานทดสอบ',authority:'นายผู้มีอำนาจ ทดสอบ',authorityPosition:'นายกหน่วยงานทดสอบ'});
 let folder:string;

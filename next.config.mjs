@@ -2,8 +2,9 @@ const config = {
   distDir: process.env.SARABUN_BUILD === "desktop" ? ".next-desktop" : process.env.SARABUN_BUILD === "procurement-lab" ? ".next-procurement-lab" : process.env.SARABUN_BUILD === "procurement-main-demo" ? ".next-procurement-main" : ".next-workspace",
   output: process.env.SARABUN_BUILD === "desktop" ? "standalone" : undefined,
   serverExternalPackages: ["playwright"],
-  outputFileTracingIncludes: { "/*": ["node_modules/playwright/**/*", "node_modules/playwright-core/**/*", "scripts/render-procurement-template.ps1"] },
+  outputFileTracingIncludes: { "/*": ["node_modules/playwright/**/*", "node_modules/playwright-core/**/*"] },
   experimental: {
+    cpus: 1,
     serverActions: { bodySizeLimit: "12mb" },
   },
   async headers() {

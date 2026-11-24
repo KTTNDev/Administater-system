@@ -28,7 +28,7 @@ test('missing signature page is reported and blocks exports until reassigned',as
  await page.getByRole('button',{name:'บันทึกร่าง',exact:true}).click();await expect(page.locator('.toast')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
  const db=new DatabaseSync(path.join(process.env.SARABUN_E2E_DATA_ROOT!,'data/sarabun.sqlite'),{readOnly:true});const row=db.prepare("SELECT id FROM documents WHERE json_extract(data,'$.subject')=?").get(title) as {id:string};db.close();
  for(const format of ['pdf','word']){const response=await page.request.get('/api/documents/'+row.id+'/'+format);expect(response.status()).toBe(422);expect((await response.json()).error).toContain("หน้า 2");}
- if(!await page.locator('.signature-editor').evaluate(el=>el.hasAttribute('open')))await page.locator('.signature-editor > summary').click();await select.selectOption('1');await expect(page.locator('.missing-overlay-alert')).toHaveCount(0);await expect(page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true})).toBeEnabled();
+ if(!await page.locator('.signature-editor').evaluate(el=>el.hasAttribute('open')))await page.locator('.signature-editor > summary').click();await select.selectOption('1');await expect(page.locator('.missing-overlay-alert')).toHaveCount(0);await expect(page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true})).toBeEnabled({timeout:30000});
  await expect(page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]').getByLabel('ภาพลายเซ็น',{exact:true})).toHaveCount(1);
 });
 
@@ -37,7 +37,7 @@ test('focus writing preserves pagination when returning to the preview',async({p
  await page.locator('#document-body').fill(('รายละเอียดประกอบการพิจารณาของเทศบาล เพื่อตรวจหน้าตัวอย่างขณะโฟกัสการเขียน\n\n').repeat(25));
  await page.getByLabel('เรื่อง / ชื่อร่าง').focus();
  // The completed preview must still have measured A4 pages while it is hidden.
- await expect(page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true})).toBeEnabled({timeout:30000});
  await page.getByRole('button',{name:'แสดงตัวอย่างคู่กัน',exact:true}).click();
  const preview=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
  await expect.poll(()=>preview.locator('.page').count()).toBeGreaterThan(1);

@@ -27,7 +27,7 @@ for(const [kind,label] of Object.entries(officeKinds))test(`office ${kind}: crea
 test('calendar appointment survives reload',async({page})=>{
  const title='ตรวจนัดหมาย '+Date.now();await page.goto('/?view=calendar');await page.getByRole('button',{name:'เพิ่มนัดหมาย',exact:true}).click();
  const form=page.locator('dialog');await form.getByLabel('เรื่อง',{exact:true}).fill(title);await form.getByLabel('ทั้งวัน',{exact:true}).check();
- await form.getByRole('button',{name:'บันทึกนัดหมาย',exact:true}).click();await expect(page.getByRole('status')).toContainText('บันทึกนัดหมายแล้ว');await page.reload();await expect(page.getByText(title,{exact:true}).first()).toBeVisible();
+ await form.getByRole('button',{name:'บันทึกนัดหมาย',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'บันทึกนัดหมายแล้ว'})).toContainText('บันทึกนัดหมายแล้ว');await page.reload();await expect(page.getByText(title,{exact:true}).first()).toBeVisible();
 });
 test('room and booking survive reload',async({page})=>{
  const room='ห้องตรวจระบบ '+Date.now(),title='ตรวจการจอง '+Date.now();await page.goto('/?view=bookings');await page.getByRole('button',{name:'เพิ่มห้อง',exact:true}).click();
@@ -35,5 +35,5 @@ test('room and booking survive reload',async({page})=>{
  const card=page.locator('.booking-room').filter({has:page.getByRole('heading',{name:room,exact:true})});await card.getByRole('button',{name:'เลือกห้องนี้',exact:true}).click();
  await page.getByLabel('หัวข้อการประชุม').fill(title);await page.getByLabel('จำนวนผู้เข้าร่วม').fill('5');await page.getByLabel('ผู้จอง / ผู้ประสานงาน').fill('ผู้ตรวจระบบ');
  await page.getByLabel('เริ่ม *',{exact:true}).fill('23:00');await page.getByLabel('สิ้นสุด *',{exact:true}).fill('23:30');
- await page.getByRole('button',{name:'บันทึกการจอง',exact:true}).click();await expect(page.getByRole('status')).toContainText('บันทึกการจองแล้ว');await page.reload();await expect(page.getByText(title,{exact:true}).first()).toBeVisible();
+ await page.getByRole('button',{name:'บันทึกการจอง',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'บันทึกการจองแล้ว'})).toContainText('บันทึกการจองแล้ว');await page.reload();await expect(page.getByText(title,{exact:true}).first()).toBeVisible();
 });

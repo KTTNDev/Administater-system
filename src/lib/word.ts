@@ -6,16 +6,17 @@ import path from 'node:path';
 import { chromium, type Page } from 'playwright';
 import { Document, Packer, Paragraph, TextRun, Tab, Table, TableRow, TableCell, ImageRun, AlignmentType, BorderStyle, WidthType, TableLayoutType, SectionType, LineRuleType, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType, type IParagraphOptions, type ISectionOptions } from 'docx';
 import { ShapeRun } from 'docx/shapes';
-import { version as pdfjsVersion } from 'pdfjs-dist/package.json';
+import pdfjsPackage from 'pdfjs-dist/package.json';
+const pdfjsVersion=pdfjsPackage.version;
 import {thaiDate,numerals,type Draft} from './document';
-import {continuationFooter} from './procurement-pagination';
+import {continuationFooter} from './word-continuation';
 import { documentHtml } from './render-document';
 import { documentAssets } from './assets';
 import { appendixSources, validateAppendixImages } from './appendix';
 import { readAttachment, validateAttachments } from './attachments';
 import { extractWordPages, type WordPage, type WordParagraph, type WordImage, type WordRun } from './word-layout';
 
-const font = { ascii:'TH Sarabun New',hAnsi:'TH Sarabun New',cs:'TH Sarabun New',eastAsia:'TH Sarabun New' };
+const font = { ascii:'TH SarabunIT๙',hAnsi:'TH SarabunIT๙',cs:'TH SarabunIT๙',eastAsia:'TH SarabunIT๙' };
 const twip = (px: number) => Math.round(px * 15);
 const emu = (px: number) => Math.round(px * 9525);
 const decode = (source: string) => Buffer.from(source.slice(source.indexOf(',')+1),'base64');
@@ -69,10 +70,10 @@ function section(page: WordPage,restartNumbering=false): ISectionOptions {
     if(block.kind==='paragraph') children.push(...paragraphs(block,gap,page.left,page.width-page.left-page.right));
     else {
       if(gap>0) children.push(new Paragraph({spacing:{before:0,after:0,line:twip(gap),lineRule:LineRuleType.EXACT}}));
-      const border={style:BorderStyle.SINGLE,size:4,color:'555555'};
-      children.push(new Table({width:{size:twip(block.width),type:WidthType.DXA},indent:{size:twip(block.x-page.left),type:WidthType.DXA},layout:TableLayoutType.FIXED,
-        columnWidths:block.rows[0]?.cells.map(cell=>twip(cell.width)),
-        rows:block.rows.map(row=>new TableRow({tableHeader:row.header,cantSplit:true,children:row.cells.map(cell=>new TableCell({width:{size:twip(cell.width),type:WidthType.DXA},margins:{top:80,bottom:80,left:120,right:120},borders:{top:border,bottom:border,left:border,right:border},shading:row.header?{fill:'F2F2F2'}:undefined,children:paragraphs({...cell,x:0,width:cell.width,indent:0,keep:false},0,0,cell.width)}))}))}));
+      const border={style:block.bordered===false?BorderStyle.NONE:BorderStyle.SINGLE,size:4,color:block.plainHeader?'000000':'555555'};
+      children.push(new Table({width:{size:twip(block.width),type:WidthType.DXA},indent:{size:twip(block.x-page.left),type:WidthType.DXA},layout:TableLayoutType.FIXED,borders:block.bordered===false?{top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border}:undefined,
+        columnWidths:block.columnWidths?.map(twip)??block.rows[0]?.cells.map(cell=>twip(cell.width)),
+        rows:block.rows.map(row=>new TableRow({...(row.header?{tableHeader:true}:{}),cantSplit:true,children:row.cells.map(cell=>new TableCell({columnSpan:cell.colSpan,rowSpan:cell.rowSpan,verticalAlign:cell.verticalAlign==='middle'?'center':undefined,width:{size:twip(cell.width),type:WidthType.DXA},margins:block.bordered===false&&!block.rows.some(r=>r.header)?{top:0,bottom:0,left:0,right:100}:block.plainHeader?{top:40,bottom:40,left:60,right:60}:{top:80,bottom:80,left:120,right:120},borders:{top:border,bottom:border,left:border,right:border},shading:row.header&&!block.plainHeader?{fill:'F2F2F2'}:undefined,children:paragraphs({...cell,x:0,width:cell.width,indent:0,keep:false},0,0,cell.width)}))}))}));
       children.push(new Paragraph({spacing:{before:0,after:0,line:1,lineRule:LineRuleType.EXACT}}));
     }
     bottom=block.y+block.height;
@@ -127,18 +128,21 @@ export async function renderWord(draft: Draft): Promise<Buffer> {
   const browser=await chromium.launch({headless:true,executablePath});
   try {
     const page=await browser.newPage();await page.route('**/*',route=>route.abort());
-    await page.setContent(documentHtml(draft,assets,appendixSources(draft),{wordParagraphs:true}),{waitUntil:'load'});
+    // Dedicated forms use the same physical paragraph breaks as preview/PDF.
+    // General correspondence retains Word's existing logical-paragraph editing behavior.
+    await page.setContent(documentHtml(draft,assets,appendixSources(draft),{wordParagraphs:!draft.layout.startsWith('procurement-')}),{waitUntil:'load'});
     await page.waitForFunction(()=> (window as unknown as {__paginationDone:boolean}).__paginationDone,undefined,{timeout:15000});
     const missing=await page.evaluate(()=> (window as unknown as {__missingOverlayPages:number[]}).__missingOverlayPages);
     if(missing.length)throw new MissingOverlayPageError(missing);
     if(await page.evaluate(()=> (window as unknown as {__overflow:boolean}).__overflow))throw new Error('มีเนื้อหาบางส่วนเกินหน้ากระดาษ กรุณาตรวจตัวอย่างก่อนส่งออก Word');
-    await page.locator('.continuation-note').evaluateAll(notes=>notes.forEach(note=>note.remove()));
+    // Memos use a real Word footer. Specialized forms retain the measured page-specific note.
+    if(['internal','memorandum'].includes(draft.type))await page.locator('.continuation-note').evaluateAll(notes=>notes.forEach(note=>note.remove()));
     const pages=await page.evaluate(extractWordPages);
     const attachments=await attachedPages(page,draft);
     const ordered=[...pages.filter(p=>!p.copy),...attachments,...pages.filter(p=>p.copy),...(pages.some(p=>p.copy)?attachments:[])];
     const document=new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title:draft.subject,description:'ข้อความและตารางแก้ไขได้ใน Word; ไฟล์ PDF ที่แนบแสดงเป็นภาพแต่ละหน้า',
       styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
-      fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:ordered.map((page,index)=>section(page,page.copy&&(index===0||!ordered[index-1].copy)))});
+      fonts:[{name:'TH SarabunIT๙',data:decode(assets.regular),bold:decode(assets.bold),italic:assets.italic?decode(assets.italic):undefined,boldItalic:assets.boldItalic?decode(assets.boldItalic):undefined}],sections:ordered.map((page,index)=>section(page,page.copy&&(index===0||!ordered[index-1].copy)))});
     const bytes=await Packer.toBuffer(document);
     return ['internal','memorandum'].includes(draft.type)?continuationFooter(bytes,{subject:numerals(draft.subject||'[เรื่อง]',draft.numeralStyle),number:numerals(draft.number||'[เลขหนังสือ]',draft.numeralStyle),date:numerals(thaiDate(draft.date),draft.numeralStyle),memo:true},[],false,ordered.flatMap((page,index)=>page.appendix?[index]:[])):bytes;
   } finally {await browser.close();}
@@ -157,6 +161,6 @@ export async function renderWordHtml(html:string,title:string):Promise<Buffer>{
   const pages=await page.evaluate(extractWordPages);
   return await Packer.toBuffer(new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title,
    styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
-   fonts:[{name:'TH Sarabun New',data:decode(assets.regular),bold:decode(assets.bold)}],sections:pages.map(page=>section(page))}));
+   fonts:[{name:'TH SarabunIT๙',data:decode(assets.regular),bold:decode(assets.bold),italic:assets.italic?decode(assets.italic):undefined,boldItalic:assets.boldItalic?decode(assets.boldItalic):undefined}],sections:pages.map(page=>section(page))}));
  }finally{await browser.close();}
 }

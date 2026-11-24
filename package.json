@@ -1,12 +1,12 @@
 {
   "name": "sarabun-workspace",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "dev:procurement": "node scripts/procurement-lab.mjs",
     "dev:procurement-main": "node scripts/procurement-main-demo.mjs",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3000",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -29,7 +29,7 @@
     "jose": "6.2.12",
     "jszip": "3.10.2",
     "lucide-react": "1.43.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",
     "playwright": "1.63.0",

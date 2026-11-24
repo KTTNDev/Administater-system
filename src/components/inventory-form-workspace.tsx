@@ -55,7 +55,7 @@ export function InventoryFormWorkspace({data,organization,department,onDirty,onB
  <details className={styles.method}><summary>ข้อมูลที่ควรตรวจทาน</summary><p className={styles.pre}>{draft.notes}</p><p>การแก้ร่างเอกสารนี้ไม่เปลี่ยนรายการรับ–จ่ายหรือยอดสต็อก</p></details>
  </div><aside className={styles.previewPanel}><div className={styles.sectionHeading}><h3>ตัวอย่างเอกสาร <small>{pages?pages+' หน้า':''}</small></h3><label>ขนาดตัวอย่าง<select value={zoom} onChange={e=>setZoom(Number(e.target.value))}><option value={0}>พอดีหน้าจอ</option>{[35,50,60,75,100].map(z=><option key={z} value={z}>{z}%</option>)}</select></label></div>
  {overflow&&<p className={styles.error} role="alert">มีรายการสูงเกินหน้ากระดาษ กรุณาย่อข้อความในรายการนั้น</p>}
- <div className={styles.preview}>{assets?<iframe ref={frame} title="ตัวอย่างแบบฟอร์มพัสดุ" sandbox="allow-scripts" srcDoc={html}/>:<p>กำลังโหลดตัวอย่าง…</p>}</div><small>TH Sarabun New · ตารางแบ่งหน้าอัตโนมัติ · Word แก้ไขข้อความและตารางต่อได้</small>
+ <div className={styles.preview}>{assets?<iframe ref={frame} title="ตัวอย่างแบบฟอร์มพัสดุ" sandbox="allow-scripts" srcDoc={html}/>:<p>กำลังโหลดตัวอย่าง…</p>}</div><small>TH SarabunIT๙ · ตารางแบ่งหน้าอัตโนมัติ · Word แก้ไขข้อความและตารางต่อได้</small>
  </aside></div>
  </>}
  <section className={styles.saved}><div className={styles.sectionHeading}><h3>ร่างที่บันทึกไว้</h3><label className={styles.search}><Search size={16}/><input type="search" aria-label="ค้นหาร่างแบบฟอร์ม" placeholder="ค้นหาชื่อร่าง" value={find} onChange={e=>setFind(e.target.value)}/></label></div>

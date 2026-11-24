@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { PDFDocument, PDFName } from "pdf-lib";
+import sharp from "sharp";
 import { db } from "./db";
 import { storageConfig } from "./storage";
 import type { Draft } from "./document";
@@ -25,6 +26,45 @@ export async function createAttachment(file:File){
  attachmentTable();db().prepare('INSERT INTO document_attachments(id,name,pages,file,created_at,original,original_name) VALUES(?,?,?,?,?,?,?)').run(id,name,output.getPageCount(),pdf,new Date().toISOString(),bytes,file.name.replace(/[\\/\x00-\x1f]/g,"_").slice(0,240));
  fs.writeFileSync(path.join(folder,id+"-original"),bytes,{flag:"wx"});
  return {originalAvailable:true,id,name,description:name.replace(/\.pdf$/i,''),showNameInDocument:true,pages:output.getPageCount(),bytes:pdf.length,quantity:1,unit:'ฉบับ' as const};
+}
+const isPng=(b:Buffer)=>b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+const isJpeg=(b:Buffer)=>b.subarray(0,3).equals(Buffer.from([255,216,255]));
+const isWebp=(b:Buffer)=>b.length>=12&&b.subarray(0,4).toString('ascii')==='RIFF'&&b.subarray(8,12).toString('ascii')==='WEBP';
+export async function createProcurementExternalAttachment(file:File){
+ if(!file.size||file.size>20*1024*1024)throw new Error('รองรับไฟล์ PDF, JPG, PNG และ WebP ขนาดไม่เกิน 20 MB ต่อไฟล์');
+ const bytes=Buffer.from(await file.arrayBuffer());
+ const output=await PDFDocument.create();
+ if(bytes.subarray(0,5).toString()==='%PDF-'){
+  let source:PDFDocument;
+  try{source=await PDFDocument.load(bytes);}
+  catch{
+   try{source=await PDFDocument.load(bytes,{ignoreEncryption:true});}
+   catch{throw new Error('ไม่สามารถเปิดไฟล์ PDF นี้ได้ (อาจเสียหายหรือติดรหัสผ่านเปิดอ่าน)');}
+  }
+  if(source.getPageCount()>200||source.getPageCount()===0)throw new Error('ไฟล์ PDF ต้องมี 1–200 หน้า');
+  const pages=await output.copyPages(source,source.getPageIndices());
+  for(const page of pages){page.node.delete(PDFName.of('Annots'));page.node.delete(PDFName.of('AA'));output.addPage(page);}
+ }else if(isPng(bytes)||isJpeg(bytes)||isWebp(bytes)){
+  const base=sharp(bytes,{limitInputPixels:64_000_000}).rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).flatten({background:'#ffffff'});
+  const usePng=isPng(bytes)&&bytes.length<=3*1024*1024;
+  const normalized=usePng?await base.png({compressionLevel:7}).toBuffer():await base.jpeg({quality:88,mozjpeg:true}).toBuffer();
+  const picture=usePng?await output.embedPng(normalized):await output.embedJpg(normalized);
+  const page=output.addPage([595.28,841.89]);
+  const size=picture.scale(Math.min(555.28/picture.width,801.89/picture.height));
+  page.drawImage(picture,{x:(595.28-size.width)/2,y:(841.89-size.height)/2,...size});
+ }else throw new Error('รองรับไฟล์ PDF, JPG, PNG และ WebP เท่านั้น กรุณาแปลงไฟล์ Word/Excel เป็น PDF ก่อนอัปโหลด');
+ const pdf=Buffer.from(await output.save());
+ if(pdf.length>25*1024*1024)throw new Error('ไฟล์หลังจัดรูปแบบมีขนาดใหญ่เกินกำหนด (เกิน 25 MB)');
+ const id=randomUUID();
+ const originalName=file.name.replace(/[\\/\x00-\x1f]/g,'_').slice(0,240)||'document';
+ const name=originalName.slice(0,235).replace(/\.[^.]+$/,'')+'.pdf';
+ const uploadedAt=new Date().toISOString();
+ const folder=path.join(storageConfig().localFolder,'เอกสารแนบ');fs.mkdirSync(folder,{recursive:true});
+ fs.writeFileSync(path.join(folder,id+'.pdf'),pdf,{flag:'wx'});
+ attachmentTable();
+ db().prepare('INSERT INTO document_attachments(id,name,pages,file,created_at,original,original_name) VALUES(?,?,?,?,?,?,?)').run(id,name,output.getPageCount(),pdf,uploadedAt,bytes,originalName);
+ fs.writeFileSync(path.join(folder,id+'-original'),bytes,{flag:'wx'});
+ return {id,name,originalName,label:originalName.replace(/\.[^.]+$/,''),pages:output.getPageCount(),bytes:pdf.length,uploadedAt};
 }
 export async function appendAttachments(cover:Buffer,d:Draft,originalPages?:number){
  if(!d.attachmentFiles.length)return cover;validateAttachments(d);

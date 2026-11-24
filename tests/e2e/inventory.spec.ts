@@ -95,8 +95,8 @@ test('loans an individually tracked asset, attaches signed evidence and returns 
 });
 
 test('long requisition keeps every item and signature block in a multipage PDF',async({page})=>{
- const font='data:font/ttf;base64,'+fs.readFileSync('public/fonts/THSarabunNew.ttf').toString('base64');
- const bold='data:font/ttf;base64,'+fs.readFileSync('public/fonts/THSarabunNew-Bold.ttf').toString('base64');
+ const font='data:font/ttf;base64,'+fs.readFileSync('public/fonts/THSarabunIT9.ttf').toString('base64');
+ const bold='data:font/ttf;base64,'+fs.readFileSync('public/fonts/THSarabunIT9-Bold.ttf').toString('base64');
  const m={id:randomUUID(),number:'เบิก-2569-000099',kind:'issue' as const,date:'2026-10-22',actor:'เจ้าหน้าที่ทดสอบ',requester:'ผู้เบิกทดสอบ',department:'สำนักปลัด',purpose:'ทดสอบใบเบิกหลายหน้า',reference:'ใบเบิก 99',approver:'ผู้อนุมัติ',approvalPosition:'หัวหน้าหน่วยพัสดุ',due:'',place:'inside' as const,status:'posted' as const,version:2,createdAt:'2026-10-22T01:00:00.000Z',lines:Array.from({length:60},(_,i)=>({itemId:randomUUID(),code:'P'+i,name:'วัสดุทดสอบรายการที่ '+(i+1)+' รายละเอียดเพิ่มเติมสำหรับทดสอบการตัดข้อความ',quantity:2,unit:'ชิ้น',unitCost:0,kind:'supply' as const}))};
  await page.setContent(inventoryHtml([m],{form:true,organization:'เทศบาลทดสอบ',font,bold,start:'',end:'',items:[]}));
  await page.evaluate(()=>document.fonts.ready);expect(await page.locator('tbody tr').count()).toBe(60);

@@ -4,7 +4,7 @@ import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 import {extractWordPages} from '../../src/lib/word-layout';
 const data=(f:string,m:string)=>'data:'+m+';base64,'+fs.readFileSync('public/'+f).toString('base64');
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:''};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:''};
 for(const type of ['internal','memorandum'] as const)test(type+': field guides match signature dots without changing header text or wrapping',async({page})=>{
  for(const long of [false,true]){
  const organization=long?'เทศบาลตัวอย่าง หน่วยงานเจ้าของเรื่องสำหรับตรวจสอบข้อความหลายบรรทัด '.repeat(3):'เทศบาลตัวอย่าง';
@@ -23,8 +23,9 @@ for(const type of ['internal','memorandum'] as const)test(type+': field guides m
  expect(dotOverlays).toHaveLength(0);
  const paragraphGuides=paragraphs.flatMap(p=>p.guides||[]);expect(paragraphGuides).toHaveLength(6);
  const headerRows=paragraphs.filter(p=>p.guides?.length&&p.runs.length);expect(headerRows).toHaveLength(3);
- // 20 pt labels need their measured 36 px line; the former 16 pt estimate was 25.6 px.
- expect(headerRows.every(p=>p.line>=35&&p.guides!.every(g=>g.y>=0&&g.y<p.line))).toBe(true);
+ // Header labels must fit at 20 pt; IT9 and New have different natural leading.
+ // A 16 pt parent estimate (25.6 px) must not compress the larger header labels.
+ expect(headerRows.every(p=>p.line>=Math.max(...p.runs.map(run=>run.size))*96/72&&p.guides!.every(g=>g.y>=0&&g.y<p.line))).toBe(true);
  expect(paragraphs.filter(p=>p.guides?.length===1&&p.runs.length===0).every(p=>p.keep)).toBe(true);
  if(!long){await page.locator('.page').first().screenshot({path:'output/dotted-guides-'+type+'.png'});await page.pdf({path:'output/dotted-guides-'+type+'.pdf',preferCSSPageSize:true});}
  }

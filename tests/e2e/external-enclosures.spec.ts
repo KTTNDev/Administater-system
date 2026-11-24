@@ -5,7 +5,7 @@ import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 
 const data=(file:string)=>`data:image/png;base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunNew.ttf').toString('base64')}`,bold:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunNew-Bold.ttf').toString('base64')}`,garuda:data('assets/garuda.png'),routingStamp:data('assets/approval-routing-stamp.png'),copyMark:data('assets/copy-counterpart.png')};
+const assets={regular:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunIT9.ttf').toString('base64')}`,bold:`data:font/ttf;base64,${fs.readFileSync('public/fonts/THSarabunIT9-Bold.ttf').toString('base64')}`,garuda:data('assets/garuda.png'),routingStamp:data('assets/approval-routing-stamp.png'),copyMark:data('assets/copy-counterpart.png')};
 
 test('external letter keeps its enclosure list before the body and starts authored attachments on new sheets',async({page})=>{
  const draft={...newDraft('external'),subject:'ทดสอบสิ่งที่ส่งมาด้วย',body:'เนื้อหาของหนังสือ',reference:'หนังสือที่อ้างถึง',appendixPages:[{id:'00000000-0000-4000-8000-000000000101',title:'รายงานรายละเอียด',body:'ข้อความในเอกสารแนบท้าย'}],additionalEnclosures:'ชุดตัวอย่าง จำนวน 1 ชุด (ส่งทางพัสดุไปรษณีย์)'};
@@ -14,7 +14,7 @@ test('external letter keeps its enclosure list before the body and starts author
  expect(await page.evaluate(()=>(window as unknown as {__overflow:boolean}).__overflow)).toBe(false);
  const first=page.locator('.page').first();
  await expect(first.locator('.enclosure-row')).toHaveCount(2);
- await expect(first.locator('.enclosure-row').first()).toContainText('รายงานรายละเอียด จำนวน 1 ฉบับ');
+ await expect(first.locator('.enclosure-row').first()).toContainText('รายงานรายละเอียด จำนวน ๑ ฉบับ');
  await expect(first.locator('.enclosure-row').last()).toContainText('ส่งทางพัสดุไปรษณีย์');
  await expect(first.locator('.body-text')).toContainText('เนื้อหาของหนังสือ');
  await expect(page.locator('.page').nth(1).locator('.appendix-page-start')).toHaveText('รายงานรายละเอียด');
@@ -43,23 +43,23 @@ test('external editor saves an authored appendix, a picture and an uploaded PDF 
  await expect(page.locator('.attachment-card')).toHaveCount(1);
  await page.locator('.attachment-card').getByLabel('รายการที่ 1').fill('กำหนดการประชุม');
  const frame=page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
- await expect(frame.locator('.enclosure-row')).toHaveCount(4);
- await expect(frame.locator('.enclosure-row').nth(0)).toContainText('รายละเอียดประกอบ จำนวน 1 ฉบับ');
- await expect(frame.locator('.enclosure-row').nth(1)).toContainText('ภาพประกอบการตรวจสอบ จำนวน 1 แผ่น');
- await expect(frame.locator('.enclosure-row').nth(2)).toContainText('กำหนดการประชุม จำนวน 1 ฉบับ');
- await expect(frame.locator('.enclosure-row').nth(3)).toContainText('ส่งทางพัสดุไปรษณีย์');
+ await expect(frame.locator('#pages .enclosure-row')).toHaveCount(4);
+ await expect(frame.locator('#pages .enclosure-row').nth(0)).toContainText('รายละเอียดประกอบ จำนวน ๑ ฉบับ');
+ await expect(frame.locator('#pages .enclosure-row').nth(1)).toContainText('ภาพประกอบการตรวจสอบ จำนวน ๑ แผ่น');
+ await expect(frame.locator('#pages .enclosure-row').nth(2)).toContainText('กำหนดการประชุม จำนวน ๑ ฉบับ');
+ await expect(frame.locator('#pages .enclosure-row').nth(3)).toContainText('ส่งทางพัสดุไปรษณีย์');
  await page.locator('.attachment-card').getByLabel('แสดงชื่อรายการในเอกสาร').uncheck();
- await expect(frame.locator('.enclosure-row').nth(2)).toContainText('เอกสารแนบ จำนวน 1 ฉบับ');
- await expect(frame.locator('.enclosure-row').nth(2)).not.toContainText('กำหนดการประชุม');
+ await expect(frame.locator('#pages .enclosure-row').nth(2)).toContainText('เอกสารแนบ จำนวน ๑ ฉบับ');
+ await expect(frame.locator('#pages .enclosure-row').nth(2)).not.toContainText('กำหนดการประชุม');
  const save=page.getByRole('button',{name:'บันทึกร่าง',exact:true});
  await save.scrollIntoViewIfNeeded();await save.click();
  await expect(page.locator('.toast[role=status]')).toContainText('บันทึกร่างเรียบร้อยแล้ว');
  await page.getByRole('button',{name:'กลับรายการ'}).click();
  await page.getByLabel('ค้นหาเอกสารทุกข้อมูล').fill(subject);
  await page.getByRole('button',{name:new RegExp('^'+subject)}).first().click();
- await expect(frame.locator('.enclosure-row')).toHaveCount(4);
+ await expect(frame.locator('#pages .enclosure-row')).toHaveCount(4);
  await expect(page.locator('.attachment-card').getByLabel('แสดงชื่อรายการในเอกสาร')).not.toBeChecked();
- await expect(frame.locator('.enclosure-row').nth(2)).toContainText('เอกสารแนบ จำนวน 1 ฉบับ');
+ await expect(frame.locator('#pages .enclosure-row').nth(2)).toContainText('เอกสารแนบ จำนวน ๑ ฉบับ');
  await expect(appendix.getByLabel('เนื้อหาเอกสารแนบท้ายฉบับที่ 1')).toHaveValue('รายการสำคัญ');
  const download=page.waitForEvent('download',{timeout:45000});
  const button=page.getByRole('button',{name:'ดาวน์โหลด PDF',exact:true});

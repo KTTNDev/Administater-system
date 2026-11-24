@@ -1,6 +1,5 @@
-import {labHandler} from "@/lib/procurement-lab/server";
-export const runtime="nodejs";
-export const dynamic="force-dynamic";
-type Context={params:Promise<{segments?:string[]}>};
-async function handle(request:Request,context:Context){return labHandler(request,(await context.params).segments||[]);}
-export {handle as GET,handle as POST,handle as PUT};
+import {GET as retiredGet,POST as retiredPost} from '@/app/api/procurement-template/[[...segments]]/route';
+export const runtime='nodejs';
+export const GET=retiredGet;
+export const POST=retiredPost;
+export const PUT=retiredPost;

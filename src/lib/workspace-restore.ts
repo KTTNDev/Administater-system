@@ -1,4 +1,8 @@
 import 'server-only';
+import {domainSql} from './procurement/storage/sql-schema';
+import {CoreBindingSchema} from './procurement/core/model';
+import {MasterSchema,RegistrySchema,StoredCaseSchema} from './procurement/workspace/model';
+// Legacy schemas remain for validating/restoring archived data only; no legacy renderer is loaded.
 import {procurementSql,procurementSchema,procurementFileSchema} from './procurement';
 import {D07_REFERENCE_SHA256} from './procurement-template';
 import {documentTemplates,type DraftDocumentCode} from './procurement-documents';
@@ -27,6 +31,7 @@ import {homeLayoutSchema,homeLayoutSql} from './home-layout';
 
 // Trusted schemas belong to the application, never to an uploaded backup.
 const schemas = {
+ ...domainSql,
  ...procurementSql,
  document_sources:documentSourcesSql,
  task_alerts:taskAlertsSql,
@@ -72,6 +77,9 @@ function inspect(file:string){
    if(item.type==='trigger'||item.type==='view')throw new Error('ชุดสำรองมีคำสั่งฐานข้อมูลที่ไม่รองรับ');
   }
   const data=Object.fromEntries(tables.map(table=>[table,rows(connection,table)])) as Record<Table,Row[]>;
+  for(const row of data.procurement_domain_cases){const value=StoredCaseSchema.parse({...JSON.parse(String(row.data)),version:row.version,updatedAt:row.updated_at});if(value.caseInput.id!==row.id||value.version<1)throw Error('ร่างจัดซื้อจัดจ้างในสำรองไม่ถูกต้อง');}
+  for(const row of data.procurement_domain_master){MasterSchema.parse(JSON.parse(String(row.data)));if(row.id!=='default'||Number(row.version)<1)throw Error('ข้อมูลหลักจัดซื้อจัดจ้างไม่ถูกต้อง');}
+  RegistrySchema.parse(data.procurement_domain_registry.map(r=>({track:r.track,yearBE:r.year_be,runningNo:r.running_no})));
   const models={procurement_cases:procurementSchema,procurement_revisions:procurementSchema,thai_dictionary:thaiTermSchema,inventory_form_drafts:inventoryFormSchema,inventory_items:inventoryItemSchema,inventory_movements:movementSchema,organization_directory:organizationInputSchema,correspondence_entries:registerSchema,documents:documentSchema,budget_transfers:budgetSchema,office_items:officeSchema,meeting_rooms:roomSchema,room_bookings:bookingSchema,calendar_events:calendarSchema};
   for(const [table,model] of Object.entries(models))for(const row of data[table as Table])model.parse(JSON.parse(String(row.data)));
   if(data.home_layout.length>1)throw Error('ชุดสำรองมีค่าหน้าหลักซ้ำ');
@@ -102,6 +110,15 @@ function inspect(file:string){
   validateInventoryBackup(data);
   // Restored references must resolve within the same snapshot.
   const documents=new Set(data.documents.map(row=>String(row.id)));
+  const domainCases=new Map(data.procurement_domain_cases.map(row=>[String(row.id),Number(row.version)]));
+  const boundDocs=new Set<string>(),boundSlots=new Set<string>();
+  for(const row of data.procurement_core_drafts){
+   const link=CoreBindingSchema.parse(row),slot=JSON.stringify([link.case_id,link.doc_id]);
+   if(!domainCases.has(link.case_id)||!documents.has(link.draft_id)||link.source_version>domainCases.get(link.case_id)!||boundDocs.has(link.draft_id)||boundSlots.has(slot))throw Error('การเชื่อมร่างจัดซื้อจัดจ้างในสำรองไม่สมบูรณ์');
+   const source=documentSchema.parse(JSON.parse(String(data.documents.find(row=>row.id===link.draft_id)!.data))).procurementSource;
+   if(source&&(source.caseId!==link.case_id||source.docId!==link.doc_id))throw Error('ที่มาของร่างไม่ตรงกับการเชื่อมจัดซื้อจัดจ้างในสำรอง');
+   boundDocs.add(link.draft_id);boundSlots.add(slot);
+  }
   const office=data.office_items.map(row=>({...officeSchema.parse(JSON.parse(String(row.data))),id:String(row.id)}));
   for(const row of data.project_files){
    const p=office.find(i=>i.id===row.project_id&&i.kind==='project');
@@ -110,6 +127,7 @@ function inspect(file:string){
   for(const row of data.document_numbers)if(!documents.has(String(row.document_id)))throw new Error('ชุดสำรองมีเลขทะเบียนที่ไม่ตรงกับเอกสาร');
   const attachments=new Set(data.document_attachments.map(row=>String(row.id)));
   const images=new Set(data.document_appendix_images.map(row=>String(row.id)));
+  for(const row of data.procurement_domain_cases){const value=StoredCaseSchema.parse({...JSON.parse(String(row.data)),version:row.version,updatedAt:row.updated_at});if(value.externalFiles.some(item=>!attachments.has(item.id)))throw Error('ชุดสำรองขาดไฟล์หลักฐานภายนอกที่งานจัดซื้อจัดจ้างอ้างถึง');}
   for(const row of data.documents){const doc=documentSchema.parse(JSON.parse(String(row.data)));if(doc.attachmentFiles.some(item=>!attachments.has(item.id))||doc.appendixImages.some(item=>!images.has(item.id))||doc.floatingItems.some(item=>item.kind==='image'&&!images.has(item.image.id)))throw new Error('ชุดสำรองขาดไฟล์แนบที่หนังสืออ้างถึง');}
   for(const row of data.signed_scans)if(!documents.has(String(row.document_id))||Number(row.bytes)!==(row.file as Uint8Array).byteLength)throw new Error('ชุดสำรองมีไฟล์สแกนที่ไม่ตรงกับรายการเอกสาร');
   for(const row of data.document_sources){

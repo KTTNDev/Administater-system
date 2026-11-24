@@ -3,7 +3,7 @@
 export type WordRun = { keepGroup?:string; softBreak?:boolean; tracking?:number; text: string; bold: boolean; underline: boolean; size: number; color: string };
 export type Box = { x: number; y: number; width: number; height: number };
 export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean; guides?: WordParagraph[] };
-export type WordTable = Box & { kind: 'table'; rows: { header: boolean; cells: WordParagraph[] }[] };
+export type WordTable = Box & { kind: 'table'; columnWidths?:number[]; bordered?:boolean; plainHeader?:boolean; rows: { header: boolean; cells: (WordParagraph & {colSpan?:number;rowSpan?:number;verticalAlign?:string})[] }[] };
 export type WordImage = Box & { kind: 'image'; source: string; alt: string; crop?: { left: number; right: number; top: number; bottom: number } };
 export type WordPage = { width: number; height: number; top: number; left: number; right: number; copy: boolean; appendix?:boolean; blocks: (WordParagraph | WordTable)[]; overlays: (WordParagraph | WordImage)[] };
 
@@ -36,7 +36,13 @@ export function extractWordPages(): WordPage[] {
         text = [];
         Array.from(el.children).filter(visible).forEach((child,i) => {
           if(i) { tabs.push(box(child).x-b.x); text.push({text:'\t',bold:false,underline:false,size:16,color:'111111'}); }
-          text.push(...runs(child));
+          if(el.classList.contains('memo-row') && i===1 && child.children.length>1) {
+            const labelEl=child.children[0], valEl=child.children[1], pad=parseFloat(getComputedStyle(valEl).paddingLeft)||0;
+            text.push(...runs(labelEl));
+            tabs.push(box(valEl).x+pad-b.x);
+            text.push({text:'\t',bold:false,underline:false,size:16,color:'111111'});
+            text.push(...runs(valEl));
+          } else text.push(...runs(child));
         });
       }
       let line = el.classList.contains('opinion-line') ? b.height : parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.2;
@@ -74,13 +80,17 @@ export function extractWordPages(): WordPage[] {
         result.overlays.push({...b,kind:'image',source:el.src,alt:el.alt}); return;
       }
       if(el instanceof HTMLTableElement) {
-        result.blocks.push({...box(el),kind:'table',rows:Array.from(el.rows).map(row=>({header:!!row.closest('thead'),cells:Array.from(row.cells).map(para)}))}); return;
+        const rows=Array.from(el.rows),fullRow=rows.find(row=>Array.from(row.cells).every(cell=>cell.colSpan===1));
+        const cell=rows[0]?.cells[0],css=cell?getComputedStyle(cell):null;
+        result.blocks.push({...box(el),kind:'table',columnWidths:fullRow?Array.from(fullRow.cells).map(cell=>box(cell).width):undefined,bordered:!!css&&css.borderTopStyle!=='none'&&parseFloat(css.borderTopWidth)>0,plainHeader:!!el.closest('.procurement-document'),rows:rows.map(row=>({header:!!row.closest('thead'),cells:Array.from(row.cells).map(cell=>({...para(cell),colSpan:cell.colSpan,rowSpan:cell.rowSpan,verticalAlign:getComputedStyle(cell).verticalAlign}))}))}); return;
       }
       if(el.classList.contains('minutes-speech')) { const label=el.querySelector('.minutes-speaker-person');if(label)result.overlays.push(para(label));const p=para(el);const padding=parseFloat(getComputedStyle(el).paddingLeft)||0;p.x+=padding;p.width-=padding;result.blocks.push(p);return;}
       if(el.classList.contains('memo-row')) { result.blocks.push(para(el)); return; }
-      const special = floating || el.matches('.letter-head,.appendix-sheet,.certificate-photo-area');
+      const special = floating || el.matches('.letter-head,.appendix-sheet,.certificate-photo-area,.procurement-metadata,.procurement-signatures');
       if(el.matches('p,h1,h2,figcaption,.letter-number,.letter-agency,.opinion-line,.certificate-photo') || el.matches('.floating-item,.copy-mark-text,.urgency,.security,.page-number,.continuation-cue,.security-control') && !el.querySelector('img') || el.parentElement?.classList.contains('memo-head') && el.tagName==='STRONG') {
         const p=para(el);
+        // The header's ข anchor splits DOM spans, but its title remains one editable Word run.
+        if(el.parentElement?.classList.contains('memo-head')&&el.tagName==='STRONG'&&p.runs.length)p.runs=[{...p.runs[0],text:p.runs.map(run=>run.text).join('')}];
         if(el.classList.contains('certificate-photo')) p.outline=true;
         (special ? result.overlays : result.blocks).push(p); return;
       }

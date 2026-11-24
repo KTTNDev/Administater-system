@@ -126,8 +126,8 @@ test("speaker columns wrap long Thai paragraphs across pages without lost text",
     fs.readFileSync("public/fonts/" + name).toString("base64");
   await page.setContent(
     documentHtml(draft, {
-      regular: font("THSarabunNew.ttf"),
-      bold: font("THSarabunNew-Bold.ttf"),
+      regular: font("THSarabunIT9.ttf"),
+      bold: font("THSarabunIT9-Bold.ttf"),
       garuda: "",
       routingStamp: "",
       copyMark: "",

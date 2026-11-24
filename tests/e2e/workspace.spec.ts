@@ -1,4 +1,5 @@
 import {test,expect} from "@playwright/test";
+import {numerals} from "../../src/lib/document";
 test("create, preview, export, reload, search, duplicate, and delete",async({page})=>{
   const subject=`ทดสอบระบบ ${Date.now()}`;
   await page.goto("/");
@@ -7,7 +8,7 @@ test("create, preview, export, reload, search, duplicate, and delete",async({pag
   await page.locator(".template-card").filter({has:page.getByRole("heading",{name:"หนังสือภายนอก",exact:true})}).click();
   await page.getByRole("button",{name:"ใช้ข้อมูลตัวอย่าง"}).click();await page.getByLabel("เลขที่หนังสือ",{exact:true}).fill("");
   await page.getByLabel("เรื่อง / ชื่อร่าง").fill(subject);
-  await expect(page.frameLocator("iframe").locator("body")).toContainText(subject);
+  await expect(page.frameLocator("iframe").locator("body")).toContainText(numerals(subject,"thai"));
   await page.getByRole("button",{name:"บันทึกร่าง",exact:true}).click();
   await expect(page.locator(".toast[role=status]")).toContainText("บันทึกร่างเรียบร้อยแล้ว");
   const downloadPromise=page.waitForEvent("download",{timeout:60000});
@@ -15,7 +16,7 @@ test("create, preview, export, reload, search, duplicate, and delete",async({pag
   const download=await downloadPromise;expect(download.suggestedFilename()).toContain(subject);
   await page.locator("#document-body").fill("ข้อความทดสอบย่อหน้ายาว เพื่อทดสอบการแบ่งหน้าและรักษาข้อความภาษาไทย ".repeat(180));
   await expect(page.frameLocator("iframe").locator(".page")).not.toHaveCount(1);
-  const text=await page.frameLocator("iframe").locator(".body-text").allTextContents();expect(text.join("")).toBe("ข้อความทดสอบย่อหน้ายาว เพื่อทดสอบการแบ่งหน้าและรักษาข้อความภาษาไทย ".repeat(180));
+  const text=await page.frameLocator("iframe").locator("#pages .body-text").allTextContents();expect(text.join("")).toBe("ข้อความทดสอบย่อหน้ายาว เพื่อทดสอบการแบ่งหน้าและรักษาข้อความภาษาไทย ".repeat(180));
   await page.getByRole("button",{name:"บันทึกร่าง",exact:true}).click();await expect(page.locator(".toast[role=status]")).toContainText("บันทึกร่างเรียบร้อยแล้ว");
   await page.reload();await page.getByLabel("ค้นหาเอกสารทุกข้อมูล").fill(subject);await expect(page.getByRole("button",{name:new RegExp(subject)}).first()).toBeVisible();
   await page.getByRole("button",{name:`ทำสำเนา ${subject}`,exact:true}).click();await expect(page.getByLabel("เรื่อง / ชื่อร่าง")).toHaveValue(subject+" (สำเนาร่าง)");

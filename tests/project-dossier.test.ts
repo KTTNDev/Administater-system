@@ -69,7 +69,7 @@ it('new annual copies reset results, approval and evidence while retaining plan 
 it('exports editable Thai Word and escaped report content with explicit draft status',async()=>{
  const id=project();saveProjectProfile(id,read(id).version,{rationale:'<script>alert(1)</script>\nย่อหน้าต่อไป'});
  const font=(file:string)=>'data:font/ttf;base64,'+fs.readFileSync(path.join('public/fonts',file)).toString('base64');
- const input={project:read(id),items:listOffice(),files:[],organization:'หน่วยงานทดสอบ',font:font('THSarabunNew.ttf'),bold:font('THSarabunNew-Bold.ttf')};
+ const input={project:read(id),items:listOffice(),files:[],organization:'หน่วยงานทดสอบ',font:font('THSarabunIT9.ttf'),bold:font('THSarabunIT9-Bold.ttf')};
  const html=projectReportHtml(input);expect(html).not.toContain('<script>');expect(html).toContain('&lt;script&gt;');expect(html).toContain('ฉบับร่าง');expect(html).toContain('7. สรุปการตรวจความครบถ้วน');
  const zip=await JSZip.loadAsync(await projectReportWord(input)),xml=await zip.file('word/document.xml')!.async('string');expect(xml).toContain('thaiDistribute');expect(xml).toContain('ย่อหน้าต่อไป');expect(xml).not.toContain('<w:br/>');
 });

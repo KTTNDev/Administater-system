@@ -67,8 +67,8 @@ test("desktop structured memo sections support bold and tables", async ({ page }
   await section.getByRole("button", { name: "ตัวหนา" }).click();
   await section.getByRole("button", { name: "แทรกตาราง" }).click();
   const preview = page.frameLocator('iframe[title="ตัวอย่างหนังสือ A4"]');
-  await expect(preview.locator(".body-text strong")).toHaveText("ข้อมูลสำคัญ");
-  await expect(preview.locator(".document-table")).toContainText("หัวข้อ");
+  await expect(preview.locator("#pages .body-text strong")).toHaveText("ข้อมูลสำคัญ");
+  await expect(preview.locator("#pages .document-table")).toContainText("หัวข้อ");
 });
 
 
@@ -137,7 +137,7 @@ test("structured memo fields and preview follow the supplied example order",asyn
  expect(Math.abs(headingIndent-bodyIndent)).toBeLessThan(0.5);
  await expect(preview.locator('.content .title').filter({hasText:"ข้อพิจารณา"})).toBeVisible();
  const text=await preview.locator('.content').first().innerText();
- const positions=["เนื้อหาส่วนที่ 1","เนื้อหาส่วนที่ 2","เนื้อหาส่วนที่ 3","เนื้อหาส่วนที่ 4","จึงเรียนมาเพื่อโปรดพิจารณา"].map(value=>text.indexOf(value));
+ const positions=["เนื้อหาส่วนที่ ๑","เนื้อหาส่วนที่ ๒","เนื้อหาส่วนที่ ๓","เนื้อหาส่วนที่ ๔","จึงเรียนมาเพื่อโปรดพิจารณา"].map(value=>text.indexOf(value));
  expect(positions.every(position=>position>=0)).toBe(true);
  expect(positions).toEqual([...positions].sort((a,b)=>a-b));
  expect(text.match(/จึงเรียนมาเพื่อโปรดพิจารณา/g)).toHaveLength(1);

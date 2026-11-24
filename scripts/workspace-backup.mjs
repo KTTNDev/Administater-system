@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 // Shared by manual exports and the background worker; never include credentials.
 export function exportDatabase(databaseFile,localFolder,sourceRoot){
- const tables=['procurement_cases','procurement_revisions','procurement_templates','procurement_files','task_alerts','home_layout','thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','document_sources','audit'];
+ const tables=['procurement_domain_cases','procurement_domain_master','procurement_domain_registry','procurement_core_drafts','procurement_cases','procurement_revisions','procurement_templates','procurement_files','task_alerts','home_layout','thai_dictionary','inventory_form_drafts','inventory_items','inventory_movements','inventory_files','inventory_events','organization_directory','documents','document_numbers','recovery_drafts','budget_transfers','office_items','project_files','correspondence_entries','correspondence_events','meeting_rooms','room_bookings','calendar_events','legal_library','document_attachments','document_appendix_images','signed_scans','document_sources','audit'];
  const source=new DatabaseSync(databaseFile,{readOnly:true});
  let snapshot,definitions;
  try{

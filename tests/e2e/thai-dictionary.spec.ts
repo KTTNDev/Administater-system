@@ -4,7 +4,7 @@ import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 import {extractWordPages} from '../../src/lib/word-layout';
 const data=(f:string,m:string)=>'data:'+m+';base64,'+fs.readFileSync('public/'+f).toString('base64');
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:'',thaiTerms:['กล้องวีดิทัศน์','เครื่องปรับอากาศ']};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:'',copyMark:'',thaiTerms:['กล้องวีดิทัศน์','เครื่องปรับอากาศ']};
 test('compound words preserve bold text and stay intact through line and page breaks',async({page})=>{
  const body=('ทดสอบข้อความกล้อง**วีดิทัศน์**และเครื่องปรับอากาศเพื่อการทำงานอย่างต่อเนื่อง ').repeat(190);
  await page.setContent(documentHtml({...newDraft('internal'),body},assets));

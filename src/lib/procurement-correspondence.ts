@@ -18,7 +18,7 @@ function setProperties(block:string,properties:string,remove:string[]){
  const at=pPr.indexOf('<w:rPr');pPr=at<0?pPr.replace('</w:pPr>',properties+'</w:pPr>'):pPr.slice(0,at)+properties+pPr.slice(at);
  return opening+pPr+block.slice(opening.length+(match?.[0].length||0));
 }
-/** Local corrections to copied source XML; the source template and drawings stay intact. */
+/** Extend dotted guides and center name/position pairs without replacing source layout. */
 export function procurementCorrespondence(xml:string){
  const doc=new DOMParser({onError:()=>{throw Error('โครงสร้างแบบบันทึกข้อความไม่สมบูรณ์');}}).parseFromString(xml,'application/xml');
  const paragraphs=Array.from(doc.getElementsByTagNameNS(W,'p')),spans=paragraphSpans(xml),changes=new Map<number,string>();
@@ -51,25 +51,6 @@ export function procurementCorrespondence(xml:string){
    for(const edit of edits.reverse()){let text=edit[2];if(edit[1]){if(!first||edit.index!<first.index!)text='';else if(edit.index!>last!.index!)text='';else{if(edit===first)text=text.trimStart();if(edit===last)text=text.trimEnd();}}const value=edit[1]?edit[1]+text+edit[3]:'';block=block.slice(0,edit.index!)+value+block.slice(edit.index!+edit[0].length);}
    block=setProperties(block,`<w:keepLines/>${keepNext?'<w:keepNext/>':''}<w:ind w:left="${left}" w:right="${right}" w:firstLine="0"/><w:jc w:val="center"/>`,['tabs','ind','jc','keepNext','keepLines']);
    changes.set(index,block);
-  }
- }
- // Floating approval boxes are anchored to the final paragraph. Word does
- // not count their height in pagination: reserve it as part of that group.
- const last=outer.at(-1);
- if(last!==undefined){
-  const WP='http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';let height=0,firstAnchor=outer.length;
-  for(let n=0;n<outer.length;n++)for(const anchor of Array.from(paragraphs[outer[n]].getElementsByTagNameNS(WP,'anchor'))){
-    if(!anchor.getElementsByTagNameNS(W,'txbxContent').length)continue;
-    const vertical=anchor.getElementsByTagNameNS(WP,'positionV')[0];if(vertical?.getAttribute('relativeFrom')!=='paragraph')continue;
-    const offset=Number(vertical.getElementsByTagNameNS(WP,'posOffset')[0]?.textContent||0),extent=Number(anchor.getElementsByTagNameNS(WP,'extent')[0]?.getAttribute('cy')||0);
-    firstAnchor=Math.min(firstAnchor,n);height=Math.max(height,Math.ceil((offset+extent)/635)-(outer.length-1-n)*320);
-  }
-  if(height>400){
-   let first=firstAnchor;if(first>0&&/^\([^()]+\)$/.test(ownText(paragraphs[outer[first-1]]).trim()))first--;
-   for(let n=first;n<outer.length;n++){const index=outer[n],block=changes.get(index)||xml.slice(spans[index].start,spans[index].end);changes.set(index,setProperties(block,'<w:keepNext/>',['keepNext']));}
-   const block=changes.get(last)||xml.slice(spans[last].start,spans[last].end);
-   const spacer='<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="'+(height-240)+'" w:lineRule="exact"/></w:pPr><w:bookmarkStart w:id="190021" w:name="SarabunSignatureSpaceV1"/><w:bookmarkEnd w:id="190021"/></w:p>';
-   changes.set(last,setProperties(block,'<w:keepNext/>',['keepNext'])+spacer);
   }
  }
  for(const [index,value] of [...changes].sort(([a],[b])=>b-a)){const span=spans[index];xml=xml.slice(0,span.start)+value+xml.slice(span.end);}

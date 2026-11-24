@@ -24,7 +24,6 @@ try {
     fs.cpSync(path.join(source, name), path.join(target, 'app', name), { recursive: true, dereference: true, filter: file => !path.basename(file).startsWith('.env') });
   }
   fs.mkdirSync(path.join(target, 'app', 'scripts'), { recursive: true });
-  fs.copyFileSync(path.join(root, 'scripts', 'render-procurement-template.ps1'), path.join(target, 'app', 'scripts', 'render-procurement-template.ps1'));
   fs.cpSync(path.join(root, 'public'), path.join(target, 'app', 'public'), { recursive: true });
   fs.cpSync(path.join(root, '.next-desktop', 'static'), path.join(target, 'app', '.next-desktop', 'static'), { recursive: true });
   const runtime = path.join(root, '.desktop', 'runtime');

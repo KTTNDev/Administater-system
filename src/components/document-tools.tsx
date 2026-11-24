@@ -23,7 +23,7 @@ export function StructuredBody({draft:d,onChange:change}:Props){return <div clas
 {([['background','เรื่องเดิม','ความเป็นมาและเหตุที่ทำหนังสือ'],['facts','ข้อเท็จจริง','ข้อเท็จจริงและข้อมูลประกอบการพิจารณา'],['legalBasis','ข้อระเบียบ/กฎหมาย','ชื่อระเบียบหรือกฎหมาย ฉบับแก้ไข และมาตรา/ข้อที่เกี่ยวข้อง'],['consideration','ข้อพิจารณา','ผลการพิจารณาและข้อเสนอแนะ'],['proposal','จึงเรียนมาเพื่อ…','เช่น จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ']] as const).map(([k,label,hint])=><div key={k}><div className="body-section-input"><label htmlFor={`structured-${k}`}>{label}</label><BodyEditor id={`structured-${k}`} rows={4} value={d[k]} placeholder={hint} onChange={value=>change({[k]:value})}/></div>{k==="legalBasis"&&<LegalPicker draft={d} onChange={change}/>} {k==="proposal"&&<ConclusionPicker draft={d} onChange={change}/>}</div>)}</>:null}</div>}
 export function ReviewChain({draft:d,onChange:change}:Props){
  const [newOpinionTitle,setNewOpinionTitle]=useState("ความเห็นปลัดเทศบาล");
- if(!["internal","memorandum"].includes(d.type))return null;
+ if(!["internal","memorandum"].includes(d.type)&&!(d.type==='other'&&d.otherShowSignatures))return null;
  const updateOpinion=(index:number,patch:Partial<Draft["opinions"][number]>)=>{
   const current=d.opinions[index],next={...current,...patch};
   if(typeof patch.title==="string"&&patch.title!==current.title){

@@ -49,7 +49,7 @@ it('does not mark draft or cancelled requests as issued',()=>{
 });
 it('escapes all editable values while using shared document pagination and Thai fonts',()=>{
  const d=seedInventoryForm(fixture,options(1));d.fields.name='<script>alert(1)</script>';d.rows[0].remark='<img src=x onerror=alert(1)>';
- const html=inventoryFormHtml(d);expect(html).toContain('&lt;script&gt;');expect(html).not.toContain('<script>alert(1)</script>');expect(html).not.toContain('<img src=x');expect(html).toContain('__paginationDone');expect(html).toContain('THSarabunNew');
+ const html=inventoryFormHtml(d);expect(html).toContain('&lt;script&gt;');expect(html).not.toContain('<script>alert(1)</script>');expect(html).not.toContain('<img src=x');expect(html).toContain('__paginationDone');expect(html).toContain('THSarabunIT9');
 });
 it('saves independently, rejects stale edits and includes form drafts in backup',()=>{
  const d=seedInventoryForm(fixture,options(4)),id=randomUUID();

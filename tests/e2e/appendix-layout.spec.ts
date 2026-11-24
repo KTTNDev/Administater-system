@@ -3,7 +3,7 @@ import fs from "node:fs";
 import {documentHtml} from "../../src/lib/render-document";
 import {newDraft} from "../../src/lib/document";
 const data=(file:string)=>`data:image/png;base64,${fs.readFileSync("public/"+file).toString("base64")}`;
-const assets={regular:`data:font/ttf;base64,${fs.readFileSync("public/fonts/THSarabunNew.ttf").toString("base64")}`,bold:`data:font/ttf;base64,${fs.readFileSync("public/fonts/THSarabunNew-Bold.ttf").toString("base64")}`,garuda:data("assets/garuda.png"),routingStamp:data("assets/approval-routing-stamp.png"),copyMark:data("assets/copy-counterpart.png")};
+const assets={regular:`data:font/ttf;base64,${fs.readFileSync("public/fonts/THSarabunIT9.ttf").toString("base64")}`,bold:`data:font/ttf;base64,${fs.readFileSync("public/fonts/THSarabunIT9-Bold.ttf").toString("base64")}`,garuda:data("assets/garuda.png"),routingStamp:data("assets/approval-routing-stamp.png"),copyMark:data("assets/copy-counterpart.png")};
 const source=data("assets/garuda.png");
 const image=(id:string,width:number,height:number,caption:string)=>({id,name:`${caption}.png`,mime:"image/png" as const,bytes:100,width,height,caption,widthMm:width/height>1?165:80});
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;

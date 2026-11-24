@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {documentHtml} from '../../src/lib/render-document';
 import {newDraft} from '../../src/lib/document';
 const data=(file:string,mime:string)=>`data:${mime};base64,${fs.readFileSync('public/'+file).toString('base64')}`;
-const assets={regular:data('fonts/THSarabunNew.ttf','font/ttf'),bold:data('fonts/THSarabunNew-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
+const assets={regular:data('fonts/THSarabunIT9.ttf','font/ttf'),bold:data('fonts/THSarabunIT9-Bold.ttf','font/ttf'),garuda:data('assets/garuda.png','image/png'),routingStamp:data('assets/approval-routing-stamp.png','image/png'),copyMark:data('assets/copy-counterpart.png','image/png')};
 
 for(const type of ['external','internal'] as const)test(`${type}: Thai paragraphs distribute naturally in preview and print`,async({page})=>{
  const text='เทศบาลมีความประสงค์ตรวจสอบอุปกรณ์สำนักงานเพื่อจัดทำข้อมูลประกอบการพิจารณา โดยให้เจ้าหน้าที่รวบรวมข้อเท็จจริงและรายละเอียดที่เกี่ยวข้องกับการดำเนินงาน '.repeat(5).trim();
