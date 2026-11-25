@@ -154,7 +154,7 @@ it('Core rendering leaves extra signatures to text boxes and escapes literal tab
   const po=mapProcurementCaseToDrafts(input,defaultAgency).find(item=>item.docId==='10')!.draft;
   const html=documentHtml(po,{regular:'',bold:'',garuda:'',routingStamp:'',copyMark:''});
   expect(html).toContain('A | B &lt;script&gt;');expect(html).not.toContain('<script>alert(1)</script>');
-  expect(html).not.toContain('class="signature"');expect(po.proposers).toEqual([]);expect(po.opinions).toEqual([]);
+  expect(html).toContain('class="signature"');expect(po.signer).toBe(input.signatories.divisionDirector.fullName);expect(po.proposers).toHaveLength(1);expect(po.proposers[0].name).toBe(input.vendor.contactPersonName);expect(po.opinions).toEqual([]);
 });
 
 it('rejects an accidental Sync across source cases or document slots',()=>{

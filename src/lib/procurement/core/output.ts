@@ -99,10 +99,12 @@ export async function coreWordOutput(input:CoreOutputInput,mode:'SINGLE_DOC'|'ZI
  const source=coreOutputCase(input);
  const computed=validatedSource(source,input);
  if(mode==='SINGLE_DOC'){
-  const draft=source.draft(docId!);return {bytes:await renderWord(draft),filename:safeName(draft.subject)+'.docx',mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
+  const draft=source.draft(docId!);const bytes=await renderWord(draft);const filename=safeName(draft.subject)+'.docx';
+  return {bytes,filename,mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',record:source.record,wordFiles:[{docId:docId!,filename:`${docId!.replace('.','-')}_${filename}`,bytes}],checklistText:undefined};
  }
  const rows=buildBinderManifest(computed),externalBySlot=groupExternalFiles(source.record.externalFiles??[]);
  const zip=new JSZip(),manifest:Array<Record<string,unknown>>=[],usedNames=new Set<string>();
+ const wordFiles:Array<{docId:string;filename:string;bytes:Uint8Array}>=[];
  const uniqueName=(candidate:string)=>{let name=candidate,n=2;while(usedNames.has(name.toLowerCase())){const dot=candidate.lastIndexOf('.');name=dot>0?`${candidate.slice(0,dot)}_${n}${candidate.slice(dot)}`:`${candidate}_${n}`;n++;}usedNames.add(name.toLowerCase());return name;};
  const addExternalZipFiles=(slotId:string,prefix:string)=>{
   const files=externalBySlot.get(slotId)??[];
@@ -120,7 +122,9 @@ export async function coreWordOutput(input:CoreOutputInput,mode:'SINGLE_DOC'|'ZI
   if(row.source==='GENERATED'){
    const draft=source.draft(row.docId);
    const name=uniqueName(`${row.docId.replace('.','-')}_${safeName(draft.subject)}.docx`);
-   zip.file(name,await renderWord(draft));
+   const wordBytes=await renderWord(draft);
+   zip.file(name,wordBytes);
+   wordFiles.push({docId:row.docId,filename:name,bytes:wordBytes});
    manifest.push({docId:row.docId,source:'GENERATED',draftId:draft.id,version:draft.version,filename:name});
    const extra=addExternalZipFiles(row.docId,row.docId.replace('.','-'));
    checklistLines.push(`${row.docId} ${row.title} — พิมพ์ ${row.copies} ชุด${extra.length?` (+ แนบหลักฐาน ${extra.length} ไฟล์)`:''}`);
@@ -132,6 +136,7 @@ export async function coreWordOutput(input:CoreOutputInput,mode:'SINGLE_DOC'|'ZI
  const otherFiles=addExternalZipFiles('OTHER','อื่นๆ');
  if(otherFiles.length)checklistLines.push(`อื่นๆ เอกสารหลักฐานเพิ่มเติม — แนบไฟล์แล้ว ${otherFiles.length} ไฟล์ (${otherFiles.reduce((n,f)=>n+f.pages,0)} หน้า)`);
  zip.file('รายการเอกสาร.json',JSON.stringify(manifest,null,2));
- zip.file('รายการเรียงแฟ้ม.txt','\uFEFF'+checklistLines.join('\r\n'));
- return {bytes:await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}}),filename:'เอกสารจัดซื้อจัดจ้างจากร่างที่บันทึก.zip',mime:'application/zip'};
+ const checklistText=checklistLines.join('\r\n');
+ zip.file('รายการเรียงแฟ้ม.txt','\uFEFF'+checklistText);
+ return {bytes:await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}}),filename:'เอกสารจัดซื้อจัดจ้างจากร่างที่บันทึก.zip',mime:'application/zip',record:source.record,wordFiles,checklistText};
 }

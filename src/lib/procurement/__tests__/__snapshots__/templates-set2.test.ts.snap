@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`builds only six manual documents in the 22,890 baht system workflow 1`] = `
+exports[`builds seven manual documents including Doc 13 in the 22,890 baht system workflow 1`] = `
 [
   {
     "continuationNote": "ใบต่อบันทึกข้อความ เรื่อง ขออนุมัติจัดซื้อตามระเบียบพัสดุ ที่ ภก ๕๒๙๐๖/๑๔๓๙ ลงวันที่ ๑๒ พฤศจิกายน ๒๕๖๙",
@@ -129,9 +129,7 @@ exports[`builds only six manual documents in the 22,890 baht system workflow 1`]
               {
                 "kind": "signature",
                 "label": "เจ้าหน้าที่พัสดุ",
-                "lines": [
-                  "เจ้าพนักงานธุรการปฏิบัติงาน",
-                ],
+                "lines": [],
                 "name": "นายกิตตินันท์ พลรบ",
                 "showSignatureLine": true,
               },
@@ -436,7 +434,13 @@ exports[`builds only six manual documents in the 22,890 baht system workflow 1`]
             "heading": "๔. รายละเอียดคุณลักษณะเฉพาะและเงื่อนไขของงาน",
             "indent": true,
             "kind": "paragraph",
-            "text": "๔.๑ รายละเอียดคุณลักษณะเฉพาะของค่าวัสดุสำนักงาน",
+            "text": "",
+          },
+          {
+            "heading": "๔.๑ รายละเอียดคุณลักษณะเฉพาะของค่าวัสดุสำนักงาน",
+            "indent": true,
+            "kind": "paragraph",
+            "text": "",
           },
           {
             "bordered": false,
@@ -569,35 +573,41 @@ exports[`builds only six manual documents in the 22,890 baht system workflow 1`]
             "text": "๔.๒.๒ ผู้ซื้อจะจ่ายเงินให้กับผู้ขาย เมื่อได้รับมอบพัสดุถูกต้อง ครบถ้วน และผู้ตรวจรับพัสดุได้ตรวจรับไว้ถูกต้อง ครบถ้วนตามคุณลักษณะที่เทศบาลตำบลฉลองกำหนดไว้",
           },
           {
-            "heading": "๕. ระยะเวลาดำเนินการ",
+            "heading": "๕. กำหนดเวลาส่งมอบพัสดุ",
             "indent": true,
             "kind": "paragraph",
-            "text": "ภายใน ๓ วัน นับถัดจากวันลงนามในใบสั่งซื้อ",
+            "text": "กำหนดส่งมอบพัสดุภายใน ๓ วัน นับถัดจากวันลงนามในใบสั่งซื้อ",
           },
           {
-            "heading": "๖. ระยะเวลาที่ส่งมอบงาน",
+            "heading": "๖. หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ",
             "indent": true,
             "kind": "paragraph",
-            "text": "กำหนดส่งมอบงานภายใน ๓ วัน นับถัดจากวันลงนามในใบสั่งซื้อ",
+            "text": "ใช้เกณฑ์พิจารณาถึงประโยชน์ของหน่วยงานของรัฐและวัตถุประสงค์ของการใช้งานเป็นสำคัญโดยการคำนึงถึงเกณฑ์ราคา",
           },
           {
-            "heading": "๗. อัตราค่าปรับ",
-            "indent": true,
-            "kind": "paragraph",
-            "text": "คิดค่าปรับเป็นรายวันในอัตราร้อยละ ๐.๒๐ ของราคาพัสดุที่ยังไม่ได้รับมอบ แต่ต้องไม่ต่ำกว่าวันละ ๑๐๐.๐๐ บาท",
-          },
-          {
-            "heading": "๘. วงเงินในการจัดซื้อ",
+            "heading": "๗. วงเงินงบประมาณ/วงเงินที่ได้รับจัดสรร",
             "indent": true,
             "kind": "paragraph",
             "text": "เบิกจ่ายตามเทศบัญญัติงบประมาณรายจ่ายประจำปี พ.ศ. ๒๕๗๐ กองสวัสดิการสังคม แผนงาน งาน วัสดุ ประเภทวัสดุสำนักงาน ตั้งไว้ ๓๐๐,๐๐๐.๐๐ บาท คงเหลือ ๒๙๙,๐๐๐.๐๐ บาท",
           },
           {
-            "heading": "๙. หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ",
+            "heading": "๘. งวดงานและการจ่ายเงิน",
+            "indent": true,
+            "kind": "paragraph",
+            "text": "๑ งวดงาน",
+          },
+          {
+            "heading": "๙. อัตราค่าปรับ",
+            "indent": true,
+            "kind": "paragraph",
+            "text": "คิดค่าปรับเป็นรายวันในอัตราร้อยละ ๐.๒๐ ของราคาพัสดุที่ยังไม่ได้รับมอบ แต่ต้องไม่ต่ำกว่าวันละ ๑๐๐.๐๐ บาท",
+          },
+          {
+            "heading": "๑๐. การกำหนดระยะเวลารับประกันความชำรุดบกพร่อง (ถ้ามี)",
             "indent": true,
             "keepTrailingLines": 2,
             "kind": "paragraph",
-            "text": "ใช้เกณฑ์พิจารณาถึงประโยชน์ของหน่วยงานของรัฐและวัตถุประสงค์ของการใช้งานเป็นสำคัญโดยการคำนึงถึงเกณฑ์ราคา",
+            "text": "-",
           },
           {
             "approvalLayout": "grid",
@@ -799,6 +809,162 @@ exports[`builds only six manual documents in the 22,890 baht system workflow 1`]
     ],
     "routingStrip": null,
     "title": "รูปภาพประกอบ",
+  },
+  {
+    "continuationNote": "ใบต่อบันทึกข้อความ เรื่อง ขออนุมัติเบิกจ่ายเงินค่าวัสดุสำนักงาน ที่ ภก ๕๒๙๐๖/๑๕๐๒ ลงวันที่ ๒๕ พฤศจิกายน ๒๕๖๙",
+    "copies": 1,
+    "docId": "13",
+    "family": "MEMO",
+    "footerLines": [],
+    "header": {
+      "date": "๒๕ พฤศจิกายน ๒๕๖๙",
+      "department": "งานธุรการ กองสวัสดิการสังคม เทศบาลตำบลฉลอง โทร. ๐-๗๖๓๘-๓๗๗๕ ต่อ ๒๗, ๓๑",
+      "lines": [
+        "บันทึกข้อความ",
+      ],
+      "number": "ภก ๕๒๙๐๖/๑๕๐๒",
+      "recipient": "นายกเทศบาลตำบลฉลอง",
+      "subject": "ขออนุมัติเบิกจ่ายเงินค่าวัสดุสำนักงาน",
+    },
+    "layout": {
+      "density": "normal",
+      "keepTrailingBodyLines": 2,
+      "singlePagePreferred": true,
+    },
+    "pages": [
+      {
+        "blocks": [
+          {
+            "heading": "เรื่องเดิม",
+            "indent": true,
+            "kind": "paragraph",
+            "text": "ตามเทศบัญญัติงบประมาณรายจ่ายประจำปี พ.ศ. ๒๕๗๐ กองสวัสดิการสังคม แผนงาน งาน วัสดุ ประเภทวัสดุสำนักงาน ตั้งไว้ ๓๐๐,๐๐๐.๐๐ บาท (สามแสนบาทถ้วน) นั้น",
+          },
+          {
+            "bordered": false,
+            "columns": [
+              "รายการ",
+              "จำนวนเงิน (บาท)",
+              "รายการ",
+              "จำนวนเงิน (บาท)",
+            ],
+            "continuationCaption": "ตารางรายการ (ต่อ)",
+            "footerRows": [],
+            "kind": "table",
+            "repeatHeader": true,
+            "rows": [
+              [
+                {
+                  "text": "ตั้งไว้",
+                },
+                {
+                  "text": "๓๐๐,๐๐๐.๐๐",
+                },
+                {
+                  "text": "โอนเพิ่ม",
+                },
+                {
+                  "text": "-",
+                },
+              ],
+              [
+                {
+                  "text": "โอนลด",
+                },
+                {
+                  "text": "-",
+                },
+                {
+                  "text": "รวมเป็นเงิน",
+                },
+                {
+                  "text": "๓๐๐,๐๐๐.๐๐",
+                },
+              ],
+              [
+                {
+                  "text": "เบิกจ่ายแล้ว",
+                },
+                {
+                  "text": "๑,๐๐๐.๐๐",
+                },
+                {
+                  "text": "คงเหลือ",
+                },
+                {
+                  "text": "๒๙๙,๐๐๐.๐๐",
+                },
+              ],
+            ],
+          },
+          {
+            "heading": "ข้อเท็จจริง",
+            "indent": true,
+            "kind": "paragraph",
+            "text": "เห็นควรเบิกจ่ายค่าซื้อวัสดุสำนักงาน จำนวน ๗ รายการ ให้แก่ ร้านดินสอสี เป็นเงิน ๒๒,๘๙๐.๐๐ บาท (สองหมื่นสองพันแปดร้อยเก้าสิบบาทถ้วน) ตามระเบียบฯ ต่อไป",
+          },
+          {
+            "heading": "ข้อเสนอเพื่อพิจารณา",
+            "indent": true,
+            "keepTrailingLines": 2,
+            "kind": "paragraph",
+            "text": "จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และโปรดลงนามในฎีกาที่แนบมาด้วยแล้ว",
+          },
+          {
+            "approvalLayout": "grid",
+            "approvals": [
+              {
+                "comments": [
+                  "- เพื่อโปรดพิจารณา",
+                ],
+                "heading": "เรียน นายกเทศบาลตำบลฉลอง",
+                "signature": {
+                  "kind": "signature",
+                  "label": "",
+                  "lines": [
+                    "รองปลัดเทศบาล รักษาราชการแทน",
+                    "ปลัดเทศบาลตำบลฉลอง",
+                  ],
+                  "name": "นายปลัด ทดสอบ",
+                  "showSignatureLine": true,
+                },
+              },
+              {
+                "comments": [],
+                "heading": "อนุมัติ",
+                "signature": {
+                  "kind": "signature",
+                  "label": "",
+                  "lines": [
+                    "รองนายกเทศมนตรี ปฏิบัติราชการแทน",
+                    "นายกเทศมนตรีตำบลฉลอง",
+                  ],
+                  "name": "นายผู้อนุมัติ ทดสอบ",
+                  "showSignatureLine": true,
+                },
+              },
+            ],
+            "closing": [],
+            "keepWithPrevious": true,
+            "kind": "signature-cluster",
+            "signatures": [
+              {
+                "kind": "signature",
+                "label": "",
+                "lines": [
+                  "ผู้อำนวยการกองสวัสดิการสังคม",
+                ],
+                "name": "นางสาวผู้อำนวยการ ทดสอบ",
+                "showSignatureLine": true,
+              },
+            ],
+          },
+        ],
+        "purpose": "body",
+      },
+    ],
+    "routingStrip": null,
+    "title": "ขออนุมัติเบิกจ่ายเงินค่าวัสดุสำนักงาน",
   },
 ]
 `;

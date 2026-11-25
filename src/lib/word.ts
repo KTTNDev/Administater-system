@@ -24,17 +24,33 @@ function textRuns(runs: WordRun[]) {
   // Word owns paragraph wrapping. Invisible word joiners preserve explicit compound-word groups.
   return runs.flatMap((run,index) => run.softBreak?[new TextRun({break:1})] : (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).map(text => new TextRun({
     ...(text==='\t'?{children:[new Tab()]}:{text}),
-    font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,
+    font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,italics:run.italic||undefined,italicsComplexScript:run.italic||undefined,
     characterSpacing:Math.round((run.tracking||0)*20),color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
   })));
 }
+function guideOffsetY(p: WordParagraph, guide: WordParagraph, rowYs: number[]) {
+  if (p.runs.length === 0 || rowYs.length === 0) return guide.y;
+  // Recover the exact first-line offset (g0.y - b.y) by cancelling word-layout's (p.height - p.line)
+  // subtraction — fixing both single-line rows with inner bottom margin (e.g. budget memos) and
+  // multi-line wrapped headers where Word applies exact p.line height to every visual line.
+  const firstRowBase = rowYs[0] + Math.max(0, p.height - p.line);
+  const rowIndex = rowYs.findIndex(y => Math.abs(y - guide.y) < 4);
+  const idx = rowIndex >= 0 ? rowIndex : rowYs.length - 1;
+  // +1 px (~0.75 pt) extra clearance so Thai low vowels (ุ/ู) sit cleanly above the dots.
+  return firstRowBase + 1 - (rowYs.length - 1 - idx) * p.line;
+}
 function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
+  const rowYs: number[] = [];
+  for (const g of p.guides || []) {
+    if (!rowYs.some(y => Math.abs(y - g.y) < 4)) rowYs.push(g.y);
+  }
+  rowYs.sort((a, b) => a - b);
   const options: IParagraphOptions = {
     children:[...textRuns(p.runs),...(p.guides||[]).map(guide=>new ShapeRun({
       type:'rectangle',transformation:{width:guide.width+2,height:guide.height},fill:'none',line:'none',
       children:paragraphs({...guide,x:0,guides:undefined},0,0,guide.width),
       textOptions:{verticalAlignment:'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},
-      floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(guide.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.LINE,offset:emu(guide.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}
+      floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(guide.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.LINE,offset:emu(guideOffsetY(p, guide, rowYs))},allowOverlap:true,behindDocument:true,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}
     }))],alignment:p.align==='center'?AlignmentType.CENTER:p.align==='right'?AlignmentType.RIGHT:p.align==='justify'?AlignmentType.THAI_DISTRIBUTE:AlignmentType.LEFT,
     spacing:{before:twip(before),after:0,line:twip(p.border?p.height:p.line),lineRule:LineRuleType.EXACT},
     indent:{left:twip(Math.max(0,p.x-left)),right:twip(Math.max(0,width-(p.x-left)-p.width-(p.align==='center'?0:4))),firstLine:twip(p.indent)},
@@ -67,7 +83,17 @@ function section(page: WordPage,restartNumbering=false): ISectionOptions {
   let bottom=page.top;
   for(const block of page.blocks) {
     const gap=Math.max(0,block.y-bottom);
-    if(block.kind==='paragraph') children.push(...paragraphs(block,gap,page.left,page.width-page.left-page.right));
+    if(block.kind==='paragraph') {
+      // Word 2013+ measures relativeFrom="line" from the top of spaceBefore, which pulls dot guides
+      // upward straight through the text whenever before > 0 (e.g. ส่วนราชการ, budget headers, opinion lines).
+      // Emit any leading gap as an exact spacer paragraph so guided paragraphs always have w:before="0".
+      if(twip(gap)>0 && block.guides?.length) {
+        children.push(new Paragraph({keepNext:true,spacing:{before:0,after:0,line:twip(gap),lineRule:LineRuleType.EXACT}}));
+        children.push(...paragraphs(block,0,page.left,page.width-page.left-page.right));
+      } else {
+        children.push(...paragraphs(block,block.guides?.length?0:gap,page.left,page.width-page.left-page.right));
+      }
+    }
     else {
       if(gap>0) children.push(new Paragraph({spacing:{before:0,after:0,line:twip(gap),lineRule:LineRuleType.EXACT}}));
       const border={style:block.bordered===false?BorderStyle.NONE:BorderStyle.SINGLE,size:4,color:block.plainHeader?'000000':'555555'};

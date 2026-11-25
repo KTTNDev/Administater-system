@@ -25,11 +25,13 @@ it('preview resolves the saved linked draft and never rebuilds its content from 
 });
 it('PDF binder and Word export receive the very same saved text boxes and edited body',async()=>{
  const pdf=await PDFDocument.create();pdf.addPage();const bytes=Buffer.from(await pdf.save());
- const pdfSpy=vi.spyOn(pdfEngine,'renderPdf').mockResolvedValue(bytes),wordSpy=vi.spyOn(wordEngine,'renderWord').mockResolvedValue(Buffer.from('saved-core-docx'));
+ const pdfSpy=vi.fn(async(_draft:Parameters<typeof pdfEngine.renderPdf>[0])=>bytes);
+ const rendererSpy=vi.spyOn(pdfEngine,'withPdfRenderer').mockImplementation(async work=>work(pdfSpy));
+ const wordSpy=vi.spyOn(wordEngine,'renderWord').mockResolvedValue(Buffer.from('saved-core-docx'));
  const version=readDraft(draftId).version;
  const result=await corePdfBinder({caseId,expectedVersions:{'13':version}},{profile:{mode:'SINGLE_DOC',docId:'13'},duplicateCopies:false,includeDividers:false,includeCoverChecklist:false,routingStripMode:'NONE'});
  expect(result.entries[0]).toMatchObject({draftId,version});expect(pdfSpy.mock.calls[0][0].body).toContain('ข้อความที่แก้ไว้ใน Core');expect(pdfSpy.mock.calls[0][0].floatingItems[0]).toMatchObject({kind:'text',text:'ผู้ลงนามที่จัดวางเอง'});
- await coreWordOutput({caseId},'SINGLE_DOC','13');expect(wordSpy.mock.calls[0][0]).toEqual(pdfSpy.mock.calls[0][0]);pdfSpy.mockRestore();wordSpy.mockRestore();
+ await coreWordOutput({caseId},'SINGLE_DOC','13');expect(wordSpy.mock.calls[0][0]).toEqual(pdfSpy.mock.calls[0][0]);rendererSpy.mockRestore();wordSpy.mockRestore();
 });
 it('refuses a stale draft version instead of exporting a different revision silently',()=>{
  expect(()=>coreOutputCase({caseId,expectedVersions:{'13':1}}).draft('13')).toThrow(/เปลี่ยนไปแล้ว/);

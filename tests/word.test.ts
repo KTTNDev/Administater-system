@@ -110,7 +110,20 @@ it('exports matching editable field and signature guides without duplicating hea
  const anchors=Array.from(xml.matchAll(/<wp:anchor[\s\S]*?<\/wp:anchor>/g),m=>m[0]);
  const guides=anchors.filter(a=>/<w:t[^>]*>\.+<\/w:t>/.test(a));
  expect(guides).toHaveLength(6);
- for(const guide of guides){expect(guide).toContain('w:val="32"');expect(guide).toContain('w:val="111111"');expect(guide).toContain('TH SarabunIT๙');expect(guide).toContain('wps:txbx');expect(guide).toContain('<wp:positionV relativeFrom="line">');}
+ for(const guide of guides){expect(guide).toContain('w:val="32"');expect(guide).toContain('w:val="111111"');expect(guide).toContain('TH SarabunIT๙');expect(guide).toContain('wps:txbx');expect(guide).toContain('<wp:positionV relativeFrom="line">');expect(guide).toContain('behindDoc="1"');}
+ // Paragraphs owning dot guides must NEVER carry w:before > 0 (Word 2013+ offsets relativeFrom="line" from top of spaceBefore, striking dots through text).
+ const bodyXml=xml.split('<w:body>')[1]!.split('</w:body>')[0]!;
+ let scan=0;
+ while(scan<bodyXml.length){
+  const s=bodyXml.indexOf('<w:p>',scan);if(s<0)break;
+  let d=0,i=s;while(i<bodyXml.length){if(bodyXml.startsWith('<w:p>',i)||bodyXml.startsWith('<w:p ',i)){d++;i+=4;}else if(bodyXml.startsWith('</w:p>',i)){d--;i+=6;if(d===0)break;}else i++;}
+  const pXml=bodyXml.slice(s,i);scan=i;
+  if(/<w:t[^>]*>\.+<\/w:t>/.test(pXml)&&pXml.includes('<wp:positionV relativeFrom="line">')){
+   const topPr=pXml.slice(0,pXml.indexOf('</w:pPr>')+8);
+   const beforeVal=Number((topPr.match(/w:before="(\d+)"/)||[])[1]||0);
+   expect(beforeVal).toBe(0);
+  }
+ }
  expect(paragraphTexts(xml).filter(t=>t.includes('DOT-GUIDE-CHECK'))).toHaveLength(1);
  expect(paragraphTexts(xml).find(t=>t.includes('DOT-GUIDE-CHECK'))).not.toContain('...');
 },180000);

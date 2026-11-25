@@ -10,7 +10,7 @@ export function buildDoc13(x: TemplateContext) {
       ['เบิกจ่ายแล้ว', display(c.budgetSpentBefore), 'คงเหลือ', moneyText(c.budgetRemainingBefore)],
     ], false),
     p(`เห็นควรเบิกจ่ายค่า${t.actionVerb}${x.title} จำนวน ${x.count} รายการ ให้แก่ ${c.vendor.shopName} เป็นเงิน ${x.total} บาท (${x.amountWords}) ตามระเบียบฯ ต่อไป`, 'ข้อเท็จจริง'),
-    p('เสนอขออนุมัติเบิกจ่ายภายหลังได้รับเอกสารคืนจากกองคลัง พร้อมเอกสารฎีกาจากระบบ e-LAAS', 'ข้อเสนอเพื่อพิจารณา'),
-    cluster(['จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และโปรดลงนามในฎีกาที่แนบมาด้วยแล้ว'], [signatory(c.signatories.divisionDirector)], approvalBoxes(x, 2, '13')),
+    p('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และโปรดลงนามในฎีกาที่แนบมาด้วยแล้ว', 'ข้อเสนอเพื่อพิจารณา'),
+    cluster([], [signatory(c.signatories.divisionDirector)], approvalBoxes(x, 2, '13')),
   ]);
 }

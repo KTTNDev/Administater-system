@@ -1,3 +1,4 @@
+import {archiveDocumentBytes} from '@/lib/handover-archive/archive-service';
 import {saveLocalDocumentOutput} from '@/lib/local-dossiers';
 import {MissingOverlayPageError} from "@/lib/export-validation";
 import { NextResponse } from 'next/server';
@@ -15,6 +16,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   try {
     const data=await renderWord(draft);
     let storageWarning='';try{saveLocalDocumentOutput(draft,'docx',data);}catch{storageWarning='local-copy-incomplete';}
+    try{archiveDocumentBytes(draft,'docx',data);}catch{storageWarning=storageWarning||'handover-copy-incomplete';}
     return new NextResponse(new Uint8Array(data),{headers:{"X-Sarabun-Storage-Warning":storageWarning,'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':`attachment; filename="draft-${id}.docx"; filename*=UTF-8''${encodeURIComponent(draft.subject+'.docx')}`,'Cache-Control':'private, no-store'}});
   } catch(error) {
     if(error instanceof MissingOverlayPageError)return NextResponse.json({error:error.message},{status:422});

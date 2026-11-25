@@ -81,21 +81,25 @@ it('uploads PDF, JPEG, and WebP external evidence files, rejects unsupported fil
     expect(stored.file.subarray(0,5).toString()).toBe('%PDF-');
   }
 
-  // Attach files onto binder slots: 4.2 (quote PDF), 5.1 (e-LAAS JPG), OTHER (extra WebP), 11.4 (disabled PNG).
+  // Attach files onto binder slots: 4.2 (quote PDF), 5.1 (e-LAAS JPG), 14 (e-LAAS voucher PDF), OTHER (extra WebP), 11.4 (disabled PNG).
+  const voucherRes=await uploadExternal(uploadRequest([new File([quotePdf],'ฎีกาเบิกเงิน_elaas.pdf',{type:'application/pdf'})]));
+  expect(voucherRes.status).toBe(200);
+  const [voucherUploaded]=await voucherRes.json() as Array<Omit<ExternalFile,'slotId'|'includeInExport'>>;
   const current=sqliteRepository.getCase(caseId)!;
   const externalFiles:ExternalFile[]=[
     {...uploaded[0],slotId:'4.2',label:'ใบเสนอราคา ร้านดินสอสี',includeInExport:true},
     {...uploaded[1],slotId:'5.1',label:'รายงานขอซื้อ e-LAAS',includeInExport:true},
+    {...voucherUploaded,slotId:'14',label:'เอกสารวางฎีกา e-LAAS',includeInExport:true},
     {...uploaded[2],slotId:'OTHER',label:'เอกสารประกอบเพิ่มเติม',includeInExport:true},
     {...uploaded[3],slotId:'11.4',label:'บิลยังไม่เปิดรวม',includeInExport:false},
   ];
   const saved=sqliteRepository.saveCase({...current,externalFiles});
-  expect(saved.externalFiles).toHaveLength(4);
+  expect(saved.externalFiles).toHaveLength(5);
   expect(cloneCaseSafely(saved).externalFiles).toEqual([]);
 
   // 1. Unified FULL_BINDER PDF export merges enabled external files at their exact binder positions and only inserts dividers for empty external slots.
   const merged=await corePdfBinder({caseId},{profile:{mode:'FULL_BINDER'},duplicateCopies:false,includeDividers:true,includeCoverChecklist:true,includeExternalFiles:true,routingStripMode:'NONE'});
-  expect(merged.externalFileCount).toBe(3);
+  expect(merged.externalFileCount).toBe(4);
   const mergedPdf=await PDFDocument.load(merged.bytes);
   expect(mergedPdf.getPageCount()).toBe(merged.pageCount);
 
@@ -103,24 +107,28 @@ it('uploads PDF, JPEG, and WebP external evidence files, rejects unsupported fil
   const entry51=merged.entries.find(e=>e.docId==='5.1');
   const entry52=merged.entries.find(e=>e.docId==='5.2');
   const entry114=merged.entries.find(e=>e.docId==='11.4');
+  const entry14=merged.entries.find(e=>e.docId==='14');
   const entryOther=merged.entries.find(e=>e.docId==='OTHER');
   expect(entry42?.externalFileId).toBe(uploaded[0].id);
   expect(entry42?.pageCount).toBe(2);
   expect(entry51?.externalFileId).toBe(uploaded[1].id);
   expect(entry51?.pageCount).toBe(1);
+  expect(entry14?.externalFileId).toBe(voucherUploaded.id);
+  expect(entry14?.pageCount).toBe(2);
   // 5.2 and 11.4 have no enabled external file -> divider sheet inserted instead.
   expect(entry52?.externalFileId).toBeUndefined();
   expect(entry114?.externalFileId).toBeUndefined();
-  // OTHER appended at the very end after Doc 13.
+  // OTHER appended at the very end after Doc 14.
   expect(entryOther?.externalFileId).toBe(uploaded[2].id);
   expect(merged.entries.at(-1)?.docId).toBe('OTHER');
-  // Order check: 4.1 -> 4.2 -> 5.1 -> 5.2 -> 6.1 ... -> 13 -> OTHER.
+  // Order check: 4.1 -> 4.2 -> 5.1 -> 5.2 -> 6.1 ... -> 13 -> 14 -> OTHER.
   const ids=merged.entries.map(e=>e.docId);
   expect(ids.indexOf('4.1')).toBeLessThan(ids.indexOf('4.2'));
   expect(ids.indexOf('4.2')).toBeLessThan(ids.indexOf('5.1'));
   expect(ids.indexOf('5.1')).toBeLessThan(ids.indexOf('5.2'));
   expect(ids.indexOf('5.2')).toBeLessThan(ids.indexOf('6.1'));
-  expect(ids.indexOf('13')).toBeLessThan(ids.indexOf('OTHER'));
+  expect(ids.indexOf('13')).toBeLessThan(ids.indexOf('14'));
+  expect(ids.indexOf('14')).toBeLessThan(ids.indexOf('OTHER'));
 
   // 2. SINGLE_DOC PDF export works for external slots (4.2 and OTHER) via API route too.
   const single42Res=await exportPdf(new Request('http://localhost/api/procurement/export/pdf',{
@@ -147,9 +155,11 @@ it('uploads PDF, JPEG, and WebP external evidence files, rejects unsupported fil
   const names=Object.keys(zip.files);
   expect(names.some(n=>n.startsWith('4-2_แนบ01_')&&n.endsWith('.pdf'))).toBe(true);
   expect(names.some(n=>n.startsWith('5-1_แนบ01_')&&n.endsWith('.pdf'))).toBe(true);
+  expect(names.some(n=>n.startsWith('14_แนบ01_')&&n.endsWith('.pdf'))).toBe(true);
   expect(names.some(n=>n.startsWith('อื่นๆ_แนบ01_')&&n.endsWith('.pdf'))).toBe(true);
   expect(names.some(n=>n.startsWith('11-4_แนบ01_'))).toBe(false);
   const checklistText=await zip.file('รายการเรียงแฟ้ม.txt')!.async('string');
   expect(checklistText).toContain('4.2 ใบเสนอราคาผู้ชนะ — แนบไฟล์แล้ว 1 ไฟล์ (2 หน้า)');
+  expect(checklistText).toContain('14 เอกสารวางฎีกา (e-LAAS) — แนบไฟล์แล้ว 1 ไฟล์ (2 หน้า)');
   expect(checklistText).toContain('อื่นๆ เอกสารหลักฐานเพิ่มเติม — แนบไฟล์แล้ว 1 ไฟล์ (1 หน้า)');
-},240000);
+},420000);

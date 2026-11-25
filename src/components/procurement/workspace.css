@@ -137,4 +137,24 @@
 .pw-ext-pdf-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:6px;background:#fff;border:1px solid #dce5e1;font-size:12px}
 .pw-ext-empty-preview{padding:24px 16px;text-align:center;color:#4a625c}
 .pw-ext-empty-preview p{margin:6px 0}
+.pw-binder-filter.is-warn{background:#fff5e0!important;border-color:#e5b96c!important;color:#8a4f04!important;font-weight:600}
+.pw-binder-filter.is-warn:hover{background:#ffebc2!important;border-color:#d89c3b!important}
+.pw-binder-filter.is-warn.is-active{background:#b4690a!important;border-color:#b4690a!important;color:#fff!important}
+.pw-binder-card.needs-control{border-left:3px solid #d98a1f}
+.pw-binder-control{display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%;padding:4px 7px!important;min-height:24px!important;border-radius:6px!important;font-size:11px!important;line-height:1.35!important;text-align:left;border:1px solid #e3ebe7!important;background:#f7faf8!important;color:#35514a!important;font-variant-numeric:tabular-nums}
+.pw-binder-control:hover:not(:disabled){background:#ebf5f0!important;border-color:#8bc3b0!important}
+.pw-binder-control.is-complete{background:#eef8f3!important;border-color:#c9e5d8!important;color:#115342!important}
+.pw-binder-control.is-complete:hover:not(:disabled){background:#e2f3eb!important;border-color:#72b79e!important}
+.pw-binder-control.is-missing{background:#fff7e6!important;border-color:#ecd09b!important;color:#874c04!important}
+.pw-binder-control.is-missing:hover:not(:disabled){background:#ffefc9!important;border-color:#d69a38!important}
+.pw-binder-control.is-muted{background:#f5f7f6!important;border-color:#e3e8e6!important;color:#5a6e68!important}
+.pw-binder-control-body{display:flex;flex-wrap:wrap;align-items:center;gap:2px 5px;min-width:0;flex:1}
+.pw-ctrl-num{font-weight:700;color:#0b5645}
+.pw-ctrl-date{color:#415f58}
+.pw-ctrl-missing{font-weight:700;color:#9a5505}
+.pw-ctrl-sep{opacity:.5}
+.pw-ctrl-go{font-size:10px;font-weight:600;white-space:nowrap;opacity:.78;flex:none}
+.pw-binder-control:hover .pw-ctrl-go{opacity:1;text-decoration:underline}
+.pw-ctrl-summary-ok{color:#0d6a4c;font-weight:700}
+.pw-ctrl-summary-wait{color:#9a5505;font-weight:700}
 @media(max-width:700px){.pw-summary-grid,.pw-type-switch,.pw-binder-grid{grid-template-columns:1fr}.pw-binder-summary-tip{display:none}.pw-filter-controls{justify-content:flex-start;min-width:0}.pw-filter-search{max-width:none;min-width:0;flex:1 1 100%}}

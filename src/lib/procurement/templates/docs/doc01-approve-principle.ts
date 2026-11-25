@@ -9,6 +9,6 @@ export function buildDoc01(x: TemplateContext) {
     p('เพื่อให้เจ้าหน้าที่พัสดุดำเนินงานเป็นไปอย่างถูกต้องตามระเบียบฯ ข้างต้น เห็นควรดำเนินการ ดังนี้', 'ข้อพิจารณาและข้อเสนอ'),
     p(`${t.action}กรณีวิธีเฉพาะเจาะจง`),
     p(`๑. อนุมัติ${t.action} โดยวิธีเฉพาะเจาะจง\n๒. อนุมัติรายงานขอ${t.shortVerb}\n๓. อนุมัติรายงานผลการพิจารณาและอนุมัติสั่ง${t.shortVerb}\n๔. อนุมัติให้เบิกจ่ายเงินแก่เจ้าหนี้ต่อไป`),
-    cluster(['จึงเรียนมาเพื่อโปรดทราบ และพิจารณาอนุมัติดำเนินการต่อไป'], [signatory(c.signatories.procurementOfficer, 'เจ้าหน้าที่พัสดุ')], approvalBoxes(x, 3, '1')),
+    cluster(['จึงเรียนมาเพื่อโปรดทราบ และพิจารณาอนุมัติดำเนินการต่อไป'], [signatory({...c.signatories.procurementOfficer, position: '', actingLine: undefined, actingTarget: undefined}, 'เจ้าหน้าที่พัสดุ')], approvalBoxes(x, 3, '1')),
   ]);
 }

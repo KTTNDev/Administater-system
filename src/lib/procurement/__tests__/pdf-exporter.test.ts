@@ -50,14 +50,14 @@ it('prints every official copy in the 1,520 baht binder exactly once per prescri
     expect(pages.slice(copies[1].startPage - 1, copies[1].startPage - 1 + copies[1].pageCount).join('')).not.toContain('จนท./ร่าง/พิมพ์/ทาน');
   }
 }, 240000);
-it('renders only six official forms in the e-GP binder and inserts all fourteen external checklists in filing order', async () => {
+it('renders seven official forms including Doc 13 in the e-GP binder and inserts all fourteen external checklists in filing order', async () => {
   const input = templateFixture(22890); input.docs.laasPurchaseReportNo = '70-45-00231-5330100-00005';
   const result = await assemblePdfBinder(computeProcurementCase(input), defaultAgency, {...binderOptions, duplicateCopies: false, includeDividers: true});
   fs.writeFileSync('output/phase3/egp-binder.pdf', result.pdfBytes);
   const pages = await pdfText(result.pdfBytes);
-  expect(result.entries.filter(e => e.source === 'GENERATED').map(e => e.docId)).toEqual(['1', '2', '3', '4.1', '11.1', '11.3']);
+  expect(result.entries.filter(e => e.source === 'GENERATED').map(e => e.docId)).toEqual(['1', '2', '3', '4.1', '11.1', '11.3', '13']);
   expect(result.entries.filter(e => e.source !== 'GENERATED')).toHaveLength(14);
-  expect(result.entries.map(e => e.docId)).toEqual(['1', '2', '3', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2', '7', '8', '9', '10', '11.1', '11.2', '11.3', '11.4', '11.5', '12', '13']);
+  expect(result.entries.map(e => e.docId)).toEqual(['1', '2', '3', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2', '7', '8', '9', '10', '11.1', '11.2', '11.3', '11.4', '11.5', '12', '13', '14']);
   expect(compact(pages.join(''))).toContain(compact('แผ่นคั่นสำหรับจัดเรียงแฟ้ม'));
   expect(compact(pages.join(''))).toContain(compact('๑๓ พฤศจิกายน ๒๕๖๙'));
 }, 240000);
@@ -82,7 +82,7 @@ it('continues long TOR and attachment tables with repeated headers, Thai page nu
 }, 180000);
 it('supports stage/single-document profiles and an optional master checklist', async () => {
   const c = computeProcurementCase(templateFixture());
-  expect(selectBinderEntries(c, {mode: 'BY_STAGE', stage: 'STAGE_4_DISBURSEMENT'}).map(e => e.docId)).toEqual(['13']);
+  expect(selectBinderEntries(c, {mode: 'BY_STAGE', stage: 'STAGE_4_DISBURSEMENT'}).map(e => e.docId)).toEqual(['13', '14']);
   expect(selectBinderEntries(c, {mode: 'BY_STAGE', stage: 'STAGE_1_PRINCIPLE'}).map(e => e.docId)).toEqual(['1', '2', '3', '4.1', '4.2']);
   const result = await assemblePdfBinder(c, defaultAgency, {...binderOptions, profile: {mode: 'BY_STAGE', stage: 'STAGE_4_DISBURSEMENT'}, includeCoverChecklist: true});
   expect(result.entries.map(e => e.docId)).toEqual(['COVER', '13']);

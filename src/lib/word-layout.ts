@@ -1,6 +1,6 @@
 // Read the same measured layout used by the preview. Text remains text in DOCX;
 // only existing images and uploaded PDF pages are raster images.
-export type WordRun = { keepGroup?:string; softBreak?:boolean; tracking?:number; text: string; bold: boolean; underline: boolean; size: number; color: string };
+export type WordRun = { keepGroup?:string; softBreak?:boolean; tracking?:number; text: string; bold: boolean; italic?: boolean; underline: boolean; size: number; color: string };
 export type Box = { x: number; y: number; width: number; height: number };
 export type WordParagraph = Box & { kind: 'paragraph'; runs: WordRun[]; align: string; indent: number; line: number; tabs: number[]; keep: boolean; border: boolean; outline?: boolean; guides?: WordParagraph[] };
 export type WordTable = Box & { kind: 'table'; columnWidths?:number[]; bordered?:boolean; plainHeader?:boolean; rows: { header: boolean; cells: (WordParagraph & {colSpan?:number;rowSpan?:number;verticalAlign?:string})[] }[] };
@@ -21,7 +21,7 @@ export function extractWordPages(): WordPage[] {
         if (node.nodeType === Node.TEXT_NODE || node instanceof HTMLBRElement) {
           const parent = node.parentElement!, css = getComputedStyle(parent);
           const rgb = css.color.match(/\d+/g)?.slice(0,3).map(n => Number(n).toString(16).padStart(2,'0')).join('') || '111111';
-          result.push({ softBreak:node instanceof HTMLBRElement&&node.hasAttribute('data-soft-break'),tracking:(parseFloat(css.letterSpacing)||0)*.75, keepGroup:parent.closest<HTMLElement>('.thai-keep')?.dataset.keepId, text: node instanceof HTMLBRElement ? '\n' : node.textContent || '', bold: Number(css.fontWeight) >= 600, underline: css.textDecorationLine.includes('underline') || getComputedStyle(el).textDecorationLine.includes('underline'), size: parseFloat(css.fontSize) * .75, color: rgb });
+          result.push({ softBreak:node instanceof HTMLBRElement&&node.hasAttribute('data-soft-break'),tracking:(parseFloat(css.letterSpacing)||0)*.75, keepGroup:parent.closest<HTMLElement>('.thai-keep')?.dataset.keepId, text: node instanceof HTMLBRElement ? '\n' : node.textContent || '', bold: Number(css.fontWeight) >= 600, italic: css.fontStyle === 'italic' || css.fontStyle === 'oblique', underline: css.textDecorationLine.includes('underline') || getComputedStyle(el).textDecorationLine.includes('underline'), size: parseFloat(css.fontSize) * .75, color: rgb });
         } else node.childNodes.forEach((child,index)=>{
           if(index && node instanceof Element && node.matches('.memo-field')) result.push({text:' ',bold:false,underline:false,size:16,color:'111111'});
           walk(child);
@@ -87,7 +87,7 @@ export function extractWordPages(): WordPage[] {
       if(el.classList.contains('minutes-speech')) { const label=el.querySelector('.minutes-speaker-person');if(label)result.overlays.push(para(label));const p=para(el);const padding=parseFloat(getComputedStyle(el).paddingLeft)||0;p.x+=padding;p.width-=padding;result.blocks.push(p);return;}
       if(el.classList.contains('memo-row')) { result.blocks.push(para(el)); return; }
       const special = floating || el.matches('.letter-head,.appendix-sheet,.certificate-photo-area,.procurement-metadata,.procurement-signatures');
-      if(el.matches('p,h1,h2,figcaption,.letter-number,.letter-agency,.opinion-line,.certificate-photo') || el.matches('.floating-item,.copy-mark-text,.urgency,.security,.page-number,.continuation-cue,.security-control') && !el.querySelector('img') || el.parentElement?.classList.contains('memo-head') && el.tagName==='STRONG') {
+      if(el.matches('p,h1,h2,figcaption,.letter-number,.letter-agency,.opinion-line,.certificate-photo') || el.matches('.floating-item,.copy-mark-text,.urgency,.security,.page-number,.continuation-cue,.security-control,.external-footer-motto') && !el.querySelector('img') || el.parentElement?.classList.contains('memo-head') && el.tagName==='STRONG') {
         const p=para(el);
         // The header's ข anchor splits DOM spans, but its title remains one editable Word run.
         if(el.parentElement?.classList.contains('memo-head')&&el.tagName==='STRONG'&&p.runs.length)p.runs=[{...p.runs[0],text:p.runs.map(run=>run.text).join('')}];

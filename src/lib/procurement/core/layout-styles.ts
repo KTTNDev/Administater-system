@@ -11,7 +11,16 @@ export const procurementLayoutStyles=`
 .procurement-document .document-table{font-size:16pt;margin:5pt 0;break-inside:auto}
 .procurement-document .document-table th,.procurement-document .document-table td{border-color:#000;background:transparent;padding:2pt 3pt}
 .procurement-document tr{break-inside:avoid}.procurement-document thead{display:table-header-group}
-.procurement-tor .body-text{text-indent:25mm}
+.procurement-tor .body-text{text-indent:10mm}
+.procurement-tor .tor-sub-heading{margin-left:10mm;margin-top:4pt;text-decoration:none;font-weight:700}
+.procurement-tor .tor-level1-item{margin-left:10mm;text-indent:0}
+.procurement-tor .tor-sub-item{margin-left:20mm;text-indent:0}
+.procurement-tor .procurement-tor-items{width:calc(100% - 20mm);margin-left:20mm}
+.procurement-tor .tor-signatures{display:block;margin-top:8mm}
+.procurement-tor .tor-signatures .signature{margin-left:auto;width:104mm;text-align:center}
+.procurement-tor .tor-signatures .signature .signature-role-line{white-space:nowrap}
+.procurement-tor .tor-signatures .signature p:not(.signature-role-line){margin-right:40mm}
+.procurement-tor .tor-signatures .sign-space{height:3lh}
 .procurement-tor-items th,.procurement-tor-items td{border:0!important}
 .procurement-tor-items th:first-child,.procurement-tor-items td:first-child{width:8%;text-align:center}
 .procurement-tor-items th:nth-child(2){width:62%}
@@ -24,9 +33,19 @@ export const procurementLayoutStyles=`
 .procurement-items .procurement-total td:first-child{text-align:right}
 .procurement-items .procurement-total td:only-child{text-align:center}
 .procurement-items .procurement-total td.procurement-words{text-align:center;vertical-align:middle}
+.procurement-po .procurement-heading{margin-bottom:4pt}
+.procurement-po .procurement-metadata{margin:3pt 0}
+.procurement-po .document-table{margin:3pt 0}
+.procurement-po .body-subheading{margin-top:3pt}
 .procurement-po .body-text{margin-bottom:0;line-height:1}
 .procurement-po .document-table th,.procurement-po .document-table td{padding:1pt 3pt}
 .procurement-po .procurement-metadata p{line-height:1}
+.procurement-po .po-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4mm 6mm;margin-top:3mm;break-inside:avoid;page-break-inside:avoid}
+.procurement-po .po-signatures .signature{margin:0;width:100%;min-width:0;text-align:center}
+.procurement-po .po-signatures .signature .signature-role-line{white-space:nowrap}
+.procurement-po .po-signatures .signature:first-child p:not(.signature-role-line){margin-right:2mm}
+.procurement-po .po-signatures .signature:nth-child(2) p:not(.signature-role-line){margin-right:12mm}
+.procurement-po .po-signatures .sign-space{height:1.8lh}
 .procurement-table-caption{text-align:center;font-weight:700}
 .procurement-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5mm 8mm;break-inside:avoid;page-break-inside:avoid}
 .procurement-signatures .signature{margin:0;width:100%;min-width:0;text-align:center}

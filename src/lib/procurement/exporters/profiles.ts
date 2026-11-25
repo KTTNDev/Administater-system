@@ -25,7 +25,7 @@ export const STAGE_DOCS: Record<z.infer<typeof StageSchema>, readonly string[]> 
   STAGE_1_PRINCIPLE: ['1', '2', '3', '4.1', '4.2'],
   STAGE_2_ORDER: ['5.1', '5.2', '6.1', '6.2', '7', '8', '9', '10'],
   STAGE_3_INSPECTION: ['11.1', '11.2', '11.3', '11.4', '11.5', '12'],
-  STAGE_4_DISBURSEMENT: ['13'],
+  STAGE_4_DISBURSEMENT: ['13', '14'],
 };
 export function selectBinderEntries(c: ComputedProcurementCase, profile: PdfExportProfile) {
   const rows = buildBinderManifest(c);

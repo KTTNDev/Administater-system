@@ -27,6 +27,7 @@ export const documentSchema = z.object({
     z.object({kind:z.literal("image"),purpose:z.literal("signature").optional(),id:z.string().uuid(),page:z.number().int().min(1).max(100),xMm:z.number().min(0).max(195),yMm:z.number().min(0).max(285),widthMm:z.number().min(10).max(180),image:z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000)})}),
   ])).max(30).default([]),
   body: z.string().max(40000).default(""), closing: z.string().max(200).default("ขอแสดงความนับถือ"),
+  footerMotto: z.string().max(300).default(""),
   layout:z.enum(['standard','budget-reference','procurement-tor','procurement-po','procurement-inspection','procurement-photos']).default('standard'),
   procurementForm:z.object({
     headingLines:z.array(z.string().max(500)).max(10).default([]),

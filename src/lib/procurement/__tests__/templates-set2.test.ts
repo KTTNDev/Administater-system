@@ -2,9 +2,9 @@ import {it, expect} from 'vitest';
 import {renderDocumentHtml} from '../index';
 import {templateFixture, modelsFor, findDoc, visibleText} from './templates-fixtures';
 
-it('builds only six manual documents in the 22,890 baht system workflow', () => {
+it('builds seven manual documents including Doc 13 in the 22,890 baht system workflow', () => {
   const models = modelsFor(templateFixture(22890));
-  expect(models.map(d => d.docId)).toEqual(['1', '2', '3', '4.1', '11.1', '11.3']);
+  expect(models.map(d => d.docId)).toEqual(['1', '2', '3', '4.1', '11.1', '11.3', '13']);
   expect(models).toMatchSnapshot();
   expect(visibleText(findDoc(models, '11.1'))).toContain('๒๓ พฤศจิกายน ๒๕๖๙');
   for (const id of ['11.1', '11.3']) expect(visibleText(findDoc(models, id))).toContain('นางสาวศิริวรรณ ไทยมิตรชอบ');

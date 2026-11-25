@@ -92,7 +92,7 @@ export function newCase(master=emptyMaster(), procurementType:'BUY'|'HIRE'='BUY'
     budgetSpentBefore:0,purposeText:defaultPurposeForType(procurementType,master.agency.divisionName),
     items:[{id:crypto.randomUUID(),description:'',quantity:1,unit:procurementType==='BUY'?'ชิ้น':'งาน',unitPrice:0}],
     vendor:structuredClone(master.vendors[0]??{id:crypto.randomUUID(),shopName:'',contactPersonName:'',contactPersonTitle:'ผู้จัดการ',businessTypeTag:procurementType==='BUY'?'ขายส่ง,ขายปลีก,ให้บริการ,ผู้ผลิต':'ให้บริการ',address:'',phone:'',taxId:'',isVatRegistered:true,isSmeRegistered:false}),
-    deliveryDays:3,warrantyYears:null,minPenaltyPerDay:100,inspectorMode:'SINGLE',inspectors:[{fullName:'',position:'',role:'INSPECTOR'}],
+    deliveryDays:3,installmentCount:1,warrantyYears:null,warrantyText:'',minPenaltyPerDay:100,inspectorMode:'SINGLE',inspectors:[{fullName:'',position:'',role:'INSPECTOR'}],
     inspectionResult:{isCorrect:true,isComplete:true,hasPenalty:false},
     signatories:Object.fromEntries(Object.keys(SIGNATORIES).map(k=>[k,structuredClone(master.people.find(p=>p.id===master.signatories[k as keyof typeof SIGNATORIES])??blankPerson(k))])) as DraftCase['signatories'],
     docs:{...Object.fromEntries(MEMO_TRACK.map(k=>[k,{runningNo:'',date:''}])) as Pick<DraftCase['docs'],typeof MEMO_TRACK[number]>,doc6_2_inspectorOrder:{},doc8_winnerAnnouncement:{},doc9_contractNotice:{},doc10_purchaseOrder:{}},attachments:{photoPaths:[]},
@@ -102,12 +102,12 @@ export function newCase(master=emptyMaster(), procurementType:'BUY'|'HIRE'='BUY'
 export const TIMELINE = [
   ['1','doc1_approvePrinciple','ขออนุมัติหลักการ',1,'INTERNAL_MEMO'],['2','doc2_assignSpec','มอบหมายกำหนดคุณลักษณะ',1,'INTERNAL_MEMO'],['3','doc3_reportSpec','รายงานกำหนดคุณลักษณะ',1,'INTERNAL_MEMO'],
   ['6.1','doc6_1_purchaseRequest','รายงานขอซื้อ / จ้าง',2,'INTERNAL_MEMO'],['6.2','doc6_2_inspectorOrder','คำสั่งแต่งตั้งผู้ตรวจรับ',2,'MUNICIPAL_ORDER'],['7','doc7_evalReport','รายงานพิจารณาผล',2,'INTERNAL_MEMO'],['8','doc8_winnerAnnouncement','ทะเบียนประกาศ (ไม่พิมพ์เลข)',2,'ANNOUNCEMENT'],['9','doc9_contractNotice','หนังสือแจ้งผู้ชนะ',2,'EXTERNAL_LETTER'],['10','doc10_purchaseOrder','ใบสั่งซื้อ / จ้าง',2,'PURCHASE_ORDER'],
-  ['11.1','doc11_1_inspectionReport','รายงานผลตรวจรับ',3,'INTERNAL_MEMO'],['12','doc12_finalSummary','รายละเอียดวิธีการ / ตั้งหนี้',3,'INTERNAL_MEMO'],['13','doc13_disbursement','ขออนุมัติเบิกจ่าย / ฎีกา',4,'INTERNAL_MEMO'],
+  ['11.1','doc11_1_inspectionReport','รายงานผลตรวจรับ',3,'INTERNAL_MEMO'],['12','doc12_finalSummary','รายละเอียดวิธีการ / ตั้งหนี้',3,'INTERNAL_MEMO'],['13','doc13_disbursement','ขออนุมัติเบิกจ่ายเงิน',4,'INTERNAL_MEMO'],
 ] as const;
 export type TimelineKey = typeof TIMELINE[number][1];
 export function cleanForExport(input:DraftCase):unknown {
   // Optional blanks are omitted, never replaced with fake dates or numbers.
-  const clean=(v:unknown):unknown=>Array.isArray(v)?v.map(clean):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k,val])=>val!==''||!['date','runningNo','registryLogNo','laasDate','laasPurchaseReportNo','laasContractNo','egpProjectNo','inspectionControlNo','deliveryDate','smeExpiryDate','projectTitleShort'].includes(k)).map(([k,val])=>[k,clean(val)])):v;
+  const clean=(v:unknown):unknown=>Array.isArray(v)?v.map(clean):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k,val])=>val!==''||!['date','runningNo','registryLogNo','laasDate','laasPurchaseReportNo','laasContractNo','egpProjectNo','inspectionControlNo','deliveryDate','smeExpiryDate','projectTitleShort','warrantyText'].includes(k)).map(([k,val])=>[k,clean(val)])):v;
   return clean(input);
 }
 export function evaluateDraft(input:DraftCase){
@@ -127,7 +127,7 @@ export function evaluateDraft(input:DraftCase){
   return {computed,issues};
 }
 export function fieldLabel(path:string){
-  const fields:Record<string,string>={fullName:'ชื่อ-สกุล',position:'ตำแหน่ง',shopName:'ชื่อร้าน',contactPersonName:'ผู้ติดต่อ',address:'ที่อยู่',phone:'โทรศัพท์',taxId:'เลขผู้เสียภาษี 13 หลัก',fiscalYearBE:'ปีงบประมาณ',yearBE:'ปี พ.ศ.',planName:'แผนงาน',workName:'งาน',categoryGroup:'หมวดรายจ่าย',categoryType:'ประเภทรายจ่าย',allocatedAmount:'วงเงินตั้งไว้',transferInAmount:'โอนเพิ่ม',transferOutAmount:'โอนลด',description:'รายละเอียดสินค้า',quantity:'จำนวน',unit:'หน่วย',unitPrice:'ราคาต่อหน่วย',purposeText:'เหตุผลและความจำเป็น',budgetSpentBefore:'เบิกแล้วก่อนรายการนี้',date:'วันที่',runningNo:'เลขที่หนังสือ',deliveryDays:'จำนวนวันส่งมอบ',penaltyRatePercent:'อัตราค่าปรับ',minPenaltyPerDay:'ค่าปรับขั้นต่ำ',deliveryDate:'วันที่ส่งมอบจริง',smeExpiryDate:'วันหมดอายุ SME'};
+  const fields:Record<string,string>={fullName:'ชื่อ-สกุล',position:'ตำแหน่ง',shopName:'ชื่อร้าน',contactPersonName:'ผู้ติดต่อ',address:'ที่อยู่',phone:'โทรศัพท์',taxId:'เลขผู้เสียภาษี 13 หลัก',fiscalYearBE:'ปีงบประมาณ',yearBE:'ปี พ.ศ.',planName:'แผนงาน',workName:'งาน',categoryGroup:'หมวดรายจ่าย',categoryType:'ประเภทรายจ่าย',allocatedAmount:'วงเงินตั้งไว้',transferInAmount:'โอนเพิ่ม',transferOutAmount:'โอนลด',description:'รายละเอียดสินค้า',quantity:'จำนวน',unit:'หน่วย',unitPrice:'ราคาต่อหน่วย',purposeText:'เหตุผลและความจำเป็น',budgetSpentBefore:'เบิกแล้วก่อนรายการนี้',date:'วันที่',runningNo:'เลขที่หนังสือ',deliveryDays:'จำนวนวันส่งมอบ',installmentCount:'จำนวนงวดงาน',warrantyText:'ระยะเวลารับประกันความชำรุดบกพร่อง',penaltyRatePercent:'อัตราค่าปรับ',minPenaltyPerDay:'ค่าปรับขั้นต่ำ',deliveryDate:'วันที่ส่งมอบจริง',smeExpiryDate:'วันหมดอายุ SME'};
   const parts=path.split('.'),last=parts.at(-1)!,prefix=parts[0]==='signatories'?SIGNATORIES[parts[1] as keyof typeof SIGNATORIES]:parts[0]==='items'?`รายการ ${Number(parts[1])+1}`:parts[0]==='inspectors'?`ผู้ตรวจรับ ${Number(parts[1])+1}`:parts[0]==='docs'?`เอกสาร ${TIMELINE.find(r=>r[1]===parts[1])?.[0]??'LAAS / e-GP'}`:parts[0]==='vendor'?'ร้านค้า':parts[0]==='budgetLine'?'งบประมาณ':'';
   return [prefix,fields[last]??'ข้อมูลหลัก'].filter(Boolean).join(' · ');
 }

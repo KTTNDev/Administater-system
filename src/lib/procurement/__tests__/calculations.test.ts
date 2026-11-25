@@ -4,7 +4,7 @@ import { fixture } from './fixtures';
 describe('financial acceptance', () => {
     it.each([
         [1520, 1420.56, 99.44, 'MANUAL_UNDER_5000', 15, 2],
-        [22890, 21392.52, 1497.48, 'EGP_OVER_5000', 6, 7],
+        [22890, 21392.52, 1497.48, 'EGP_OVER_5000', 7, 7],
     ] as const)('computes the %s baht case without mutating input', (total, net, vat, mode, count, items) => {
         const input = fixture(total), before = JSON.stringify(input), result = computeProcurementCase(input);
         expect(result.grandTotal).toBe(total);

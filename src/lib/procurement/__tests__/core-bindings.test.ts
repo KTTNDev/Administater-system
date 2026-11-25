@@ -48,7 +48,7 @@ it('imports photos once and Sync preserves binary references, overlays and attac
   const updated=repo.saveCase(input),fresh=listCoreDraftBindings(record.caseInput.id);
   const result=await bindProcurementCoreDrafts(updated.caseInput.id,updated.version,'sync',versions(fresh));
   const after=result.find(link=>link.doc_id==='11.3')!.draft!;
-  expect(after.signer).toBe(''); // Photo-sheet signers are placed manually with text boxes.
+  expect(after.signer).toBe('นายผู้ตรวจรับคนใหม่'); // Sync refreshes automatic inspector signatory while keeping manual overlays/photos.
   for(const key of ['floatingItems','appendixImages','attachmentFiles'] as const)expect(after[key]).toEqual(edited[key]);
   expect(appendixSources({...after,floatingItems:[]})).toEqual(appendixSources(original));
   expect(appendixSources(after)[signatureId]).toBe(Object.values(appendixSources(original))[0]);

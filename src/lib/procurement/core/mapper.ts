@@ -21,7 +21,7 @@ export interface MappedProcurementDraft {docId:GeneratedDocId; copies:number; dr
 export const SYNC_CONTENT_FIELDS = [
   'subject','headerSubtitle','number','date','organization','department','address','phone','recipient','salutation',
   'body','bodyMode','contentBlocks','background','facts','legalBasis','consideration','proposal',
-  'closing','signer','position','proposers','opinions','procurementForm',
+  'closing','footerMotto','signer','position','proposers','opinions','procurementForm',
 ] as const satisfies readonly (keyof Draft)[];
 
 /** Pure and non-mutating; callers must persist with the current Core document version. */
@@ -83,18 +83,26 @@ export function mapProcurementCaseToDrafts(input:ProcurementCaseInput, agency:Ag
     const headerSubtitle=toThaiDigits((docId==='6.2'?model.header.lines.slice(3,-1):docId==='8'?model.header.lines.slice(2,-1):[]).join('\n'));
     // Core already adds paragraph spacing. Empty separator paragraphs would double it.
     const body=toThaiDigits(model.pages.map((page,i)=>[i&&page.heading&&model.family!=='PHOTO_SHEET'?`## ${page.heading.join(' ')}`:'',...page.blocks.filter(block=>!layout||block.kind!=='metadata').map(blockText)].filter(Boolean).join('\n')).filter(Boolean).join('\n'));
-    const autoSigner=['internal','external','order','announcement'].includes(type)||docId==='11.2'||docId==='11.3';
-    const inspectionSigners=docId==='11.2'||docId==='11.3'?signatures:[];
+    const autoSigner=['internal','external','order','announcement'].includes(type)||docId==='4.1'||docId==='10'||docId==='11.2'||docId==='11.3';
+    const multiSigners=docId==='10'||docId==='11.2'||docId==='11.3'?signatures:[];
+    const doc12Opinions=docId==='12'?clusters.flatMap(cluster=>cluster.approvals).map(box=>({
+      title:box.heading,
+      comment:box.comments.filter(line=>!/^\.+$/.test(line.trim())).join('\n'),
+      name:box.signature.name,
+      position:position(box.signature),
+      showDate:false,
+      lines:1,
+    })):[];
     const draft=documentSchema.parse({
       type,subject,headerSubtitle,number:key&&key!=='doc8_winnerAnnouncement'?numbers[key]:'',date,procurementSource:{caseId:c.id,docId},
       organization:type==='external'?a.officeTitle:a.municipalityName,department:type==='internal'?docId==='11.1'?(c.inspectorMode==='SINGLE'?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับพัสดุ'):[a.sectionName,a.divisionName].join(' '):type==='external'?[a.divisionName,a.subDepartmentFooter].join('\n'):a.divisionName,
       address:a.externalAddressLine,phone:type==='internal'?(docId==='11.1'?'':a.phoneDisplay):type==='external'?[a.phoneShort,a.fax?`โทรสาร ${a.fax}`:''].filter(Boolean).join('\n'):a.phoneShort,recipient:model.header.recipient??'',
       body,bodyMode:'free',numeralStyle:'thai',firstPageTop:layout&&layout!=='procurement-po'?'25':'15',
       ...(layout?{layout,procurementForm:{headingLines:model.header.lines.slice(1).map(toThaiDigits),metadataColumns:allBlocks.filter(block=>block.kind==='metadata').flatMap(block=>block.columns).map(column=>column.map(toThaiDigits)),signatureDates:signatures.map(s=>toThaiDigits(s.date??''))}}:{}),
-      closing:type==='external'?'ขอแสดงความนับถือ':'',otherShowSignatures:type==='other',
-      // Memo proposers, order/announcement/external authorities, and inspection-sheet inspectors (with position) are automatic; other signers use text boxes.
+      closing:type==='external'?'ขอแสดงความนับถือ':'',footerMotto:docId==='9'?'ภูเก็ตสามัคคี ร่วมใจภักดิ์ รักษ์สถาบันพระมหากษัตริย์':'',otherShowSignatures:type==='other',
+      // Memo proposers, order/announcement/external authorities, TOR officer, PO buyer/vendor, and inspection-sheet inspectors are automatic; Doc 12 includes all 3 review opinions.
       signer:autoSigner?first?.name??'':'',position:autoSigner&&first?position(first):(docId==='11.2'||docId==='11.3'?'ผู้ตรวจรับพัสดุ':''),
-      proposers:inspectionSigners.slice(1).map(s=>({name:s.name,position:position(s)||'กรรมการ'})),opinions:[],
+      proposers:multiSigners.slice(1).map(s=>({name:s.name,position:position(s)||'กรรมการ'})),opinions:doc12Opinions,
       appendixTitle:docId==='11.3'?model.header.lines.join('\n'):'',
     });
     return {docId,copies:model.copies,draft};

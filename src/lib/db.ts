@@ -56,6 +56,7 @@ function decode(row: Row): SavedDraft { return { ...documentSchema.parse(JSON.pa
 export function listDrafts(): SavedDraft[] { return (db().prepare("SELECT d.*, (SELECT COUNT(*) FROM signed_scans s WHERE s.document_id=d.id) signed_scan_count FROM documents d WHERE d.deleted_at IS NULL ORDER BY d.updated_at DESC").all() as Row[]).map(decode); }
 export function readDraft(id: string) { const row = db().prepare("SELECT d.*, (SELECT COUNT(*) FROM signed_scans s WHERE s.document_id=d.id) signed_scan_count FROM documents d WHERE d.id = ? AND d.deleted_at IS NULL").get(id) as Row | undefined; if (!row) throw new Error("ไม่พบร่างหนังสือ หรืออยู่ในถังขยะ"); return decode(row); }
 export const normalizeNumber=(value:string)=>value.normalize('NFKC').replace(/[๐-๙]/g,digit=>String('๐๑๒๓๔๕๖๗๘๙'.indexOf(digit))).replace(/\s+/g,'').replace(/\/0+(?=\d+$)/,'/').toLocaleLowerCase('th-TH');
+const isSampleDomainCase=(inputCase:{projectTitleShort?:string;vendor?:{id?:string}})=>!!inputCase.projectTitleShort?.trim().startsWith('[ตัวอย่าง]')||inputCase.vendor?.id==='sample-vendor';
 // Call inside the same write transaction as the insert/update.
 export function checkNumber(input:Draft,id:string,reservationOwner?:{caseId:string;docId:string}){
   const number=normalizeNumber(input.number),year=Number(input.date.slice(0,4));
@@ -64,8 +65,13 @@ export function checkNumber(input:Draft,id:string,reservationOwner?:{caseId:stri
   const exists=(table:string)=>!!c.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
   const link=exists('procurement_core_drafts')?c.prepare('SELECT case_id,doc_id FROM procurement_core_drafts WHERE draft_id=?').get(id):undefined;
   const owner=reservationOwner??(link?{caseId:String(link.case_id),docId:String(link.doc_id)}:undefined);
-  if(exists('procurement_domain_cases'))for(const row of c.prepare('SELECT data FROM procurement_domain_cases').all()){
-    const record=StoredCaseSchema.parse(JSON.parse(String(row.data))),inputCase=record.caseInput,numbers=formatDocumentNumbers(inputCase.docs,record.agency);
+  const domainCases=exists('procurement_domain_cases')?c.prepare('SELECT data FROM procurement_domain_cases').all().map(row=>StoredCaseSchema.parse(JSON.parse(String(row.data)))):[];
+  const sampleCaseIds=new Set<string>(domainCases.filter(r=>isSampleDomainCase(r.caseInput)).map(r=>r.caseInput.id));
+  const ownerIsRealCase=!!owner&&domainCases.some(r=>r.caseInput.id===owner.caseId&&!isSampleDomainCase(r.caseInput));
+  for(const record of domainCases){
+    const inputCase=record.caseInput;
+    if(ownerIsRealCase&&isSampleDomainCase(inputCase)&&inputCase.id!==owner!.caseId)continue;
+    const numbers=formatDocumentNumbers(inputCase.docs,record.agency);
     const ids=['1','2','3','6.1','7','11.1','12','13'];
     const entries=[...MEMO_TRACK.map((key,index)=>({docId:ids[index],number:numbers[key],date:inputCase.docs[key].date})),{docId:'6.2',number:numbers.doc6_2_inspectorOrder,date:inputCase.docs.doc6_2_inspectorOrder.date},{docId:'9',number:numbers.doc9_contractNotice,date:inputCase.docs.doc9_contractNotice.date},{docId:'10',number:numbers.doc10_purchaseOrder,date:inputCase.docs.doc10_purchaseOrder.date}];
     for(const entry of entries){
@@ -81,6 +87,8 @@ export function checkNumber(input:Draft,id:string,reservationOwner?:{caseId:stri
   if(reservation&&reservation.document_id!==id)throw new Error('เลขที่หนังสือนี้ถูกจองแล้วในปีเดียวกัน');
   for(const row of db().prepare('SELECT id,data FROM documents WHERE id<>?').all(id)){
     const other=JSON.parse(String(row.data));
+    const otherCaseId=other.procurementSource?.caseId?String(other.procurementSource.caseId):'';
+    if(ownerIsRealCase&&otherCaseId&&sampleCaseIds.has(otherCaseId)&&otherCaseId!==owner!.caseId)continue;
     const fiscalOrder=input.layout==='procurement-po'||input.procurementSource?.docId==='10'||other.layout==='procurement-po'||other.procurementSource?.docId==='10';
     if((fiscalOrder||Number(String(other.date).slice(0,4))===year)&&normalizeNumber(other.number||'')===number)throw new Error('เลขที่หนังสือซ้ำในปีเดียวกัน (รวมเอกสารในถังขยะ) กรุณาตรวจทะเบียน');
   }
@@ -139,7 +147,9 @@ export function reserveDraftNumber(id:string,version:number,prefix:string,start:
   let serial=start;
   const numbers=db().prepare('SELECT number FROM document_numbers WHERE year=?').all(year).map(row=>String(row.number));
   if(db().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='procurement_domain_cases'").get())for(const row of db().prepare('SELECT data FROM procurement_domain_cases').all()){
-    const record=StoredCaseSchema.parse(JSON.parse(String(row.data))),entries=formatDocumentNumbers(record.caseInput.docs,record.agency);
+    const record=StoredCaseSchema.parse(JSON.parse(String(row.data)));
+    if(isSampleDomainCase(record.caseInput))continue;
+    const entries=formatDocumentNumbers(record.caseInput.docs,record.agency);
     for(const key of MEMO_TRACK)if(record.caseInput.docs[key].date?.startsWith(String(year)))numbers.push(normalizeNumber(entries[key]));
     if(record.caseInput.docs.doc9_contractNotice.date?.startsWith(String(year)))numbers.push(normalizeNumber(entries.doc9_contractNotice));
     if(record.caseInput.docs.doc6_2_inspectorOrder.date?.startsWith(String(year)))numbers.push(normalizeNumber(entries.doc6_2_inspectorOrder));

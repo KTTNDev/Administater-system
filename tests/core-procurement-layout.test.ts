@@ -61,8 +61,11 @@ it('renders all fifteen Thai-numbered Core drafts and preserves the four physica
       expect(await page.locator('#pages .page').count()).toBe(1);
       const columns=await page.locator('#pages .procurement-metadata>div').evaluateAll(cols=>cols.map(el=>el.getBoundingClientRect().x));
       expect(columns[1]).toBeGreaterThan(columns[0]+200);
-      const signers=await page.locator('#pages .procurement-signatures .signature').evaluateAll(cols=>cols.map(el=>({x:el.getBoundingClientRect().x,y:el.getBoundingClientRect().y})));
-      expect(signers).toHaveLength(0);
+      const signers=await page.locator('#pages .procurement-signatures .signature').evaluateAll(cols=>cols.map(el=>({x:el.getBoundingClientRect().x,y:el.getBoundingClientRect().y,text:el.textContent?.trim()||''})));
+      expect(signers).toHaveLength(2);
+      expect(signers[1].x).toBeGreaterThan(signers[0].x+150);
+      expect(signers[0].text).toContain('ผู้สั่งซื้อ');
+      expect(signers[1].text).toContain('ผู้รับใบสั่งซื้อ');
       expect(await page.locator('#pages td[colspan="3"][rowspan="3"]').count()).toBe(1);
       const garuda=await page.locator('#pages .garuda').boundingBox();expect(garuda!.y).toBeCloseTo(15*96/25.4,0);
       const measured=await page.evaluate(extractWordPages),table=measured.flatMap(p=>p.blocks).find(b=>b.kind==='table');
@@ -286,8 +289,10 @@ it('uses zero before/after spacing between body lines inside sections and before
   const m62=await p62.locator('#pages .page:first-child .content > p').evaluateAll(nodes=>nodes.map(el=>{
     const css=getComputedStyle(el);return {cls:el.className,text:el.textContent?.trim()||'',mt:parseFloat(css.marginTop)||0,mb:parseFloat(css.marginBottom)||0};
   }));
-  const h62=m62.find(m=>m.cls.includes('body-subheading'))!;
-  expect(h62.mt).toBeCloseTo(8,0);expect(h62.mb).toBe(0);
+  const duty=m62.find(m=>m.text.startsWith('อำนาจและหน้าที่'))!;
+  expect(duty).toBeDefined();
+  expect(duty.cls).toContain('body-text');
+  expect(duty.text).toContain('ทำการตรวจรับพัสดุ');
   for(const b of m62.filter(m=>m.cls.includes('body-text'))){expect(b.mt,b.text).toBe(0);expect(b.mb,b.text).toBe(0);}
   await p62.close();
 },180000);
@@ -557,4 +562,145 @@ it('lets users drag and corner-resize appendix photos freely and exports free-po
   expect(xml).toContain('<w:drawing>');
   expect(savedText).toContain('ภาพลากอิสระ');
   expect(savedText).toContain('ผู้ตรวจรับพัสดุ');
+},180000);
+
+it('renders role-only proposer on Doc 1 and 10-clause ว 159 TOR hierarchy with 1cm/2cm indents and TOR officer signature on Doc 4.1',async()=>{
+  const baseInput=templateFixture();
+  const mapped=mapProcurementCaseToDrafts(baseInput,defaultAgency);
+  const doc1=mapped.find(d=>d.docId==='1')!.draft;
+  expect(doc1.position).toBe('เจ้าหน้าที่พัสดุ');
+  expect(doc1.position).not.toContain(baseInput.signatories.procurementOfficer.position);
+
+  const doc41=mapped.find(d=>d.docId==='4.1')!.draft;
+  expect(doc41.signer).toBe(baseInput.signatories.procurementOfficer.fullName);
+  expect(doc41.position).toContain(baseInput.signatories.procurementOfficer.position);
+  expect(doc41.position).toContain('เจ้าหน้าที่กำหนดคุณลักษณะเฉพาะฯ');
+  const {page,count,text}=await preview(doc41,'doc041-v159');
+  expect(count).toBeGreaterThanOrEqual(2);
+  await page.locator('#pages .page').nth(count-1).screenshot({path:`${output}/doc041-v159-page2.png`});
+  const headings=['๑. ความเป็นมา','๒. วัตถุประสงค์','๓. คุณสมบัติของผู้ยื่นราคา','๔. รายละเอียดคุณลักษณะเฉพาะและเงื่อนไขของงาน','๕. กำหนดเวลาส่งมอบพัสดุ','๖. หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ','๗. วงเงินงบประมาณ/วงเงินที่ได้รับจัดสรร','๘. งวดงานและการจ่ายเงิน','๙. อัตราค่าปรับ','๑๐. การกำหนดระยะเวลารับประกันความชำรุดบกพร่อง (ถ้ามี)'];
+  let prevIdx=-1;
+  for(const h of headings){const idx=text.indexOf(h);expect(idx,h).toBeGreaterThan(prevIdx);prevIdx=idx;}
+  expect(text).toContain('๑ งวดงาน');
+  const geom=await page.evaluate(()=>{
+    const content=document.querySelector('#pages .page .content')!;
+    const left=content.getBoundingClientRect().left;
+    const pxToMm=(px:number)=>px*25.4/96;
+    const h4=Array.from(content.querySelectorAll('.body-subheading')).find(el=>el.textContent?.startsWith('๔. '))!;
+    const h41=Array.from(content.querySelectorAll('.tor-sub-heading')).find(el=>el.textContent?.startsWith('๔.๑ '))!;
+    const h42=Array.from(content.querySelectorAll('.tor-sub-heading')).find(el=>el.textContent?.startsWith('๔.๒ '))!;
+    const tbl=content.querySelector('.procurement-tor-items')!;
+    const item421=Array.from(content.querySelectorAll('.tor-sub-item')).find(el=>el.textContent?.startsWith('๔.๒.๑ '))!;
+    const p1=Array.from(content.querySelectorAll('p.body-text')).find(el=>el.textContent?.includes('ด้วย '))!;
+    return {
+      h4Mm:pxToMm(h4.getBoundingClientRect().left-left),
+      h41Mm:pxToMm(h41.getBoundingClientRect().left-left),
+      h42Mm:pxToMm(h42.getBoundingClientRect().left-left),
+      tblMm:pxToMm(tbl.getBoundingClientRect().left-left),
+      item421Mm:pxToMm(item421.getBoundingClientRect().left-left),
+      p1IndentMm:pxToMm(parseFloat(getComputedStyle(p1).textIndent)),
+    };
+  });
+  expect(geom.h4Mm).toBeLessThan(1);
+  expect(Math.abs(geom.h41Mm-10)).toBeLessThan(1.5);
+  expect(Math.abs(geom.h42Mm-10)).toBeLessThan(1.5);
+  expect(Math.abs(geom.tblMm-20)).toBeLessThan(1.5);
+  expect(Math.abs(geom.item421Mm-20)).toBeLessThan(1.5);
+  expect(Math.abs(geom.p1IndentMm-10)).toBeLessThan(1.5);
+  const sigText=await page.locator('#pages .tor-signatures .spec-signature').innerText();
+  expect(sigText).toContain('(ลงชื่อ)');
+  expect(sigText).toContain('เจ้าหน้าที่กำหนดคุณลักษณะเฉพาะฯ');
+  expect(sigText).toContain(baseInput.signatories.procurementOfficer.fullName);
+  expect(sigText).toContain(baseInput.signatories.procurementOfficer.position);
+  await page.close();
+
+  const customInput={...baseInput,installmentCount:2,warrantyText:'1 ปี'};
+  const custom41=mapProcurementCaseToDrafts(customInput,defaultAgency).find(d=>d.docId==='4.1')!.draft;
+  expect(custom41.body).toContain('๒ งวดงาน');
+  expect(custom41.body).toContain('๑ ปี');
+  const word=await renderWord(doc41),zip=await JSZip.loadAsync(word),xml=await zip.file('word/document.xml')!.async('string');
+  const savedText=Array.from(xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g),m=>m[1]).join('').replaceAll('\u2060','');
+  expect(savedText).toContain('๑๐. การกำหนดระยะเวลารับประกันความชำรุดบกพร่อง (ถ้ามี)');
+  expect(savedText).toContain('เจ้าหน้าที่กำหนดคุณลักษณะเฉพาะฯ');
+  expect(savedText).toContain(baseInput.signatories.procurementOfficer.position);
+},180000);
+
+it('applies Round 2 polish across Docs 6.2, 7, 8, 9, 10, 12 and 14pt continuation notes',async()=>{
+  const input=templateFixture(22890);
+  const mapped=mapProcurementCaseToDrafts(input,defaultAgency);
+  const byId=(id:string)=>mapped.find(d=>d.docId===id)!.draft;
+
+  // Doc 6.2 & Doc 8: .issued centered over .signature + inline อำนาจและหน้าที่ on Doc 6.2
+  for(const id of ['6.2','8'] as const){
+    const {page,text}=await preview(byId(id),`r2-doc-${id}`);
+    const align=await page.evaluate(()=>{
+      const issued=document.querySelector('#pages .issued')!.getBoundingClientRect();
+      const sig=document.querySelector('#pages .signature')!.getBoundingClientRect();
+      return Math.abs((issued.left+issued.width/2)-(sig.left+sig.width/2));
+    });
+    expect(align,id).toBeLessThan(3);
+    if(id==='6.2')expect(text).toContain('อำนาจและหน้าที่ ทำการตรวจรับพัสดุ');
+    await page.close();
+  }
+
+  // Doc 7: new intro above table & generic consideration wording without vendor name
+  const doc7=byId('7');
+  expect(doc7.body).toContain('ขอรายงานผลการพิจารณาค่าซื้อ');
+  expect(doc7.body).toContain('เกณฑ์การพิจารณาผลการยื่นข้อเสนอครั้งนี้ จะพิจารณาตัดสินโดยใช้หลักเกณฑ์ราคา');
+  const {page:p7}=await preview(doc7,'r2-doc-7');
+  await p7.close();
+
+  // Doc 9: 20pt bold italic Phuket slogan footer in preview and Word
+  const doc9=byId('9');
+  expect(doc9.footerMotto).toBe('ภูเก็ตสามัคคี ร่วมใจภักดิ์ รักษ์สถาบันพระมหากษัตริย์');
+  const {page:p9,count:c9}=await preview(doc9,'r2-doc-9');
+  expect(c9).toBe(1);
+  const mottoCss=await p9.locator('#pages .external-footer-motto').evaluate(el=>{
+    const css=getComputedStyle(el);
+    return {text:el.textContent?.trim(),pt:parseFloat(css.fontSize)*0.75,weight:Number(css.fontWeight),style:css.fontStyle,align:css.textAlign};
+  });
+  expect(mottoCss.text).toBe('ภูเก็ตสามัคคี ร่วมใจภักดิ์ รักษ์สถาบันพระมหากษัตริย์');
+  expect(Math.round(mottoCss.pt)).toBe(20);
+  expect(mottoCss.weight).toBeGreaterThanOrEqual(700);
+  expect(mottoCss.style).toBe('italic');
+  expect(mottoCss.align).toBe('center');
+  await p9.close();
+  const word9=await renderWord(doc9),zip9=await JSZip.loadAsync(word9),xml9=await zip9.file('word/document.xml')!.async('string');
+  expect(xml9).toContain('ภูเก็ตสามัคคี');
+  expect(xml9).toContain('<w:i/>');
+  expect(xml9).toContain('w:val="40"');
+
+  // Doc 10: 2 signers (ผู้สั่งซื้อ + ผู้รับใบสั่งซื้อ) with matching PO header date
+  const doc10=byId('10');
+  const {page:p10,count:c10}=await preview(doc10,'r2-doc-10');
+  if(c10>1)await p10.locator('#pages .page').nth(1).screenshot({path:`${output}/r2-doc-10-page2.png`});
+  const poSigs=await p10.locator('#pages .po-signatures .signature').allInnerTexts();
+  expect(poSigs).toHaveLength(2);
+  expect(poSigs[0]).toContain('ผู้สั่งซื้อ');
+  expect(poSigs[0]).toContain(input.signatories.divisionDirector.fullName);
+  expect(poSigs[0]).toContain('วันที่ ๑๙ เดือนพฤศจิกายน พ.ศ. ๒๕๖๙');
+  expect(poSigs[1]).toContain('ผู้รับใบสั่งซื้อ');
+  expect(poSigs[1]).toContain(input.vendor.contactPersonName);
+  expect(poSigs[1]).toContain('วันที่ ๑๙ เดือนพฤศจิกายน พ.ศ. ๒๕๖๙');
+  await p10.close();
+
+  // Doc 12: all 4 signers (proposer + 3 approval opinions) + 14pt continuation note on page 2
+  const doc12=byId('12');
+  expect(doc12.opinions).toHaveLength(3);
+  const {page:p12,count:c12}=await preview(doc12,'r2-doc-12');
+  if(c12>1)await p12.locator('#pages .page').nth(1).screenshot({path:`${output}/r2-doc-12-page2.png`});
+  expect(await p12.locator('#pages .signature').count()).toBe(1);
+  expect(await p12.locator('#pages .procurement-opinion').count()).toBe(3);
+  const opinionText=await p12.locator('#pages').innerText();
+  expect(opinionText).toContain(input.signatories.procurementOfficer.fullName);
+  expect(opinionText).toContain(input.signatories.divisionDirector.fullName);
+  expect(opinionText).toContain(input.signatories.municipalClerk.fullName);
+  expect(opinionText).toContain(input.signatories.mayor.fullName);
+  if(c12>1){
+    const noteInfo=await p12.locator('#pages .continuation-note').first().evaluate(el=>({pt:parseFloat(getComputedStyle(el).fontSize)*0.75,paras:el.querySelectorAll('p').length,text:el.textContent?.trim()||''}));
+    expect(Math.round(noteInfo.pt)).toBe(14);
+    expect(noteInfo.paras).toBe(1);
+    expect(noteInfo.text).toContain('เรื่อง '+doc12.subject.replace(/\d/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)])+' ที่ ');
+  }
+  await p12.close();
 },180000);

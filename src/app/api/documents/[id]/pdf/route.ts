@@ -1,3 +1,4 @@
+import {archiveDocumentBytes} from '@/lib/handover-archive/archive-service';
 import {saveLocalDocumentOutput} from '@/lib/local-dossiers';
 import {MissingOverlayPageError} from "@/lib/export-validation";
 import { NextResponse } from "next/server";
@@ -14,6 +15,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   try {
     const data=await renderPdf(draft);
     let storageWarning='';try{saveLocalDocumentOutput(draft,'pdf',data);}catch{storageWarning='local-copy-incomplete';}
+    try{archiveDocumentBytes(draft,'pdf',data);}catch{storageWarning=storageWarning||'handover-copy-incomplete';}
     return new NextResponse(new Uint8Array(data),{headers:{"X-Sarabun-Storage-Warning":storageWarning,"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="draft-${id}.pdf"; filename*=UTF-8''${encodeURIComponent(draft.subject+".pdf")}`,"Cache-Control":"private, no-store"}});
   }catch(error){if(error instanceof MissingOverlayPageError)return NextResponse.json({error:error.message},{status:422});return NextResponse.json({error:"สร้าง PDF ไม่สำเร็จ ตรวจการติดตั้ง Chromium และความยาวส่วนหัวของหนังสือ"},{status:500});}
 }

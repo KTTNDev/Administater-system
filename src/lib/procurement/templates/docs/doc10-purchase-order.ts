@@ -14,14 +14,14 @@ export function buildDoc10(x: TemplateContext) {
     ]}, items,
     p(`๑. กำหนดส่งมอบภายใน ${c.deliveryDays} วัน นับถัดจากวันลงนามใน${t.orderDocTitle}`, 'เงื่อนไข'),
     p(`๒. สถานที่ส่งมอบ ${a.deliveryAddressFull}`),
-    p(`๓. ระยะเวลารับประกัน ${c.warrantyYears === null ? '-' : c.warrantyYears} ปี`),
+    p(`๓. ระยะเวลารับประกัน ${c.warrantyText?.trim() ? c.warrantyText.trim() : c.warrantyYears === null ? '- ปี' : `${c.warrantyYears} ปี`}`),
     p(`๔. สงวนสิทธิ์ค่าปรับกรณีส่งมอบเกินกำหนด โดยคิดค่าปรับเป็นรายวันในอัตราร้อยละ ${c.penaltyRatePercent.toFixed(2)} ของราคา${t.penaltyBaseLabel}ที่ยังไม่ได้รับมอบ แต่จะต้องไม่ต่ำกว่าวันละ ${moneyText(c.minPenaltyPerDay)} บาท`),
     p(`๕. ส่วนราชการสงวนสิทธิ์ที่จะไม่รับมอบถ้าปรากฏว่า${t.deliveryObject}นั้นมีลักษณะไม่ตรงตามรายการที่ระบุไว้ใน${t.orderDocTitle}`),
     p('๖. การประเมินผลการปฏิบัติงานของผู้ประกอบการ หน่วยงานของรัฐสามารถนำผลการปฏิบัติงานแล้วเสร็จตามสัญญาหรือข้อตกลงไปใช้ในการประเมินผลการปฏิบัติงานของผู้ประกอบการตามหลักเกณฑ์ที่กำหนด'),
     p(`๑. การติดอากรแสตมป์ให้เป็นไปตามประมวลกฎหมายรัษฎากร หากต้องการให้${t.orderDocTitle}มีผลตามกฎหมาย`, 'หมายเหตุ'),
     p(`๒. ${t.orderDocTitle} เลขที่ ${x.poNumber} ${t.actionVerb}${x.title} จำนวน ${x.count} รายการ โดยวิธีเฉพาะเจาะจง`),
     cluster([], [
-      signatory(c.signatories.divisionDirector, t.buyerLabel, c.docs.doc10_purchaseOrder.date),
+      signatory(c.signatories.divisionDirector, t.orderingPartyLabel, c.docs.doc10_purchaseOrder.date),
       signatory({id: c.vendor.id, fullName: c.vendor.contactPersonName, position: c.vendor.contactPersonTitle}, `ผู้รับ${t.orderDocTitle}`, c.docs.doc10_purchaseOrder.date),
     ]),
   ]);

@@ -31,7 +31,7 @@ function garuda(ctx: WordContext, heightCm: number) {
 }
 export function memoHeader(ctx: WordContext): FileChild[] {
   const h = ctx.model.header;
-  const labelField = (label: string, value: string) => new Paragraph({keepNext: true, keepLines: true, spacing: {after: 0, line: 410, lineRule: LineRuleType.EXACT}, border: {bottom: {style: BorderStyle.DOTTED, size: 3, color: '000000'}}, children: [new TextRun({text: label + ' ', bold: true, boldComplexScript: true, italics: false, italicsComplexScript: false, size: 36, sizeComplexScript: 36}), new TextRun({text: value})]});
+  const labelField = (label: string, value: string) => new Paragraph({keepNext: true, keepLines: true, spacing: {after: 0, line: 420, lineRule: LineRuleType.EXACT}, border: {bottom: {style: BorderStyle.DOTTED, size: 3, space: 2, color: '000000'}}, children: [new TextRun({text: label + ' ', bold: true, boldComplexScript: true, italics: false, italicsComplexScript: false, size: 36, sizeComplexScript: 36}), new TextRun({text: value})]});
   return [
     grid([[garuda(ctx, 1.5)], [wordParagraph('บันทึกข้อความ', ctx, {alignment: AlignmentType.CENTER, keepNext: true, spacing: {after: 0}}, true, 29)]], [cmToTwip(1.5), ctx.width - cmToTwip(1.5)], false, false, VerticalAlignTable.BOTTOM),
     labelField('ส่วนราชการ', h.department ?? ''),

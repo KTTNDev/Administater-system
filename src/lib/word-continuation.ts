@@ -21,21 +21,22 @@ export function continuationCue(text:string){
  const segments=[...new Intl.Segmenter('th',{granularity:'word'}).segment(clean)].filter(s=>s.isWordLike),last=segments[Math.min(2,segments.length-1)];
  return Array.from(clean.slice(0,last?last.index+last.segment.length:24).trim()).slice(0,40).join('')+'...';
 }
-const props='<w:rPr><w:rFonts w:ascii="TH SarabunIT๙" w:hAnsi="TH SarabunIT๙" w:cs="TH SarabunIT๙"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>';
+const props='<w:rPr><w:rFonts w:ascii="TH SarabunIT๙" w:hAnsi="TH SarabunIT๙" w:cs="TH SarabunIT๙"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr>';
 const run=(text:string)=>'<w:r>'+props+'<w:t xml:space="preserve">'+escape(text)+'</w:t></w:r>';
 const instruction=(s:string)=>'<w:r>'+props+'<w:instrText xml:space="preserve">'+escape(s)+'</w:instrText></w:r>';
 const begin='<w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r>',end='<w:r><w:fldChar w:fldCharType="end"/></w:r>';
 const field=(name:string)=>begin+instruction(name+' \\* CHARFORMAT ')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+run('1')+end;
-const conditional=(comparison:string,text:string,size=24)=>(begin+instruction(' IF ')+field('PAGE')+instruction(' '+comparison+' "'+text.replaceAll('"','“').replace(/\d/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)])+'" "" \\* CHARFORMAT ')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+run('')+end).replaceAll('w:val="24"','w:val="'+size+'"');
+const conditional=(comparison:string,text:string,size=28)=>(begin+instruction(' IF ')+field('PAGE')+instruction(' '+comparison+' "'+text.replaceAll('"','“').replace(/\d/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)])+'" "" \\* CHARFORMAT ')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+run('')+end).replaceAll('w:val="28"','w:val="'+size+'"');
 /** Only managed footers/relationships and section footer space change; source artwork stays intact. */
 export async function continuationFooter(bytes:Buffer,info:ContinuationInfo,pageTexts:string[],pageNumbers=true,excludedSections:number[]=[]){
  const zip=await JSZip.loadAsync(bytes),cues=pageTexts.slice(1).map(continuationCue),label=info.memo?'ใบต่อบันทึกข้อความ':'ใบต่อเอกสาร';
  const subject=label+' เรื่อง '+(info.subject||'[เรื่อง]'),reference=info.memo?'ที่ '+(info.number||'[เลขหนังสือ]')+' ลงวันที่ '+(info.date||'[วันที่]'):[info.number&&'ที่ '+info.number,info.date&&'ลงวันที่ '+info.date].filter(Boolean).join(' ');
- const paragraph=(content:string,cue=false)=>'<w:p><w:pPr><w:jc w:val="'+(cue?'right':'left')+'"/><w:spacing w:before="0" w:after="'+(cue?'120':'0')+'" w:line="'+(cue?'360':'260')+'" w:lineRule="exact"/></w:pPr>'+content+'</w:p>';
- const footer='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><!--'+marker+'-->'+paragraph(cues.map((cue,i)=>conditional('= '+(i+1),cue,32)).join(''),true)+paragraph(conditional('> 1',subject))+paragraph(conditional('> 1',reference))+'</w:ftr>';
+ const note=[subject,reference].filter(Boolean).join(' ');
+ const paragraph=(content:string,cue=false)=>'<w:p><w:pPr><w:jc w:val="'+(cue?'right':'left')+'"/><w:spacing w:before="0" w:after="'+(cue?'120':'0')+'" w:line="'+(cue?'360':'300')+'" w:lineRule="exact"/></w:pPr>'+content+'</w:p>';
+ const footer='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><!--'+marker+'-->'+paragraph(cues.map((cue,i)=>conditional('= '+(i+1),cue,32)).join(''),true)+paragraph(conditional('> 1',note))+'</w:ftr>';
  put(zip,'word/footer1.xml',footer);
  const headerName='header-sarabun-continuation.xml',headerId='rIdSarabunContinuationHeader';
- const dynamicPageNumber=(begin+instruction(' IF ')+field('PAGE')+instruction(' > 1 "- ')+field('PAGE')+instruction(' -" "" \\* CHARFORMAT ')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+run('')+end).replaceAll('w:val="24"','w:val="32"');
+ const dynamicPageNumber=(begin+instruction(' IF ')+field('PAGE')+instruction(' > 1 "- ')+field('PAGE')+instruction(' -" "" \\* CHARFORMAT ')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+run('')+end).replaceAll('w:val="28"','w:val="32"');
  const pageNumber=pageTexts.length?pageTexts.slice(1).map((_,i)=>conditional('= '+(i+2),'- '+String(i+2).replace(/\d/g,c=>'๐๑๒๓๔๕๖๗๘๙'[Number(c)])+' -',32)).join(''):dynamicPageNumber;
  if(pageNumbers)put(zip,'word/'+headerName,'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0" w:line="360" w:lineRule="exact"/></w:pPr>'+pageNumber+'</w:p></w:hdr>');
  const blankId='rIdSarabunEmptyContinuation',blankName='footer-sarabun-empty.xml';if(excludedSections.length)put(zip,'word/'+blankName,'<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p/></w:ftr>');
@@ -47,7 +48,7 @@ export async function continuationFooter(bytes:Buffer,info:ContinuationInfo,page
  let types=await zip.file('[Content_Types].xml')!.async('string');if(!types.includes('PartName="/word/footer1.xml"')){types=types.replace('</Types>','<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');put(zip,'[Content_Types].xml',types);}
  if(pageNumbers&&!types.includes('PartName="/word/'+headerName+'"'))types=types.replace('</Types>','<Override PartName="/word/'+headerName+'" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>');put(zip,'[Content_Types].xml',types);
  if(excludedSections.length&&!types.includes('PartName="/word/'+blankName+'"'))put(zip,'[Content_Types].xml',types.replace('</Types>','<Override PartName="/word/'+blankName+'" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>'));
- const lines=Math.ceil(subject.length/75)+Math.ceil(reference.length/75),bottom=String(300+360+120+260*lines+300);
+ const lines=Math.max(1,Math.ceil(note.length/75)),bottom=String(300+360+120+300*lines+300);
  let sectionIndex=0,document=await zip.file('word/document.xml')!.async('string');document=document.replace(/<w:sectPr\b[^>]*>[\s\S]*?<\/w:sectPr>/g,section=>{
   const index=sectionIndex++;if(excludedSections.includes(index))return section.replace(/<w:footerReference\b[^>]*\/>/g,'').replace(/(<w:sectPr\b[^>]*>)/,'$1'+['default','first','even'].map(type=>'<w:footerReference w:type="'+type+'" r:id="'+blankId+'"/>').join(''));
   if(pageNumbers){const first=index===0;if(/<w:pgNumType\b/.test(section))section=section.replace(/<w:pgNumType\b[^>]*\/>/,tag=>tag.replace(/\s+w:start="[^"]*"/g,'').replace('/>',first?' w:start="1"/>':'/>'));else if(first)section=section.replace(/(<w:cols\b|<w:docGrid\b|<\/w:sectPr>)/,'<w:pgNumType w:start="1"/>$1');}
