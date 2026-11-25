@@ -34,6 +34,9 @@ describe('Phase 2: 1,520 baht manual binder', () => {
     expect(visibleText(request)).toContain('กล่องพลาสติกมีฝาปิด ขนาด ๑๒๐ ลิตร');
     for (const id of ['6.1', '6.2', '11.1', '11.2', '11.3']) expect(visibleText(findDoc(models, id))).toContain('นางสาวศิริวรรณ ไทยมิตรชอบ');
     expect(visibleText(findDoc(models, '4.1'))).not.toContain('เจ้าพนักงานธุรการปฏิบัติงานสังคมสงเคราะห์');
+    const doc111Text = visibleText(findDoc(models, '11.1'));
+    expect(doc111Text).toContain('จึงได้ลงชื่อตามใบตรวจรับ ลงวันที่ ๒๔ พฤศจิกายน ๒๕๖๙ ไว้เป็นหลักฐาน');
+    expect(doc111Text).not.toContain('เลขคุมตรวจรับ');
     for (const id of ['2', '13']) {
       const text = visibleText(findDoc(models, id));
       expect(text).toContain('นายปลัด ทดสอบ');

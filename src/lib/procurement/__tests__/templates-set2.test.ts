@@ -7,6 +7,13 @@ it('builds seven manual documents including Doc 13 in the 22,890 baht system wor
   expect(models.map(d => d.docId)).toEqual(['1', '2', '3', '4.1', '11.1', '11.3', '13']);
   expect(models).toMatchSnapshot();
   expect(visibleText(findDoc(models, '11.1'))).toContain('๒๓ พฤศจิกายน ๒๕๖๙');
+  expect(visibleText(findDoc(models, '11.1'))).toContain('จึงได้ลงชื่อตามเลขคุมตรวจรับ CNTR........ ลงวันที่ ๒๔ พฤศจิกายน ๒๕๖๙ ไว้เป็นหลักฐาน');
+  const withCtrl = templateFixture(22890);
+  withCtrl.docs.inspectionControlNo = 'CNTR-00558/70';
+  expect(visibleText(findDoc(modelsFor(withCtrl), '11.1'))).toContain('จึงได้ลงชื่อตามเลขคุมตรวจรับ CNTR-00558/70 ลงวันที่ ๒๔ พฤศจิกายน ๒๕๖๙ ไว้เป็นหลักฐาน');
+  const numericCtrl = templateFixture(22890);
+  numericCtrl.docs.inspectionControlNo = '-00558/70';
+  expect(visibleText(findDoc(modelsFor(numericCtrl), '11.1'))).toContain('จึงได้ลงชื่อตามเลขคุมตรวจรับ CNTR-00558/70 ลงวันที่ ๒๔ พฤศจิกายน ๒๕๖๙ ไว้เป็นหลักฐาน');
   for (const id of ['11.1', '11.3']) expect(visibleText(findDoc(models, id))).toContain('นางสาวศิริวรรณ ไทยมิตรชอบ');
 });
 it('automatically attaches all seven items with a repeating four-column table when manual drafting is selected', () => {

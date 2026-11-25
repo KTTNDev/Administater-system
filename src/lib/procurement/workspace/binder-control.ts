@@ -133,7 +133,7 @@ export function getBinderDocControl(
 
   if(docId==='11.2'||docId==='11.3'){
     const dateText=formatThaiShortDate(docs.doc11_1_inspectionReport.date);
-    const ctrl=docId==='11.2'?docs.inspectionControlNo?.trim()||null:null;
+    const ctrl=docId==='11.2'&&source!=='GENERATED'?docs.inspectionControlNo?.trim()||null:null;
     return {
       hasOwnNumber:false,
       required:false,
