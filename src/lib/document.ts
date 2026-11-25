@@ -8,6 +8,7 @@ export const documentSchema = z.object({
   subject: z.string().trim().min(1, "กรุณาระบุเรื่อง").max(300),
   headerSubtitle: z.string().max(1000).default(""),
   procurementSource:z.object({caseId:z.string().min(1).max(200),docId:z.enum(CORE_DOC_IDS)}).optional(),
+  caseFolderSource:z.object({folderId:z.string().min(1).max(200),itemId:z.string().min(1).max(200),folderName:z.string().max(300).optional(),docLabel:z.string().max(200).optional()}).optional(),
   number: text, date: z.string().refine(v => {
     if (v === "") return true; // Keep older in-progress drafts readable; review still requires a valid date.
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;

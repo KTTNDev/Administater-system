@@ -5,10 +5,10 @@ import {ListTodo,Home,Package,BarChart3,BookOpen,BriefcaseBusiness,CalendarDays,
 
 import type {WorkspaceView} from '@/lib/workspace-location';
 export type {WorkspaceView} from '@/lib/workspace-location';
-const shortLabels:Partial<Record<WorkspaceView,string>>={register:"ทะเบียนรับ–ส่ง",dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
+const shortLabels:Partial<Record<WorkspaceView,string>>={cases:"แฟ้มงานสารบรรณ",register:"ทะเบียนรับ–ส่ง",dashboard:"เอกสารของฉัน",templates:"แบบหนังสือ",reports:"ภาพรวม",office:"งานธุรการ",laws:"คลังกฎหมาย",guide:"คู่มือใช้งาน",settings:"ตั้งค่า"};
 const groups=[
  {label:"เริ่มต้น",items:[{view:"home",label:"โต๊ะทำงานวันนี้",icon:Home},{view:"tasks",label:"งานของฉัน",icon:ListTodo},{view:"projects",label:"โครงการประจำปี",icon:FolderOpen}]},
- {label:"เอกสาร",items:[{view:"dashboard",label:"แดชบอร์ดเอกสาร",icon:FolderOpen},{view:"templates",label:"แบบหนังสือราชการ",icon:Files},{view:"reports",label:"ภาพรวมและรายงาน",icon:BarChart3}]},
+ {label:"เอกสาร",items:[{view:"cases",label:"แฟ้มงานสารบรรณ",icon:FolderOpen},{view:"dashboard",label:"แดชบอร์ดเอกสาร",icon:FolderOpen},{view:"templates",label:"แบบหนังสือราชการ",icon:Files},{view:"reports",label:"ภาพรวมและรายงาน",icon:BarChart3}]},
  {label:"งานประจำ",items:[{view:"procurement",label:"จัดซื้อจัดจ้าง",icon:BriefcaseBusiness},{view:"inventory",label:"พัสดุและครุภัณฑ์",icon:Package},{view:"register",label:"ทะเบียนรับ–ส่งหนังสือ",icon:BookOpen},{view:"office",label:"งานธุรการเทศบาล",icon:BriefcaseBusiness},{view:"budget",label:"โอนงบประมาณ",icon:Wallet},{view:"calendar",label:"ปฏิทินงาน",icon:CalendarDays},{view:"bookings",label:"จองห้องประชุม",icon:DoorOpen}]},
  {label:"คลังและการตั้งค่า",items:[{view:"laws",label:"คลังกฎหมายและระเบียบ",icon:BookOpen},{view:"guide",label:"คู่มือและแหล่งอ้างอิง",icon:HelpCircle},{view:"settings",label:"ตั้งค่าหน่วยงานและ Drive",icon:Settings2}]},
 ] as const;

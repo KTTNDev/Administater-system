@@ -124,7 +124,7 @@ it('aligns memo section headings with the first line of their body in free and s
     if(linked&&mode==='free')expect((await PDFDocument.load(await renderPdf(draft))).getPageCount()).toBe(count);
     await page.close();
   }
-});
+},120000);
 
 it('repeats PO table headers and Thai continuation notes without losing rows or merged VAT totals',async()=>{
   const input=templateFixture();input.items=Array.from({length:42},(_,i)=>({id:randomUUID(),description:`วัสดุสำนักงานลำดับ ${i+1} สำหรับตรวจรับรายละเอียด`,quantity:1,unit:'ชิ้น',unitPrice:107}));

@@ -3,7 +3,7 @@ import {MissingOverlayPageError} from "./export-validation";
 import 'server-only';
 import fs from 'node:fs';
 import path from 'node:path';
-import { chromium, type Page } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import { Document, Packer, Paragraph, TextRun, Tab, Table, TableRow, TableCell, ImageRun, AlignmentType, BorderStyle, WidthType, TableLayoutType, SectionType, LineRuleType, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType, type IParagraphOptions, type ISectionOptions } from 'docx';
 import { ShapeRun } from 'docx/shapes';
 import pdfjsPackage from 'pdfjs-dist/package.json';
@@ -20,13 +20,33 @@ const font = { ascii:'TH SarabunIT๙',hAnsi:'TH SarabunIT๙',cs:'TH SarabunIT�
 const twip = (px: number) => Math.round(px * 15);
 const emu = (px: number) => Math.round(px * 9525);
 const decode = (source: string) => Buffer.from(source.slice(source.indexOf(',')+1),'base64');
-function textRuns(runs: WordRun[]) {
+function splitHighlightText(text: string, highlightBlanks: boolean): Array<{text: string; highlight: boolean}> {
+  if (!highlightBlanks || !text.includes('[')) return [{text, highlight: false}];
+  const parts: Array<{text: string; highlight: boolean}> = [];
+  const regex = /(\[[^\[\]\r\n]{1,200}\])/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push({text: text.slice(last, m.index), highlight: false});
+    parts.push({text: m[1], highlight: true});
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({text: text.slice(last), highlight: false});
+  return parts.length ? parts : [{text, highlight: false}];
+}
+
+function textRuns(runs: WordRun[], highlightBlanks = false) {
   // Word owns paragraph wrapping. Invisible word joiners preserve explicit compound-word groups.
-  return runs.flatMap((run,index) => run.softBreak?[new TextRun({break:1})] : (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).map(text => new TextRun({
-    ...(text==='\t'?{children:[new Tab()]}:{text}),
+  return runs.flatMap((run,index) => run.softBreak?[new TextRun({break:1})] : (run.keepGroup ? wordJoin(run.text)+(runs[index+1]?.keepGroup===run.keepGroup?'\u2060':'') : run.text).split(/(\t)/).filter(Boolean).flatMap(chunk => chunk==='\t' ? [new TextRun({
+    children:[new Tab()],
     font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,italics:run.italic||undefined,italicsComplexScript:run.italic||undefined,
     characterSpacing:Math.round((run.tracking||0)*20),color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
-  })));
+  })] : splitHighlightText(chunk, highlightBlanks).map(seg => new TextRun({
+    text: seg.text,
+    ...(seg.highlight ? {highlight: 'yellow' as const} : {}),
+    font,size:Math.round(run.size*2),sizeComplexScript:Math.round(run.size*2),bold:run.bold,boldComplexScript:run.bold,italics:run.italic||undefined,italicsComplexScript:run.italic||undefined,
+    characterSpacing:Math.round((run.tracking||0)*20),color:run.color,underline:run.underline?{}:undefined,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'},
+  }))));
 }
 function guideOffsetY(p: WordParagraph, guide: WordParagraph, rowYs: number[]) {
   if (p.runs.length === 0 || rowYs.length === 0) return guide.y;
@@ -39,16 +59,16 @@ function guideOffsetY(p: WordParagraph, guide: WordParagraph, rowYs: number[]) {
   // +1 px (~0.75 pt) extra clearance so Thai low vowels (ุ/ู) sit cleanly above the dots.
   return firstRowBase + 1 - (rowYs.length - 1 - idx) * p.line;
 }
-function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
+function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width, highlightBlanks = false) {
   const rowYs: number[] = [];
   for (const g of p.guides || []) {
     if (!rowYs.some(y => Math.abs(y - g.y) < 4)) rowYs.push(g.y);
   }
   rowYs.sort((a, b) => a - b);
   const options: IParagraphOptions = {
-    children:[...textRuns(p.runs),...(p.guides||[]).map(guide=>new ShapeRun({
+    children:[...textRuns(p.runs, highlightBlanks),...(p.guides||[]).map(guide=>new ShapeRun({
       type:'rectangle',transformation:{width:guide.width+2,height:guide.height},fill:'none',line:'none',
-      children:paragraphs({...guide,x:0,guides:undefined},0,0,guide.width),
+      children:paragraphs({...guide,x:0,guides:undefined},0,0,guide.width,false),
       textOptions:{verticalAlignment:'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},
       floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(guide.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.LINE,offset:emu(guideOffsetY(p, guide, rowYs))},allowOverlap:true,behindDocument:true,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}
     }))],alignment:p.align==='center'?AlignmentType.CENTER:p.align==='right'?AlignmentType.RIGHT:p.align==='justify'?AlignmentType.THAI_DISTRIBUTE:AlignmentType.LEFT,
@@ -61,7 +81,7 @@ function paragraph(p: WordParagraph, before = 0, left = 0, width = p.width) {
   };
   return new Paragraph(options);
 }
-function paragraphs(p: WordParagraph, before = 0, left = 0, width = p.width) {
+function paragraphs(p: WordParagraph, before = 0, left = 0, width = p.width, highlightBlanks = false) {
   // Explicit newlines (addresses, acting positions, text boxes) start real
   // paragraphs, never Shift+Enter breaks inside a distributed paragraph.
   const groups: WordRun[][] = [[]];
@@ -70,15 +90,15 @@ function paragraphs(p: WordParagraph, before = 0, left = 0, width = p.width) {
     if(text) groups.at(-1)!.push({...run,text});
   });
   }
-  return groups.map((runs,index)=>paragraph({...p,runs,guides:index===groups.length-1?p.guides:undefined,keep:index<groups.length-1||p.keep},index===0?before:0,left,width));
+  return groups.map((runs,index)=>paragraph({...p,runs,guides:index===groups.length-1?p.guides:undefined,keep:index<groups.length-1||p.keep},index===0?before:0,left,width,highlightBlanks));
 }
 function image(img: WordImage) {
   return new ImageRun({type:img.source.startsWith('data:image/jpeg')?'jpg':'png',data:decode(img.source),transformation:{width:img.width,height:img.height},crop:img.crop,
     altText:{name:img.alt,title:img.alt,description:img.alt},floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(img.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.PAGE,offset:emu(img.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}});
 }
-function section(page: WordPage,restartNumbering=false): ISectionOptions {
+function section(page: WordPage,restartNumbering=false,highlightBlanks=false): ISectionOptions {
   const children: (Paragraph | Table)[] = [];
-  const overlays=page.overlays.map(item=>item.kind==='image'?image(item):new ShapeRun({type:'rectangle',transformation:{width:item.width+2,height:Math.max(item.height,item.line)},fill:'none',line:item.outline?'555555':'none',children:paragraphs({...item,x:0},0,0,item.width),textOptions:{verticalAlignment:item.outline?'center':'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(item.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.PAGE,offset:emu(item.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}}));
+  const overlays=page.overlays.map(item=>item.kind==='image'?image(item):new ShapeRun({type:'rectangle',transformation:{width:item.width+2,height:Math.max(item.height,item.line)},fill:'none',line:item.outline?'555555':'none',children:paragraphs({...item,x:0},0,0,item.width,highlightBlanks),textOptions:{verticalAlignment:item.outline?'center':'top',margins:{top:0,bottom:0,left:0,right:0},resizeShapeToFitText:true},floating:{horizontalPosition:{relative:HorizontalPositionRelativeFrom.PAGE,offset:emu(item.x)},verticalPosition:{relative:VerticalPositionRelativeFrom.PAGE,offset:emu(item.y)},allowOverlap:true,behindDocument:false,layoutInCell:false,wrap:{type:TextWrappingType.NONE}}}));
   children.push(new Paragraph({children:overlays,spacing:{before:0,after:0,line:1,lineRule:LineRuleType.EXACT}}));
   let bottom=page.top;
   for(const block of page.blocks) {
@@ -89,9 +109,9 @@ function section(page: WordPage,restartNumbering=false): ISectionOptions {
       // Emit any leading gap as an exact spacer paragraph so guided paragraphs always have w:before="0".
       if(twip(gap)>0 && block.guides?.length) {
         children.push(new Paragraph({keepNext:true,spacing:{before:0,after:0,line:twip(gap),lineRule:LineRuleType.EXACT}}));
-        children.push(...paragraphs(block,0,page.left,page.width-page.left-page.right));
+        children.push(...paragraphs(block,0,page.left,page.width-page.left-page.right,highlightBlanks));
       } else {
-        children.push(...paragraphs(block,block.guides?.length?0:gap,page.left,page.width-page.left-page.right));
+        children.push(...paragraphs(block,block.guides?.length?0:gap,page.left,page.width-page.left-page.right,highlightBlanks));
       }
     }
     else {
@@ -99,7 +119,7 @@ function section(page: WordPage,restartNumbering=false): ISectionOptions {
       const border={style:block.bordered===false?BorderStyle.NONE:BorderStyle.SINGLE,size:4,color:block.plainHeader?'000000':'555555'};
       children.push(new Table({width:{size:twip(block.width),type:WidthType.DXA},indent:{size:twip(block.x-page.left),type:WidthType.DXA},layout:TableLayoutType.FIXED,borders:block.bordered===false?{top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border}:undefined,
         columnWidths:block.columnWidths?.map(twip)??block.rows[0]?.cells.map(cell=>twip(cell.width)),
-        rows:block.rows.map(row=>new TableRow({...(row.header?{tableHeader:true}:{}),cantSplit:true,children:row.cells.map(cell=>new TableCell({columnSpan:cell.colSpan,rowSpan:cell.rowSpan,verticalAlign:cell.verticalAlign==='middle'?'center':undefined,width:{size:twip(cell.width),type:WidthType.DXA},margins:block.bordered===false&&!block.rows.some(r=>r.header)?{top:0,bottom:0,left:0,right:100}:block.plainHeader?{top:40,bottom:40,left:60,right:60}:{top:80,bottom:80,left:120,right:120},borders:{top:border,bottom:border,left:border,right:border},shading:row.header&&!block.plainHeader?{fill:'F2F2F2'}:undefined,children:paragraphs({...cell,x:0,width:cell.width,indent:0,keep:false},0,0,cell.width)}))}))}));
+        rows:block.rows.map(row=>new TableRow({...(row.header?{tableHeader:true}:{}),cantSplit:true,children:row.cells.map(cell=>new TableCell({columnSpan:cell.colSpan,rowSpan:cell.rowSpan,verticalAlign:cell.verticalAlign==='middle'?'center':undefined,width:{size:twip(cell.width),type:WidthType.DXA},margins:block.bordered===false&&!block.rows.some(r=>r.header)?{top:0,bottom:0,left:0,right:100}:block.plainHeader?{top:40,bottom:40,left:60,right:60}:{top:80,bottom:80,left:120,right:120},borders:{top:border,bottom:border,left:border,right:border},shading:row.header&&!block.plainHeader?{fill:'F2F2F2'}:undefined,children:paragraphs({...cell,x:0,width:cell.width,indent:0,keep:false},0,0,cell.width,highlightBlanks)}))}))}));
       children.push(new Paragraph({spacing:{before:0,after:0,line:1,lineRule:LineRuleType.EXACT}}));
     }
     bottom=block.y+block.height;
@@ -147,13 +167,12 @@ async function attachedPages(page: Page, draft: Draft): Promise<WordPage[]> {
   return result;
 }
 
-export async function renderWord(draft: Draft): Promise<Buffer> {
+async function renderWordWithBrowser(browser: Browser, draft: Draft, options: {highlightBlanks?: boolean} = {}): Promise<Buffer> {
   validateAppendixImages(draft);validateAttachments(draft);
   const assets=documentAssets();
-  const executablePath=process.env.CHROMIUM_EXECUTABLE_PATH||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
-  const browser=await chromium.launch({headless:true,executablePath});
+  const page=await browser.newPage();
   try {
-    const page=await browser.newPage();await page.route('**/*',route=>route.abort());
+    await page.route('**/*',route=>route.abort());
     // Dedicated forms use the same physical paragraph breaks as preview/PDF.
     // General correspondence retains Word's existing logical-paragraph editing behavior.
     await page.setContent(documentHtml(draft,assets,appendixSources(draft),{wordParagraphs:!draft.layout.startsWith('procurement-')}),{waitUntil:'load'});
@@ -166,12 +185,30 @@ export async function renderWord(draft: Draft): Promise<Buffer> {
     const pages=await page.evaluate(extractWordPages);
     const attachments=await attachedPages(page,draft);
     const ordered=[...pages.filter(p=>!p.copy),...attachments,...pages.filter(p=>p.copy),...(pages.some(p=>p.copy)?attachments:[])];
+    const hl = options.highlightBlanks === true;
     const document=new Document({compatibility:{version:15,applyBreakingRules:true},creator:'Sarabun',title:draft.subject,description:'ข้อความและตารางแก้ไขได้ใน Word; ไฟล์ PDF ที่แนบแสดงเป็นภาพแต่ละหน้า',
       styles:{default:{document:{run:{font,size:32,sizeComplexScript:32,noProof:true,language:{value:'th-TH',eastAsia:'th-TH',bidirectional:'th-TH'}},paragraph:{spacing:{after:0}}}}},
-      fonts:[{name:'TH SarabunIT๙',data:decode(assets.regular),bold:decode(assets.bold),italic:assets.italic?decode(assets.italic):undefined,boldItalic:assets.boldItalic?decode(assets.boldItalic):undefined}],sections:ordered.map((page,index)=>section(page,page.copy&&(index===0||!ordered[index-1].copy)))});
+      fonts:[{name:'TH SarabunIT๙',data:decode(assets.regular),bold:decode(assets.bold),italic:assets.italic?decode(assets.italic):undefined,boldItalic:assets.boldItalic?decode(assets.boldItalic):undefined}],sections:ordered.map((page,index)=>section(page,page.copy&&(index===0||!ordered[index-1].copy),hl))});
     const bytes=await Packer.toBuffer(document);
     return ['internal','memorandum'].includes(draft.type)?continuationFooter(bytes,{subject:numerals(draft.subject||'[เรื่อง]',draft.numeralStyle),number:numerals(draft.number||'[เลขหนังสือ]',draft.numeralStyle),date:numerals(thaiDate(draft.date),draft.numeralStyle),memo:true},[],false,ordered.flatMap((page,index)=>page.appendix?[index]:[])):bytes;
-  } finally {await browser.close();}
+  } finally {await page.close();}
+}
+
+export async function withWordRenderer<T>(work: (render: (draft: Draft, options?: {highlightBlanks?: boolean}) => Promise<Buffer>) => Promise<T>): Promise<T> {
+  const state: {browser: Browser | null} = {browser: null};
+  const render = async (draft: Draft, options?: {highlightBlanks?: boolean}) => {
+    if (!state.browser) {
+      const executablePath=process.env.CHROMIUM_EXECUTABLE_PATH||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+      state.browser=await chromium.launch({headless:true,executablePath});
+    }
+    return renderWordWithBrowser(state.browser, draft, options);
+  };
+  try { return await work(render); }
+  finally { if (state.browser) await state.browser.close(); }
+}
+
+export async function renderWord(draft: Draft, options: {highlightBlanks?: boolean} = {}): Promise<Buffer> {
+  return withWordRenderer(render => render(draft, options));
 }
 
 

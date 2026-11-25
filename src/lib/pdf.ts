@@ -21,7 +21,7 @@ async function renderDraftWithBrowser(browser: Browser, draft: Draft) {
     if(missing.length)throw new MissingOverlayPageError(missing);
     if(await page.evaluate(()=> (window as unknown as {__overflow:boolean}).__overflow)) throw new Error("มีส่วนของหนังสือยาวเกินหน้ากระดาษ กรุณาแบ่งข้อความก่อนส่งออก");
     let cover=await page.pdf({format:"A4",preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
-    if(draft.procurementSource||draft.layout.startsWith('procurement-')){
+    if(draft.procurementSource||draft.caseFolderSource||draft.layout.startsWith('procurement-')){
       const pdf=await PDFDocument.load(cover);normalizeThaiCMaps(pdf);cover=Buffer.from(await pdf.save());
     }
     const originalPages=await page.locator('.page:not(.counterpart-page)').count();
