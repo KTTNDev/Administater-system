@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import JSZip from 'jszip';
 import {PDFDocument} from 'pdf-lib';
@@ -247,4 +249,22 @@ describe('Phase 8 Case Exporters (Core-First Engine)', () => {
     expect(result.entries.filter(e => e.itemId === 'doc-1')).toHaveLength(2);
     expect(result.entries.some(e => e.source === 'DIVIDER' && e.itemId === 'slot-1')).toBe(true);
   }, 60000);
+
+  it('exports the full 11-item project-loan-lifecycle sample folder to PDF binder without field-length errors', async () => {
+    const raw = fs.readFileSync(
+      path.join(process.cwd(), 'docs/samples/project-loan-lifecycle.sarabun-case.json'),
+      'utf8',
+    );
+    const {folder} = parsePortableCaseArchive(raw);
+    const result = await assembleCasePdfBinder(folder, {
+      mode: 'FULL_BINDER',
+      duplicateCopies: true,
+      includeCoverChecklist: true,
+      includeDividers: true,
+      includeLinkedPdfs: false,
+      preferBoundCore: false,
+    });
+    expect(result.pdfBytes.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+    expect(result.pageCount).toBeGreaterThanOrEqual(11);
+  }, 90000);
 });

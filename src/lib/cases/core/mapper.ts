@@ -62,6 +62,11 @@ function escapeCell(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
 
+function clip(value: string, max: number): string {
+  const trimmed = value.trim();
+  return trimmed.length > max ? trimmed.slice(0, max).trimEnd() : trimmed;
+}
+
 function tableToMarkdown(
   folder: CaseFolder,
   spec: CaseTableSpec,
@@ -214,14 +219,14 @@ export function mapCaseItemToCoreDraft(
 
   const a = folder.agency;
   const s = folder.signatories;
-  const subject = resolve(item.title).trim() || DOC_TYPE_THAI_NAMES[item.docType];
-  const number = buildNumberForCore(folder, item, hl);
+  const subject = clip(resolve(item.title).trim() || DOC_TYPE_THAI_NAMES[item.docType], 300);
+  const number = clip(buildNumberForCore(folder, item, hl), 2000);
   const date = /^\d{4}-\d{2}-\d{2}$/.test(item.date) ? item.date : '';
   const caseFolderSource = {
-    folderId: folder.id,
-    itemId: item.id,
-    folderName: folder.name,
-    docLabel: DOC_TYPE_THAI_NAMES[item.docType],
+    folderId: folder.id.slice(0, 200),
+    itemId: item.id.slice(0, 200),
+    folderName: clip(folder.name, 300),
+    docLabel: clip(DOC_TYPE_THAI_NAMES[item.docType], 200),
   };
 
   switch (item.payload.docType) {
@@ -271,7 +276,7 @@ export function mapCaseItemToCoreDraft(
         legalBasis: useStructured ? legal : '',
         proposal: useStructured ? prop : '',
         body: useStructured ? '' : freeParts.join('\n'),
-        closing: resolve(p.closing || 'จึงเรียนมาเพื่อโปรดพิจารณา'),
+        closing: clip(resolve(p.closing || 'จึงเรียนมาเพื่อโปรดพิจารณา'), 200),
         signer: proposer.fullName,
         position: formatPersonPosition(proposer),
         opinions: buildOpinionsFromChain(p.approvalChain, a, s),
@@ -309,7 +314,7 @@ export function mapCaseItemToCoreDraft(
         attachments: p.enclosures.map(resolve).filter(Boolean).join('\n'),
         bodyMode: 'free',
         body: bodyParts.join('\n'),
-        closing: resolve(p.closing || 'ขอแสดงความนับถือ'),
+        closing: clip(resolve(p.closing || 'ขอแสดงความนับถือ'), 200),
         signer: signer.fullName,
         position: formatPersonPosition(signer),
         numeralStyle: 'thai',
@@ -425,7 +430,7 @@ export function mapCaseItemToCoreDraft(
         attachments: p.enclosures.map(resolve).filter(Boolean).join('\n'),
         bodyMode: 'free',
         body: bodyParts.join('\n'),
-        closing: resolve(p.closing || 'ขอแสดงความนับถือ'),
+        closing: clip(resolve(p.closing || 'ขอแสดงความนับถือ'), 200),
         signer: signer.fullName,
         position: formatPersonPosition(signer),
         numeralStyle: 'thai',
@@ -469,7 +474,7 @@ export function mapCaseItemToCoreDraft(
       return documentSchema.parse({
         type: 'other',
         subject,
-        headerSubtitle: resolve(p.subtitle),
+        headerSubtitle: clip(resolve(p.subtitle), 1000),
         number: '',
         date,
         organization: a.municipalityName,
@@ -509,7 +514,7 @@ export function mapCaseItemToCoreDraft(
       return documentSchema.parse({
         type: 'other',
         subject,
-        headerSubtitle: resolve(p.subtitle),
+        headerSubtitle: clip(resolve(p.subtitle), 1000),
         number: '',
         date,
         organization: a.municipalityName,
@@ -520,7 +525,7 @@ export function mapCaseItemToCoreDraft(
         otherShowSignatures: true,
         signer: certifier.fullName,
         position: formatPersonPosition(certifier),
-        appendixTitle: [subject, resolve(p.subtitle)].filter(Boolean).join('\n'),
+        appendixTitle: clip([subject, resolve(p.subtitle)].filter(Boolean).join('\n'), 500),
         numeralStyle: 'thai',
         caseFolderSource,
       });

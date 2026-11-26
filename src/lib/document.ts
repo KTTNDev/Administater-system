@@ -19,7 +19,7 @@ export const documentSchema = z.object({
   additionalEnclosures: z.string().max(2000).default(""),
   attachmentFiles: z.array(z.object({originalAvailable:z.boolean().default(false),id:z.string().uuid(),name:z.string().min(1).max(240),description:z.string().trim().min(1).max(300),showNameInDocument:z.boolean().default(true),pages:z.number().int().positive().max(200),bytes:z.number().int().positive().max(15*1024*1024),quantity:z.number().int().min(1).max(999).default(1),unit:z.enum(["ฉบับ","ชุด","แผ่น"]).default("ฉบับ")})).max(10).default([]),
   attachmentPhrase: z.enum(["ตามเอกสารที่แนบมาพร้อมนี้","รายละเอียดตามเอกสารแนบ","พร้อมนี้ได้แนบเอกสารประกอบการพิจารณา"]).default("ตามเอกสารที่แนบมาพร้อมนี้"),
-  appendixTitle: z.string().trim().max(200).default(""),
+  appendixTitle: z.string().trim().max(500).default(""),
   appendixLayout: z.enum(["auto","stack","columns"]).default("auto"),
   appendixPages: z.array(z.object({id:z.string().uuid(),title:z.string().max(200).default(''),body:z.string().max(20000).default('')})).max(20).default([]),
   appendixImages: z.array(z.object({id:z.string().uuid(),name:z.string().min(1).max(240),mime:z.enum(["image/png","image/jpeg"]),bytes:z.number().int().positive().max(10*1024*1024),width:z.number().int().positive().max(30000),height:z.number().int().positive().max(30000),caption:z.string().max(500).default(""),widthMm:z.number().min(20).max(195).default(150),page:z.number().int().min(1).max(100).optional(),xMm:z.number().min(0).max(195).optional(),yMm:z.number().min(0).max(285).optional()})).max(20).default([]),
